@@ -1,0 +1,799 @@
+@startuml
+
+title AlphaInvest AI - Modelo Entidad Relacion
+
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entity {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+
+' =========================================================
+' DOMINIO DE IDENTIDAD Y SEGURIDAD
+' =========================================================
+
+package "Identidad y seguridad" {
+
+entity "usuarios" as usuarios {
+    * id : UUID <<PK>>
+    --
+    nombres : VARCHAR(100)
+    apellidos : VARCHAR(100)
+    correo : VARCHAR(255) <<UQ>>
+    password_hash : VARCHAR(255)
+    estado : VARCHAR(30)
+    correo_verificado : BOOLEAN
+    intentos_fallidos : INTEGER
+    bloqueado_hasta : TIMESTAMP
+    ultimo_acceso : TIMESTAMP
+    fecha_creacion : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+entity "roles" as roles {
+    * id : UUID <<PK>>
+    --
+    nombre : VARCHAR(50) <<UQ>>
+    descripcion : VARCHAR(255)
+    estado : BOOLEAN
+    fecha_creacion : TIMESTAMP
+}
+
+entity "permisos" as permisos {
+    * id : UUID <<PK>>
+    --
+    codigo : VARCHAR(100) <<UQ>>
+    nombre : VARCHAR(100)
+    descripcion : VARCHAR(255)
+    modulo : VARCHAR(50)
+}
+
+entity "usuario_roles" as usuario_roles {
+    * usuario_id : UUID <<PK, FK>>
+    * rol_id : UUID <<PK, FK>>
+    --
+    fecha_asignacion : TIMESTAMP
+    asignado_por : UUID <<FK>>
+}
+
+entity "rol_permisos" as rol_permisos {
+    * rol_id : UUID <<PK, FK>>
+    * permiso_id : UUID <<PK, FK>>
+    --
+    fecha_asignacion : TIMESTAMP
+}
+
+entity "sesiones" as sesiones {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    refresh_token_hash : VARCHAR(255)
+    direccion_ip : VARCHAR(45)
+    agente_usuario : VARCHAR(500)
+    fecha_inicio : TIMESTAMP
+    fecha_expiracion : TIMESTAMP
+    fecha_revocacion : TIMESTAMP
+    activa : BOOLEAN
+}
+
+entity "aceptaciones_terminos" as aceptaciones_terminos {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    version_terminos : VARCHAR(30)
+    version_privacidad : VARCHAR(30)
+    fecha_aceptacion : TIMESTAMP
+    direccion_ip : VARCHAR(45)
+}
+
+}
+
+' =========================================================
+' DOMINIO DE PERFIL DE RIESGO
+' =========================================================
+
+package "Perfil de riesgo" {
+
+entity "cuestionarios" as cuestionarios {
+    * id : UUID <<PK>>
+    --
+    nombre : VARCHAR(150)
+    descripcion : TEXT
+    version : VARCHAR(30)
+    estado : VARCHAR(30)
+    fecha_publicacion : TIMESTAMP
+    fecha_creacion : TIMESTAMP
+}
+
+entity "preguntas" as preguntas {
+    * id : UUID <<PK>>
+    --
+    cuestionario_id : UUID <<FK>>
+    texto : TEXT
+    tipo : VARCHAR(30)
+    orden : INTEGER
+    ponderacion : DECIMAL(8,4)
+    obligatoria : BOOLEAN
+    activa : BOOLEAN
+}
+
+entity "opciones_respuesta" as opciones_respuesta {
+    * id : UUID <<PK>>
+    --
+    pregunta_id : UUID <<FK>>
+    texto : VARCHAR(500)
+    valor : DECIMAL(10,4)
+    orden : INTEGER
+    activa : BOOLEAN
+}
+
+entity "evaluaciones_riesgo" as evaluaciones_riesgo {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    cuestionario_id : UUID <<FK>>
+    version_cuestionario : VARCHAR(30)
+    puntuacion_total : DECIMAL(10,4)
+    clasificacion : VARCHAR(40)
+    confianza : DECIMAL(6,5)
+    metodo_clasificacion : VARCHAR(50)
+    version_modelo_id : UUID <<FK>>
+    fecha_evaluacion : TIMESTAMP
+    estado : VARCHAR(30)
+}
+
+entity "respuestas_usuario" as respuestas_usuario {
+    * id : UUID <<PK>>
+    --
+    evaluacion_id : UUID <<FK>>
+    pregunta_id : UUID <<FK>>
+    opcion_id : UUID <<FK>>
+    valor_numerico : DECIMAL(12,4)
+    respuesta_texto : TEXT
+    puntuacion_obtenida : DECIMAL(10,4)
+}
+
+entity "perfiles_riesgo" as perfiles_riesgo {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    evaluacion_id : UUID <<FK>>
+    clasificacion : VARCHAR(40)
+    puntuacion : DECIMAL(10,4)
+    confianza : DECIMAL(6,5)
+    descripcion : TEXT
+    vigente : BOOLEAN
+    fecha_inicio : TIMESTAMP
+    fecha_fin : TIMESTAMP
+    fecha_creacion : TIMESTAMP
+}
+
+}
+
+' =========================================================
+' DOMINIO DE MERCADO
+' =========================================================
+
+package "Mercado financiero" {
+
+entity "mercados" as mercados {
+    * id : UUID <<PK>>
+    --
+    codigo : VARCHAR(30) <<UQ>>
+    nombre : VARCHAR(150)
+    pais : VARCHAR(100)
+    zona_horaria : VARCHAR(80)
+    moneda : VARCHAR(10)
+    estado : BOOLEAN
+}
+
+entity "tipos_activo" as tipos_activo {
+    * id : UUID <<PK>>
+    --
+    codigo : VARCHAR(30) <<UQ>>
+    nombre : VARCHAR(100)
+    descripcion : VARCHAR(255)
+}
+
+entity "activos" as activos {
+    * id : UUID <<PK>>
+    --
+    mercado_id : UUID <<FK>>
+    tipo_activo_id : UUID <<FK>>
+    simbolo : VARCHAR(30)
+    nombre : VARCHAR(200)
+    descripcion : TEXT
+    moneda : VARCHAR(10)
+    sector : VARCHAR(100)
+    industria : VARCHAR(150)
+    isin : VARCHAR(30)
+    estado : VARCHAR(30)
+    fecha_alta : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+entity "fuentes_financieras" as fuentes_financieras {
+    * id : UUID <<PK>>
+    --
+    nombre : VARCHAR(100)
+    proveedor : VARCHAR(100)
+    url_base : VARCHAR(500)
+    prioridad : INTEGER
+    estado : BOOLEAN
+    ultima_consulta : TIMESTAMP
+}
+
+entity "precios_historicos" as precios_historicos {
+    * id : BIGINT <<PK>>
+    --
+    activo_id : UUID <<FK>>
+    fuente_id : UUID <<FK>>
+    fecha : DATE
+    apertura : DECIMAL(20,8)
+    maximo : DECIMAL(20,8)
+    minimo : DECIMAL(20,8)
+    cierre : DECIMAL(20,8)
+    cierre_ajustado : DECIMAL(20,8)
+    volumen : DECIMAL(24,4)
+    moneda : VARCHAR(10)
+    fecha_registro : TIMESTAMP
+}
+
+entity "indicadores_financieros" as indicadores_financieros {
+    * id : BIGINT <<PK>>
+    --
+    activo_id : UUID <<FK>>
+    tipo_indicador : VARCHAR(50)
+    fecha : DATE
+    valor : DECIMAL(24,8)
+    periodo : VARCHAR(30)
+    parametros : JSONB
+    fecha_calculo : TIMESTAMP
+}
+
+entity "noticias_referencia" as noticias_referencia {
+    * id : UUID <<PK>>
+    --
+    activo_id : UUID <<FK>>
+    mongo_document_id : VARCHAR(100)
+    titulo : VARCHAR(500)
+    fuente : VARCHAR(150)
+    url : VARCHAR(1000)
+    fecha_publicacion : TIMESTAMP
+    idioma : VARCHAR(10)
+    relevancia : DECIMAL(6,5)
+    fecha_registro : TIMESTAMP
+}
+
+}
+
+' =========================================================
+' DOMINIO DE PORTAFOLIOS
+' =========================================================
+
+package "Portafolios virtuales" {
+
+entity "listas_seguimiento" as listas_seguimiento {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    nombre : VARCHAR(100)
+    descripcion : VARCHAR(255)
+    predeterminada : BOOLEAN
+    fecha_creacion : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+entity "lista_activos" as lista_activos {
+    * lista_id : UUID <<PK, FK>>
+    * activo_id : UUID <<PK, FK>>
+    --
+    fecha_agregacion : TIMESTAMP
+    notas : VARCHAR(500)
+}
+
+entity "portafolios" as portafolios {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    nombre : VARCHAR(150)
+    descripcion : TEXT
+    moneda_base : VARCHAR(10)
+    capital_inicial : DECIMAL(20,4)
+    estado : VARCHAR(30)
+    fecha_creacion : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+}
+
+entity "posiciones_portafolio" as posiciones_portafolio {
+    * id : UUID <<PK>>
+    --
+    portafolio_id : UUID <<FK>>
+    activo_id : UUID <<FK>>
+    cantidad_virtual : DECIMAL(24,8)
+    precio_promedio : DECIMAL(20,8)
+    capital_asignado : DECIMAL(20,4)
+    porcentaje_objetivo : DECIMAL(8,4)
+    fecha_apertura : TIMESTAMP
+    fecha_actualizacion : TIMESTAMP
+    estado : VARCHAR(30)
+}
+
+entity "valoraciones_portafolio" as valoraciones_portafolio {
+    * id : BIGINT <<PK>>
+    --
+    portafolio_id : UUID <<FK>>
+    fecha : TIMESTAMP
+    valor_total : DECIMAL(20,4)
+    ganancia_perdida : DECIMAL(20,4)
+    rendimiento_porcentual : DECIMAL(12,6)
+    volatilidad : DECIMAL(12,6)
+    moneda : VARCHAR(10)
+}
+
+}
+
+' =========================================================
+' DOMINIO DE SIMULACIONES
+' =========================================================
+
+package "Simulaciones historicas" {
+
+entity "simulaciones" as simulaciones {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    nombre : VARCHAR(150)
+    capital_inicial : DECIMAL(20,4)
+    moneda : VARCHAR(10)
+    fecha_inicio_solicitada : DATE
+    fecha_fin_solicitada : DATE
+    fecha_inicio_efectiva : DATE
+    fecha_fin_efectiva : DATE
+    estado : VARCHAR(30)
+    guardada : BOOLEAN
+    fecha_ejecucion : TIMESTAMP
+    fecha_guardado : TIMESTAMP
+}
+
+entity "simulacion_activos" as simulacion_activos {
+    * id : UUID <<PK>>
+    --
+    simulacion_id : UUID <<FK>>
+    activo_id : UUID <<FK>>
+    porcentaje : DECIMAL(8,4)
+    capital_asignado : DECIMAL(20,4)
+    precio_inicial : DECIMAL(20,8)
+    precio_final : DECIMAL(20,8)
+    cantidad_virtual : DECIMAL(24,8)
+    valor_final : DECIMAL(20,4)
+    rendimiento : DECIMAL(12,6)
+}
+
+entity "resultados_simulacion" as resultados_simulacion {
+    * id : UUID <<PK>>
+    --
+    simulacion_id : UUID <<FK, UQ>>
+    valor_final : DECIMAL(20,4)
+    ganancia_perdida : DECIMAL(20,4)
+    rendimiento_porcentual : DECIMAL(12,6)
+    volatilidad : DECIMAL(12,6)
+    maximo_drawdown : DECIMAL(12,6)
+    indice_sharpe : DECIMAL(12,6)
+    dias_analizados : INTEGER
+    advertencias : JSONB
+    fecha_calculo : TIMESTAMP
+}
+
+entity "series_simulacion_referencia" as series_simulacion_referencia {
+    * id : UUID <<PK>>
+    --
+    simulacion_id : UUID <<FK, UQ>>
+    mongo_document_id : VARCHAR(100)
+    cantidad_puntos : INTEGER
+    fecha_primer_punto : DATE
+    fecha_ultimo_punto : DATE
+    fecha_registro : TIMESTAMP
+}
+
+}
+
+' =========================================================
+' DOMINIO DE INTELIGENCIA ARTIFICIAL
+' =========================================================
+
+package "Inteligencia artificial" {
+
+entity "modelos_ia" as modelos_ia {
+    * id : UUID <<PK>>
+    --
+    codigo : VARCHAR(100) <<UQ>>
+    nombre : VARCHAR(150)
+    tipo : VARCHAR(50)
+    objetivo : VARCHAR(150)
+    descripcion : TEXT
+    estado : VARCHAR(30)
+    fecha_creacion : TIMESTAMP
+}
+
+entity "versiones_modelo" as versiones_modelo {
+    * id : UUID <<PK>>
+    --
+    modelo_id : UUID <<FK>>
+    version : VARCHAR(30)
+    ruta_artefacto : VARCHAR(1000)
+    checksum : VARCHAR(255)
+    algoritmo : VARCHAR(100)
+    hiperparametros : JSONB
+    metricas : JSONB
+    fecha_entrenamiento : TIMESTAMP
+    fecha_activacion : TIMESTAMP
+    activa : BOOLEAN
+}
+
+entity "analisis_activos" as analisis_activos {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    activo_id : UUID <<FK>>
+    fecha_inicio : DATE
+    fecha_fin : DATE
+    clasificacion_riesgo : VARCHAR(40)
+    puntuacion_riesgo : DECIMAL(8,6)
+    clasificacion_tendencia : VARCHAR(40)
+    confianza_tendencia : DECIMAL(8,6)
+    sentimiento_agregado : VARCHAR(30)
+    puntuacion_sentimiento : DECIMAL(8,6)
+    confianza_general : DECIMAL(8,6)
+    explicacion : TEXT
+    fecha_generacion : TIMESTAMP
+    valido_hasta : TIMESTAMP
+    estado : VARCHAR(30)
+}
+
+entity "analisis_modelos" as analisis_modelos {
+    * analisis_id : UUID <<PK, FK>>
+    * version_modelo_id : UUID <<PK, FK>>
+    --
+    tipo_resultado : VARCHAR(50)
+    tiempo_ejecucion_ms : INTEGER
+    fecha_ejecucion : TIMESTAMP
+}
+
+entity "predicciones" as predicciones {
+    * id : UUID <<PK>>
+    --
+    analisis_id : UUID <<FK>>
+    tipo : VARCHAR(50)
+    horizonte : VARCHAR(30)
+    valor_estimado : DECIMAL(24,8)
+    clasificacion : VARCHAR(50)
+    confianza : DECIMAL(8,6)
+    fecha_objetivo : DATE
+    fecha_generacion : TIMESTAMP
+}
+
+entity "factores_explicativos" as factores_explicativos {
+    * id : UUID <<PK>>
+    --
+    analisis_id : UUID <<FK>>
+    variable : VARCHAR(150)
+    valor_variable : VARCHAR(500)
+    importancia : DECIMAL(10,8)
+    impacto : VARCHAR(30)
+    metodo : VARCHAR(50)
+    orden : INTEGER
+}
+
+entity "analisis_sentimiento" as analisis_sentimiento {
+    * id : UUID <<PK>>
+    --
+    analisis_id : UUID <<FK>>
+    noticia_referencia_id : UUID <<FK>>
+    mongo_document_id : VARCHAR(100)
+    clasificacion : VARCHAR(30)
+    puntuacion : DECIMAL(8,6)
+    confianza : DECIMAL(8,6)
+    version_modelo_id : UUID <<FK>>
+    fecha_analisis : TIMESTAMP
+}
+
+}
+
+' =========================================================
+' DOMINIO DE RECOMENDACIONES
+' =========================================================
+
+package "Recomendaciones" {
+
+entity "recomendaciones" as recomendaciones {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    analisis_id : UUID <<FK>>
+    perfil_riesgo_id : UUID <<FK>>
+    categoria : VARCHAR(60)
+    compatibilidad : DECIMAL(8,6)
+    confianza : DECIMAL(8,6)
+    explicacion : TEXT
+    advertencia : TEXT
+    version_modelo_id : UUID <<FK>>
+    fecha_generacion : TIMESTAMP
+    valido_hasta : TIMESTAMP
+    estado : VARCHAR(30)
+}
+
+entity "factores_recomendacion" as factores_recomendacion {
+    * id : UUID <<PK>>
+    --
+    recomendacion_id : UUID <<FK>>
+    factor : VARCHAR(200)
+    valor : VARCHAR(500)
+    impacto : VARCHAR(30)
+    importancia : DECIMAL(10,8)
+    orden : INTEGER
+}
+
+entity "reglas_recomendacion" as reglas_recomendacion {
+    * id : UUID <<PK>>
+    --
+    codigo : VARCHAR(100) <<UQ>>
+    nombre : VARCHAR(150)
+    condicion : JSONB
+    resultado : VARCHAR(60)
+    prioridad : INTEGER
+    version : VARCHAR(30)
+    activa : BOOLEAN
+    fecha_creacion : TIMESTAMP
+}
+
+entity "recomendacion_reglas" as recomendacion_reglas {
+    * recomendacion_id : UUID <<PK, FK>>
+    * regla_id : UUID <<PK, FK>>
+    --
+    cumplida : BOOLEAN
+    resultado_evaluacion : JSONB
+    fecha_evaluacion : TIMESTAMP
+}
+
+}
+
+' =========================================================
+' DOMINIO DE AUDITORIA
+' =========================================================
+
+package "Auditoria y operacion" {
+
+entity "eventos_auditoria" as eventos_auditoria {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    tipo_evento : VARCHAR(80)
+    accion : VARCHAR(100)
+    entidad : VARCHAR(100)
+    entidad_id : VARCHAR(100)
+    servicio : VARCHAR(100)
+    resultado : VARCHAR(30)
+    direccion_ip : VARCHAR(45)
+    agente_usuario : VARCHAR(500)
+    correlation_id : UUID
+    valores_anteriores : JSONB
+    valores_nuevos : JSONB
+    detalle : JSONB
+    fecha_evento : TIMESTAMP
+}
+
+entity "errores_sistema" as errores_sistema {
+    * id : UUID <<PK>>
+    --
+    usuario_id : UUID <<FK>>
+    servicio : VARCHAR(100)
+    codigo_error : VARCHAR(100)
+    mensaje : TEXT
+    detalle_tecnico : TEXT
+    correlation_id : UUID
+    nivel : VARCHAR(30)
+    resuelto : BOOLEAN
+    fecha_error : TIMESTAMP
+    fecha_resolucion : TIMESTAMP
+}
+
+entity "tareas_programadas" as tareas_programadas {
+    * id : UUID <<PK>>
+    --
+    codigo : VARCHAR(100) <<UQ>>
+    nombre : VARCHAR(150)
+    tipo : VARCHAR(50)
+    expresion_programacion : VARCHAR(100)
+    ultima_ejecucion : TIMESTAMP
+    siguiente_ejecucion : TIMESTAMP
+    estado : VARCHAR(30)
+    activa : BOOLEAN
+}
+
+entity "ejecuciones_tarea" as ejecuciones_tarea {
+    * id : UUID <<PK>>
+    --
+    tarea_id : UUID <<FK>>
+    fecha_inicio : TIMESTAMP
+    fecha_fin : TIMESTAMP
+    estado : VARCHAR(30)
+    registros_procesados : INTEGER
+    mensaje : TEXT
+    detalle : JSONB
+}
+
+}
+
+' =========================================================
+' RELACIONES DE IDENTIDAD
+' =========================================================
+
+usuarios ||--o{ usuario_roles : posee
+roles ||--o{ usuario_roles : asigna
+roles ||--o{ rol_permisos : contiene
+permisos ||--o{ rol_permisos : pertenece
+usuarios ||--o{ sesiones : inicia
+usuarios ||--o{ aceptaciones_terminos : acepta
+usuarios ||--o{ usuario_roles : asignado
+
+' =========================================================
+' RELACIONES DE PERFIL DE RIESGO
+' =========================================================
+
+cuestionarios ||--|{ preguntas : contiene
+preguntas ||--|{ opciones_respuesta : ofrece
+usuarios ||--o{ evaluaciones_riesgo : realiza
+cuestionarios ||--o{ evaluaciones_riesgo : utiliza
+evaluaciones_riesgo ||--|{ respuestas_usuario : contiene
+preguntas ||--o{ respuestas_usuario : responde
+opciones_respuesta ||--o{ respuestas_usuario : selecciona
+evaluaciones_riesgo ||--|| perfiles_riesgo : genera
+usuarios ||--o{ perfiles_riesgo : posee
+versiones_modelo ||--o{ evaluaciones_riesgo : clasifica
+
+' =========================================================
+' RELACIONES DE MERCADO
+' =========================================================
+
+mercados ||--o{ activos : lista
+tipos_activo ||--o{ activos : clasifica
+activos ||--o{ precios_historicos : registra
+fuentes_financieras ||--o{ precios_historicos : proporciona
+activos ||--o{ indicadores_financieros : posee
+activos ||--o{ noticias_referencia : relaciona
+
+' =========================================================
+' RELACIONES DE PORTAFOLIO
+' =========================================================
+
+usuarios ||--o{ listas_seguimiento : crea
+listas_seguimiento ||--o{ lista_activos : contiene
+activos ||--o{ lista_activos : aparece_en
+usuarios ||--o{ portafolios : administra
+portafolios ||--o{ posiciones_portafolio : contiene
+activos ||--o{ posiciones_portafolio : representa
+portafolios ||--o{ valoraciones_portafolio : genera
+
+' =========================================================
+' RELACIONES DE SIMULACION
+' =========================================================
+
+usuarios ||--o{ simulaciones : ejecuta
+simulaciones ||--|{ simulacion_activos : contiene
+activos ||--o{ simulacion_activos : participa
+simulaciones ||--o| resultados_simulacion : produce
+simulaciones ||--o| series_simulacion_referencia : referencia
+
+' =========================================================
+' RELACIONES DE IA
+' =========================================================
+
+modelos_ia ||--|{ versiones_modelo : versiona
+usuarios ||--o{ analisis_activos : solicita
+activos ||--o{ analisis_activos : analiza
+analisis_activos ||--|{ analisis_modelos : utiliza
+versiones_modelo ||--o{ analisis_modelos : participa
+analisis_activos ||--o{ predicciones : genera
+analisis_activos ||--o{ factores_explicativos : explica
+analisis_activos ||--o{ analisis_sentimiento : incorpora
+noticias_referencia ||--o{ analisis_sentimiento : evalua
+versiones_modelo ||--o{ analisis_sentimiento : procesa
+
+' =========================================================
+' RELACIONES DE RECOMENDACION
+' =========================================================
+
+usuarios ||--o{ recomendaciones : recibe
+analisis_activos ||--o{ recomendaciones : fundamenta
+perfiles_riesgo ||--o{ recomendaciones : personaliza
+versiones_modelo ||--o{ recomendaciones : genera
+recomendaciones ||--|{ factores_recomendacion : explica
+recomendaciones ||--o{ recomendacion_reglas : evalua
+reglas_recomendacion ||--o{ recomendacion_reglas : aplica
+
+' =========================================================
+' RELACIONES DE AUDITORIA
+' =========================================================
+
+usuarios ||--o{ eventos_auditoria : origina
+usuarios ||--o{ errores_sistema : experimenta
+tareas_programadas ||--o{ ejecuciones_tarea : ejecuta
+
+' =========================================================
+' NOTAS
+' =========================================================
+
+note right of usuarios
+El correo debe ser unico.
+
+Las contrasenas nunca se guardan
+en texto plano.
+end note
+
+note right of perfiles_riesgo
+Solo un perfil puede estar
+vigente por usuario.
+
+Los perfiles anteriores se
+conservan como historial.
+end note
+
+note right of precios_historicos
+Restriccion unica recomendada:
+
+activo_id + fuente_id + fecha
+end note
+
+note right of posiciones_portafolio
+Las posiciones son virtuales.
+
+No representan activos ni
+fondos reales del usuario.
+end note
+
+note right of simulaciones
+La suma de porcentajes de
+simulacion_activos debe ser 100.
+end note
+
+note right of analisis_activos
+Todo analisis debe registrar:
+
+* Activo
+* Periodo
+* Modelos utilizados
+* Confianza
+* Vigencia
+* Explicacion
+end note
+
+note right of recomendaciones
+Las categorias representan
+compatibilidad y riesgo.
+
+No son ordenes de compra
+o venta.
+end note
+
+note bottom of noticias_referencia
+El contenido completo de la noticia
+se almacena en MongoDB.
+
+PostgreSQL conserva la referencia,
+la relacion con el activo y los
+metadatos principales.
+end note
+
+note bottom of series_simulacion_referencia
+La serie temporal completa se
+almacena en MongoDB.
+
+PostgreSQL conserva la referencia
+al documento.
+end note
+
+@enduml
