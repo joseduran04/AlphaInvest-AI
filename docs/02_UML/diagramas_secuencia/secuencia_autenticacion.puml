@@ -1,0 +1,204 @@
+@startuml
+title AlphaInvest AI - Secuencia de Registro e Inicio de Sesion
+
+autonumber
+
+actor Usuario as USR
+boundary "Frontend React" as WEB
+control "API Gateway" as GW
+control "Auth Service" as AUTH
+database "PostgreSQL" as DB
+control "Servicio de Auditoria" as AUD
+control "Servicio de Correo" as MAIL
+
+== CU-001 Registrar usuario ==
+
+USR -> WEB : Abrir formulario de registro
+WEB --> USR : Mostrar formulario
+
+USR -> WEB : Capturar nombre, correo,\npassword y aceptacion de terminos
+WEB -> WEB : Validar campos obligatorios
+
+alt Campos incompletos o invalidos
+    WEB --> USR : Mostrar errores de validacion
+else Datos validos
+    WEB -> GW : POST /auth/register
+    activate GW
+
+    GW -> GW : Validar estructura de solicitud
+
+    alt Solicitud invalida
+        GW --> WEB : HTTP 422 Datos invalidos
+        deactivate GW
+        WEB --> USR : Mostrar errores
+    else Solicitud valida
+        GW -> AUTH : registrarUsuario(datos)
+        activate AUTH
+
+        AUTH -> AUTH : Normalizar correo
+        AUTH -> AUTH : Validar fortaleza del password
+        AUTH -> DB : Buscar usuario por correo
+        activate DB
+        DB --> AUTH : Resultado de busqueda
+        deactivate DB
+
+        alt Correo ya registrado
+            AUTH --> GW : Error CORREO_EXISTENTE
+            deactivate AUTH
+            GW --> WEB : HTTP 409 Conflicto
+            deactivate GW
+            WEB --> USR : El correo ya esta registrado
+        else Correo disponible
+            AUTH -> AUTH : Generar hash del password
+            AUTH -> DB : Iniciar transaccion
+            activate DB
+            AUTH -> DB : Insertar usuario
+            AUTH -> DB : Asignar rol USUARIO
+            AUTH -> DB : Registrar aceptacion de terminos
+            DB --> AUTH : Usuario creado
+
+            alt Error al guardar
+                AUTH -> DB : Revertir transaccion
+                DB --> AUTH : Transaccion revertida
+                deactivate DB
+
+                AUTH -> AUD : registrarError(registro)
+                AUD --> AUTH : Error registrado
+
+                AUTH --> GW : Error interno
+                deactivate AUTH
+                GW --> WEB : HTTP 500
+                deactivate GW
+                WEB --> USR : Registro no disponible
+            else Datos guardados
+                AUTH -> DB : Confirmar transaccion
+                DB --> AUTH : Transaccion confirmada
+                deactivate DB
+
+                AUTH -> AUD : registrarEvento(\nUSUARIO_REGISTRADO)
+                AUD --> AUTH : Evento registrado
+
+                opt Enviar correo de bienvenida
+                    AUTH -> MAIL : enviarBienvenida(correo)
+                    activate MAIL
+
+                    alt Servicio de correo disponible
+                        MAIL --> AUTH : Correo enviado
+                    else Servicio de correo no disponible
+                        MAIL --> AUTH : Error de envio
+                        AUTH -> AUD : registrarError(correo)
+                        AUD --> AUTH : Error registrado
+                    end
+
+                    deactivate MAIL
+                end
+
+                AUTH --> GW : Usuario registrado
+                deactivate AUTH
+                GW --> WEB : HTTP 201 Created
+                deactivate GW
+                WEB --> USR : Registro exitoso
+                WEB --> USR : Redirigir a inicio de sesion
+            end
+        end
+    end
+end
+
+== CU-002 Iniciar sesion ==
+
+USR -> WEB : Introducir correo y password
+WEB -> WEB : Validar campos
+
+alt Campos incompletos
+    WEB --> USR : Solicitar campos faltantes
+else Campos completos
+    WEB -> GW : POST /auth/login
+    activate GW
+
+    GW -> AUTH : autenticar(correo, password)
+    activate AUTH
+
+    AUTH -> AUTH : Normalizar correo
+    AUTH -> DB : Buscar usuario por correo
+    activate DB
+    DB --> AUTH : Usuario y credenciales
+    deactivate DB
+
+    alt Usuario no encontrado
+        AUTH -> AUD : registrarIntentoFallido(correo)
+        AUD --> AUTH : Intento registrado
+
+        AUTH --> GW : Credenciales invalidas
+        deactivate AUTH
+        GW --> WEB : HTTP 401 Unauthorized
+        deactivate GW
+        WEB --> USR : Correo o password incorrectos
+    else Usuario encontrado
+        AUTH -> AUTH : Comparar password con hash
+
+        alt Password incorrecto
+            AUTH -> AUD : registrarIntentoFallido(usuario)
+            AUD --> AUTH : Intento registrado
+
+            AUTH --> GW : Credenciales invalidas
+            deactivate AUTH
+            GW --> WEB : HTTP 401 Unauthorized
+            deactivate GW
+            WEB --> USR : Correo o password incorrectos
+        else Password correcto
+            AUTH -> AUTH : Validar estado de cuenta
+
+            alt Cuenta inactiva o bloqueada
+                AUTH -> AUD : registrarAccesoRechazado(usuario)
+                AUD --> AUTH : Evento registrado
+
+                AUTH --> GW : Cuenta no disponible
+                deactivate AUTH
+                GW --> WEB : HTTP 403 Forbidden
+                deactivate GW
+                WEB --> USR : La cuenta no puede acceder
+            else Cuenta activa
+                AUTH -> AUTH : Obtener roles y permisos
+                AUTH -> AUTH : Generar access token
+                AUTH -> AUTH : Generar refresh token
+                AUTH -> AUTH : Aplicar expiracion
+
+                AUTH -> DB : Guardar sesion y hash\ndel refresh token
+                activate DB
+                DB --> AUTH : Sesion registrada
+                deactivate DB
+
+                AUTH -> AUD : registrarEvento(\nINICIO_SESION_EXITOSO)
+                AUD --> AUTH : Evento registrado
+
+                AUTH --> GW : Tokens y datos de usuario
+                deactivate AUTH
+
+                GW --> WEB : HTTP 200 OK\naccessToken, refreshToken, usuario
+                deactivate GW
+
+                WEB -> WEB : Guardar sesion de forma segura
+                WEB --> USR : Mostrar dashboard
+            end
+        end
+    end
+end
+
+note right of AUTH
+El password nunca se almacena
+ni se compara en texto plano.
+
+Los mensajes de autenticacion
+no revelan si un correo existe.
+end note
+
+note right of GW
+El API Gateway centraliza:
+
+* Enrutamiento
+* Validacion inicial
+* Limites de solicitudes
+* Identificadores de trazabilidad
+end note
+
+@enduml
