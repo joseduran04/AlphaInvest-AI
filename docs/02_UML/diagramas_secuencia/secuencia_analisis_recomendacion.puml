@@ -1,0 +1,489 @@
+@startuml
+title AlphaInvest AI - Secuencia de Analisis y Recomendacion
+
+autonumber
+
+actor "Usuario inversionista" as USR
+boundary "Frontend React" as WEB
+control "API Gateway" as GW
+control "AI Service" as AI
+control "Market Service" as MARKET
+control "News Service" as NEWS
+control "Profile Service" as PROFILE
+control "Motor de Recomendacion" as REC
+control "API Financiera" as FINAPI
+control "API de Noticias" as NEWSAPI
+database "PostgreSQL" as SQL
+database "MongoDB" as MONGO
+control "Servicio de Auditoria" as AUD
+
+== Seleccionar activo ==
+
+USR -> WEB : Buscar y seleccionar activo
+WEB -> GW : GET /market/assets/{symbol}
+activate GW
+
+GW -> GW : Validar access token
+
+alt Token invalido o vencido
+    GW --> WEB : HTTP 401 Unauthorized
+    deactivate GW
+    WEB --> USR : Solicitar inicio de sesion
+else Token valido
+    GW -> MARKET : obtenerDetalleActivo(symbol)
+    activate MARKET
+
+    MARKET -> SQL : Consultar activo
+    activate SQL
+    SQL --> MARKET : Datos del activo
+    deactivate SQL
+
+    alt Activo no encontrado localmente
+        MARKET -> FINAPI : Buscar activo por simbolo
+        activate FINAPI
+
+        alt Activo encontrado
+            FINAPI --> MARKET : Informacion financiera
+            deactivate FINAPI
+
+            MARKET -> MARKET : Normalizar datos
+            MARKET -> SQL : Registrar o actualizar activo
+            activate SQL
+            SQL --> MARKET : Activo almacenado
+            deactivate SQL
+        else Activo inexistente
+            FINAPI --> MARKET : Sin resultados
+            deactivate FINAPI
+
+            MARKET --> GW : Activo no encontrado
+            deactivate MARKET
+            GW --> WEB : HTTP 404 Not Found
+            deactivate GW
+            WEB --> USR : Mostrar activo no encontrado
+        end
+    end
+
+    opt Activo disponible
+        MARKET --> GW : Detalle del activo
+        deactivate MARKET
+        GW --> WEB : HTTP 200 OK
+        deactivate GW
+        WEB --> USR : Mostrar informacion del activo
+    end
+end
+
+== CU-026 Analizar activo ==
+
+USR -> WEB : Seleccionar analizar activo
+WEB -> GW : POST /ai/analyses
+activate GW
+
+GW -> GW : Validar access token
+GW -> GW : Validar solicitud
+GW -> GW : Generar identificador de trazabilidad
+
+alt Solicitud invalida
+    GW --> WEB : HTTP 422 Unprocessable Entity
+    deactivate GW
+    WEB --> USR : Mostrar errores
+else Solicitud valida
+    GW -> AI : analizarActivo(usuarioId, activoId, periodo)
+    activate AI
+
+    AI -> SQL : Consultar analisis reciente vigente
+    activate SQL
+    SQL --> AI : Resultado de busqueda
+    deactivate SQL
+
+    alt Existe analisis reciente vigente
+        AI --> GW : Analisis almacenado
+        deactivate AI
+
+        GW --> WEB : HTTP 200 OK
+        deactivate GW
+
+        WEB --> USR : Mostrar analisis vigente
+    else No existe analisis vigente
+
+        par Obtener datos financieros
+            AI -> MARKET : obtenerDatosParaAnalisis(activoId, periodo)
+            activate MARKET
+
+            MARKET -> SQL : Consultar precios e indicadores
+            activate SQL
+            SQL --> MARKET : Datos locales y vigencia
+            deactivate SQL
+
+            alt Datos completos y vigentes
+                MARKET --> AI : Datos financieros normalizados
+            else Datos incompletos o desactualizados
+                MARKET -> FINAPI : Solicitar datos financieros
+                activate FINAPI
+
+                alt Proveedor disponible
+                    FINAPI --> MARKET : Precios e indicadores
+                    deactivate FINAPI
+
+                    MARKET -> MARKET : Normalizar informacion
+                    MARKET -> MARKET : Validar calidad
+                    MARKET -> MARKET : Eliminar duplicados
+
+                    MARKET -> SQL : Actualizar precios e indicadores
+                    activate SQL
+                    SQL --> MARKET : Datos actualizados
+                    deactivate SQL
+
+                    MARKET --> AI : Datos financieros normalizados
+                else Proveedor no disponible
+                    FINAPI --> MARKET : Error del proveedor
+                    deactivate FINAPI
+
+                    alt Datos locales utilizables
+                        MARKET --> AI : Datos locales con advertencia
+                    else Datos insuficientes
+                        MARKET --> AI : Error DATOS_FINANCIEROS_INSUFICIENTES
+                    end
+                end
+            end
+
+            deactivate MARKET
+
+        else Obtener noticias
+            AI -> NEWS : obtenerNoticiasParaAnalisis(activoId, periodo)
+            activate NEWS
+
+            NEWS -> MONGO : Consultar noticias recientes
+            activate MONGO
+            MONGO --> NEWS : Noticias almacenadas
+            deactivate MONGO
+
+            alt Noticias suficientes y vigentes
+                NEWS --> AI : Noticias normalizadas
+            else Noticias inexistentes o desactualizadas
+                NEWS -> NEWSAPI : Buscar noticias del activo
+                activate NEWSAPI
+
+                alt Proveedor disponible
+                    NEWSAPI --> NEWS : Articulos encontrados
+                    deactivate NEWSAPI
+
+                    NEWS -> NEWS : Normalizar articulos
+                    NEWS -> NEWS : Eliminar duplicados
+                    NEWS -> NEWS : Filtrar noticias relacionadas
+
+                    NEWS -> MONGO : Guardar noticias
+                    activate MONGO
+                    MONGO --> NEWS : Noticias almacenadas
+                    deactivate MONGO
+
+                    NEWS --> AI : Noticias normalizadas
+                else Proveedor no disponible
+                    NEWSAPI --> NEWS : Error del proveedor
+                    deactivate NEWSAPI
+
+                    NEWS --> AI : Lista vacia y advertencia
+                end
+            end
+
+            deactivate NEWS
+        end
+
+        AI -> AI : Validar datos recibidos
+
+        alt Datos financieros insuficientes
+            AI -> AUD : registrarError(\nDATOS_INSUFICIENTES_ANALISIS)
+            AUD --> AI : Error registrado
+
+            AI --> GW : Analisis no disponible
+            deactivate AI
+            GW --> WEB : HTTP 422
+            deactivate GW
+            WEB --> USR : No existen datos suficientes
+        else Datos financieros suficientes
+            AI -> AI : Limpiar datos
+            AI -> AI : Alinear fechas
+            AI -> AI : Calcular indicadores tecnicos
+            AI -> AI : Preparar variables financieras
+
+            alt Existen noticias
+                loop Por cada noticia sin analizar
+                    AI -> AI : Preparar texto
+                    AI -> AI : Ejecutar modelo NLP
+                    AI -> AI : Obtener etiqueta y confianza
+                    AI -> MONGO : Guardar sentimiento
+                    activate MONGO
+                    MONGO --> AI : Sentimiento almacenado
+                    deactivate MONGO
+                end
+
+                AI -> AI : Calcular sentimiento agregado
+            else No existen noticias
+                AI -> AI : Marcar sentimiento no disponible
+            end
+
+            AI -> SQL : Consultar modelos activos
+            activate SQL
+            SQL --> AI : Versiones de modelos
+            deactivate SQL
+
+            alt No existen modelos activos
+                AI -> AUD : registrarError(\nMODELO_NO_DISPONIBLE)
+                AUD --> AI : Error registrado
+
+                AI --> GW : Servicio de IA no disponible
+                deactivate AI
+                GW --> WEB : HTTP 503 Service Unavailable
+                deactivate GW
+                WEB --> USR : Analisis no disponible temporalmente
+            else Modelos disponibles
+                AI -> AI : Ejecutar modelo de riesgo
+                AI -> AI : Ejecutar modelo de tendencia
+                AI -> AI : Calcular nivel de confianza
+                AI -> AI : Generar predicciones
+                AI -> AI : Calcular factores explicativos
+                AI -> AI : Generar explicacion comprensible
+                AI -> AI : Definir fecha de vigencia
+
+                AI -> SQL : Iniciar transaccion
+                activate SQL
+
+                AI -> SQL : Insertar analisis
+                AI -> SQL : Insertar predicciones
+                AI -> SQL : Insertar factores explicativos
+                AI -> SQL : Relacionar versiones de modelos
+
+                alt Error al guardar analisis
+                    AI -> SQL : Revertir transaccion
+                    SQL --> AI : Transaccion revertida
+                    deactivate SQL
+
+                    AI -> AUD : registrarError(\nGUARDAR_ANALISIS)
+                    AUD --> AI : Error registrado
+
+                    AI --> GW : Error interno
+                    deactivate AI
+                    GW --> WEB : HTTP 500
+                    deactivate GW
+                    WEB --> USR : No fue posible guardar el analisis
+                else Analisis guardado
+                    AI -> SQL : Confirmar transaccion
+                    SQL --> AI : Transaccion confirmada
+                    deactivate SQL
+
+                    AI -> AUD : registrarEvento(\nANALISIS_GENERADO)
+                    AUD --> AI : Evento registrado
+
+                    AI --> GW : Analisis, predicciones,\nconfianza y explicacion
+                    deactivate AI
+
+                    GW --> WEB : HTTP 201 Created
+                    deactivate GW
+
+                    WEB --> USR : Mostrar riesgo estimado
+                    WEB --> USR : Mostrar tendencia estimada
+                    WEB --> USR : Mostrar sentimiento
+                    WEB --> USR : Mostrar nivel de confianza
+                    WEB --> USR : Mostrar factores explicativos
+                    WEB --> USR : Mostrar advertencia financiera
+                end
+            end
+        end
+    end
+end
+
+== CU-029 Obtener recomendacion ==
+
+USR -> WEB : Seleccionar obtener recomendacion
+WEB -> GW : POST /ai/recommendations
+activate GW
+
+GW -> GW : Validar access token
+GW -> GW : Validar identificador de analisis
+
+alt Solicitud invalida
+    GW --> WEB : HTTP 422
+    deactivate GW
+    WEB --> USR : Mostrar error
+else Solicitud valida
+    GW -> REC : generarRecomendacion(\nusuarioId, analisisId)
+    activate REC
+
+    REC -> PROFILE : obtenerPerfilVigente(usuarioId)
+    activate PROFILE
+
+    PROFILE -> SQL : Consultar perfil de riesgo vigente
+    activate SQL
+    SQL --> PROFILE : Perfil o resultado vacio
+    deactivate SQL
+
+    alt Usuario sin perfil vigente
+        PROFILE --> REC : Perfil no encontrado
+        deactivate PROFILE
+
+        REC --> GW : Perfil requerido
+        deactivate REC
+
+        GW --> WEB : HTTP 409 Conflict
+        deactivate GW
+
+        WEB --> USR : Invitar a completar cuestionario
+    else Perfil vigente encontrado
+        PROFILE --> REC : Perfil, puntuacion y confianza
+        deactivate PROFILE
+
+        REC -> SQL : Consultar analisis solicitado
+        activate SQL
+        SQL --> REC : Analisis y propietario
+        deactivate SQL
+
+        alt Analisis no encontrado
+            REC --> GW : Analisis inexistente
+            deactivate REC
+
+            GW --> WEB : HTTP 404 Not Found
+            deactivate GW
+
+            WEB --> USR : Analisis no encontrado
+        else Analisis pertenece a otro usuario
+            REC -> AUD : registrarAccesoNoAutorizado()
+            AUD --> REC : Evento registrado
+
+            REC --> GW : Acceso denegado
+            deactivate REC
+
+            GW --> WEB : HTTP 403 Forbidden
+            deactivate GW
+
+            WEB --> USR : No autorizado
+        else Analisis vencido
+            REC --> GW : Analisis desactualizado
+            deactivate REC
+
+            GW --> WEB : HTTP 409 Conflict
+            deactivate GW
+
+            WEB --> USR : Solicitar nuevo analisis
+        else Analisis valido
+            REC -> SQL : Consultar reglas y modelo\nde recomendacion activos
+            activate SQL
+            SQL --> REC : Configuracion vigente
+            deactivate SQL
+
+            alt Motor no disponible
+                REC -> AUD : registrarError(\nMOTOR_RECOMENDACION)
+                AUD --> REC : Error registrado
+
+                REC --> GW : Servicio no disponible
+                deactivate REC
+
+                GW --> WEB : HTTP 503
+                deactivate GW
+
+                WEB --> USR : Recomendacion no disponible
+            else Motor disponible
+                REC -> REC : Comparar riesgo del activo\ncon perfil del usuario
+                REC -> REC : Evaluar tendencia estimada
+                REC -> REC : Evaluar sentimiento agregado
+                REC -> REC : Evaluar confianza del analisis
+                REC -> REC : Evaluar diversificacion
+                REC -> REC : Ejecutar reglas de compatibilidad
+                REC -> REC : Ejecutar modelo de recomendacion
+                REC -> REC : Definir categoria informativa
+                REC -> REC : Calcular confianza
+                REC -> REC : Seleccionar factores principales
+                REC -> REC : Generar explicacion personalizada
+                REC -> REC : Generar advertencia
+                REC -> REC : Definir fecha de vigencia
+
+                alt Informacion insuficiente
+                    REC -> REC : Asignar categoria\nINFORMACION_INSUFFICIENTES
+                else Riesgo superior al perfil
+                    REC -> REC : Asignar categoria\nRIESGO_SUPERIOR_AL_PERFIL
+                else Compatibilidad parcial
+                    REC -> REC : Asignar categoria\nCOMPATIBLE_CON_PRECAUCION
+                else Compatibilidad aceptable
+                    REC -> REC : Asignar categoria COMPATIBLE
+                end
+
+                REC -> SQL : Iniciar transaccion
+                activate SQL
+
+                REC -> SQL : Insertar recomendacion
+                REC -> SQL : Relacionar perfil utilizado
+                REC -> SQL : Relacionar analisis utilizado
+                REC -> SQL : Guardar factores explicativos
+                REC -> SQL : Registrar versiones y reglas
+
+                alt Error al guardar recomendacion
+                    REC -> SQL : Revertir transaccion
+                    SQL --> REC : Transaccion revertida
+                    deactivate SQL
+
+                    REC -> AUD : registrarError(\nGUARDAR_RECOMENDACION)
+                    AUD --> REC : Error registrado
+
+                    REC --> GW : Error interno
+                    deactivate REC
+
+                    GW --> WEB : HTTP 500
+                    deactivate GW
+
+                    WEB --> USR : No fue posible generar la recomendacion
+                else Recomendacion guardada
+                    REC -> SQL : Confirmar transaccion
+                    SQL --> REC : Transaccion confirmada
+                    deactivate SQL
+
+                    REC -> AUD : registrarEvento(\nRECOMENDACION_GENERADA)
+                    AUD --> REC : Evento registrado
+
+                    REC --> GW : Categoria, confianza,\nexplicacion y advertencia
+                    deactivate REC
+
+                    GW --> WEB : HTTP 201 Created
+                    deactivate GW
+
+                    WEB --> USR : Mostrar categoria
+                    WEB --> USR : Mostrar compatibilidad
+                    WEB --> USR : Mostrar nivel de confianza
+                    WEB --> USR : Mostrar factores principales
+                    WEB --> USR : Mostrar explicacion personalizada
+                    WEB --> USR : Mostrar advertencia financiera
+                end
+            end
+        end
+    end
+end
+
+note right of AI
+El analisis debe registrar:
+
+* Datos utilizados
+* Fecha de generacion
+* Periodo analizado
+* Modelos y versiones
+* Confianza
+* Factores explicativos
+* Vigencia
+end note
+
+note right of REC
+La recomendacion combina:
+
+* Perfil de riesgo
+* Riesgo del activo
+* Tendencia estimada
+* Sentimiento
+* Confianza del analisis
+* Reglas de compatibilidad
+end note
+
+note over USR,WEB
+La recomendacion es informativa.
+
+No representa asesoria financiera,
+no garantiza ganancias y no ejecuta
+operaciones de compra o venta.
+end note
+
+@enduml
