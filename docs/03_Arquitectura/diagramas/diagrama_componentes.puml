@@ -1,0 +1,332 @@
+@startuml
+title AlphaInvest AI - Diagrama de Componentes
+left to right direction
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+
+actor "Usuario inversionista" as Usuario
+actor "Administrador" as Administrador
+
+package "Capa de presentacion" {
+    node "Aplicacion Web\nReact + TypeScript" as Frontend {
+        component "Modulo de autenticacion" as UIAuth
+        component "Modulo de mercado" as UIMarket
+        component "Modulo de noticias" as UINews
+        component "Modulo de perfil de riesgo" as UIProfile
+        component "Modulo de portafolios" as UIPortfolio
+        component "Modulo de simulaciones" as UISimulation
+        component "Modulo de recomendaciones" as UIRecommendation
+        component "Modulo administrativo" as UIAdmin
+    }
+}
+
+package "Capa de acceso y comunicacion" {
+    node "API Gateway\nFastAPI" as Gateway {
+        component "Enrutamiento" as Routing
+        component "Validacion de tokens" as TokenValidation
+        component "Rate Limiting" as RateLimit
+        component "Trazabilidad" as Trace
+        component "Manejo de errores" as ErrorHandling
+    }
+}
+
+package "Microservicios de negocio" {
+    node "Auth Service" as Auth {
+        component "Gestion de usuarios" as UserManagement
+        component "Autenticacion JWT" as JWT
+        component "Roles y permisos" as RBAC
+        component "Sesiones" as Sessions
+    }
+
+    node "Profile Service" as Profile {
+        component "Cuestionarios" as Questionnaires
+        component "Evaluaciones de riesgo" as RiskEvaluation
+        component "Perfiles de inversion" as RiskProfiles
+    }
+
+    node "Market Service" as Market {
+        component "Catalogo de activos" as Assets
+        component "Precios historicos" as HistoricalPrices
+        component "Indicadores financieros" as FinancialIndicators
+        component "Normalizacion de mercado" as MarketNormalization
+    }
+
+    node "News Service" as News {
+        component "Consulta de noticias" as NewsSearch
+        component "Normalizacion de articulos" as NewsNormalization
+        component "Relacion noticia-activo" as AssetNewsRelation
+    }
+
+    node "Portfolio Service" as Portfolio {
+        component "Watchlists" as Watchlists
+        component "Portafolios virtuales" as VirtualPortfolios
+        component "Posiciones virtuales" as VirtualPositions
+        component "Valoracion de portafolio" as PortfolioValuation
+    }
+
+    node "Simulation Service" as Simulation {
+        component "Validacion de escenarios" as ScenarioValidation
+        component "Motor de simulacion historica" as HistoricalSimulation
+        component "Calculo de rendimiento" as ReturnCalculation
+        component "Metricas de riesgo" as RiskMetrics
+    }
+
+    node "AI Service" as AI {
+        component "Preparacion de datos" as DataPreparation
+        component "Prediccion de tendencia" as TrendPrediction
+        component "Clasificacion de riesgo" as RiskClassification
+        component "Analisis de sentimiento" as SentimentAnalysis
+        component "Explicabilidad SHAP" as Explainability
+        component "Registro de modelos" as ModelRegistry
+    }
+
+    node "Recommendation Service" as Recommendation {
+        component "Motor de reglas" as RuleEngine
+        component "Compatibilidad de riesgo" as RiskCompatibility
+        component "Generador de recomendaciones" as RecommendationGenerator
+        component "Generador de explicaciones" as ExplanationGenerator
+    }
+
+    node "Admin Service" as Admin {
+        component "Administracion de usuarios" as AdminUsers
+        component "Administracion de activos" as AdminAssets
+        component "Administracion de modelos" as AdminModels
+        component "Consulta de auditoria" as AdminAudit
+    }
+}
+
+package "Servicios transversales" {
+    node "Audit Service" as Audit {
+        component "Registro de eventos" as EventLog
+        component "Registro de accesos" as AccessLog
+        component "Registro de cambios" as ChangeLog
+    }
+
+    node "Notification Service" as Notification {
+        component "Correo de bienvenida" as WelcomeEmail
+        component "Recuperacion de acceso" as RecoveryEmail
+        component "Notificaciones del sistema" as SystemNotifications
+    }
+
+    node "Scheduler / Workers" as Workers {
+        component "Actualizacion de precios" as PriceWorker
+        component "Actualizacion de noticias" as NewsWorker
+        component "Analisis programados" as AnalysisWorker
+        component "Limpieza de datos" as CleanupWorker
+    }
+}
+
+package "Capa de persistencia" {
+    database "PostgreSQL" as PostgreSQL {
+        component "Usuarios y seguridad" as DBUsers
+        component "Mercado financiero" as DBMarket
+        component "Portafolios" as DBPortfolio
+        component "Simulaciones" as DBSimulation
+        component "Resultados de IA" as DBAI
+        component "Auditoria" as DBAudit
+    }
+
+    database "MongoDB" as MongoDB {
+        component "Noticias" as MongoNews
+        component "Contenido textual" as MongoText
+        component "Resultados NLP" as MongoNLP
+        component "Series documentales" as MongoSeries
+    }
+
+    database "Redis Cache" as Redis {
+        component "Cache de mercado" as CacheMarket
+        component "Cache de sesiones" as CacheSessions
+        component "Cache de consultas" as CacheQueries
+        component "Control de solicitudes" as CacheRateLimit
+    }
+
+    folder "Almacenamiento de modelos" as ModelStorage {
+        component "Modelos entrenados" as TrainedModels
+        component "Transformadores" as Transformers
+        component "Artefactos SHAP" as ShapArtifacts
+        component "Metadatos de entrenamiento" as TrainingMetadata
+    }
+}
+
+package "Proveedores externos" {
+    cloud "API Financiera" as FinancialAPI {
+        component "Cotizaciones" as QuotesAPI
+        component "Datos historicos" as HistoryAPI
+        component "Informacion de empresas" as CompaniesAPI
+    }
+
+    cloud "API de Noticias" as NewsAPI {
+        component "Noticias financieras" as FinancialNewsAPI
+        component "Metadatos de articulos" as ArticleMetadataAPI
+    }
+
+    cloud "Proveedor de correo" as EmailProvider
+    cloud "Proveedor de identidad\nopcional" as IdentityProvider
+}
+
+package "Observabilidad y operacion" {
+    component "Servicio de Logs" as Logs
+    component "Metricas y monitoreo" as Metrics
+    component "Alertas" as Alerts
+    component "Documentacion OpenAPI" as OpenAPI
+}
+
+Usuario --> Frontend : HTTPS
+Administrador --> Frontend : HTTPS
+Frontend --> Gateway : REST / JSON\nHTTPS
+
+UIAuth --> Gateway
+UIMarket --> Gateway
+UINews --> Gateway
+UIProfile --> Gateway
+UIPortfolio --> Gateway
+UISimulation --> Gateway
+UIRecommendation --> Gateway
+UIAdmin --> Gateway
+
+Gateway --> Auth : /auth y /users
+Gateway --> Profile : /risk-profile
+Gateway --> Market : /market
+Gateway --> News : /news
+Gateway --> Portfolio : /portfolios y /watchlists
+Gateway --> Simulation : /simulations
+Gateway --> AI : /ai/analyses
+Gateway --> Recommendation : /ai/recommendations
+Gateway --> Admin : /admin
+Gateway --> Redis : Limites y cache
+Gateway --> OpenAPI : Especificacion REST
+
+Auth --> PostgreSQL : Usuarios, roles y sesiones
+Auth --> Redis : Sesiones y tokens
+Auth --> Notification : Correos de acceso
+Auth --> IdentityProvider : OAuth / identidad externa
+
+Profile --> PostgreSQL : Cuestionarios y perfiles
+Profile --> AI : Clasificacion de riesgo
+
+Market --> PostgreSQL : Activos, precios e indicadores
+Market --> Redis : Cache de mercado
+Market --> FinancialAPI : Datos financieros
+
+News --> MongoDB : Noticias y contenido
+News --> Redis : Cache de noticias
+News --> NewsAPI : Noticias externas
+News --> AI : Textos para sentimiento
+
+Portfolio --> PostgreSQL : Portafolios y posiciones
+Portfolio --> Market : Precios actuales e historicos
+
+Simulation --> PostgreSQL : Configuracion y resultados
+Simulation --> MongoDB : Series temporales
+Simulation --> Market : Datos historicos
+
+AI --> PostgreSQL : Analisis, predicciones y versiones
+AI --> MongoDB : Resultados NLP
+AI --> ModelStorage : Cargar modelos
+AI --> Market : Datos financieros
+AI --> News : Noticias
+AI --> Profile : Perfil de riesgo
+
+Recommendation --> PostgreSQL : Recomendaciones
+Recommendation --> AI : Analisis y predicciones
+Recommendation --> Profile : Perfil vigente
+Recommendation --> Portfolio : Diversificacion
+Recommendation --> ModelStorage : Modelo de recomendacion
+
+Admin --> Auth : Usuarios y roles
+Admin --> Market : Activos y fuentes
+Admin --> AI : Modelos y versiones
+Admin --> Audit : Eventos de auditoria
+
+Auth --> Audit : Eventos de seguridad
+Profile --> Audit : Cambios de perfil
+Market --> Audit : Actualizacion de fuentes
+News --> Audit : Actualizacion de noticias
+Portfolio --> Audit : Cambios de portafolio
+Simulation --> Audit : Ejecuciones
+AI --> Audit : Analisis generados
+Recommendation --> Audit : Recomendaciones generadas
+Admin --> Audit : Acciones administrativas
+
+Audit --> PostgreSQL : Persistir auditoria
+Notification --> EmailProvider : SMTP / API
+
+Workers --> Market : Actualizar mercado
+Workers --> News : Actualizar noticias
+Workers --> AI : Ejecutar procesos
+Workers --> PostgreSQL : Consultar tareas
+Workers --> MongoDB : Limpiar documentos
+
+Gateway --> Logs : Logs de acceso
+Auth --> Logs
+Profile --> Logs
+Market --> Logs
+News --> Logs
+Portfolio --> Logs
+Simulation --> Logs
+AI --> Logs
+Recommendation --> Logs
+Admin --> Logs
+Workers --> Logs
+
+Gateway --> Metrics : Metricas
+Auth --> Metrics
+Profile --> Metrics
+Market --> Metrics
+News --> Metrics
+Portfolio --> Metrics
+Simulation --> Metrics
+AI --> Metrics
+Recommendation --> Metrics
+Workers --> Metrics
+
+Metrics --> Alerts : Evaluar umbrales
+
+note right of Gateway
+Punto unico de entrada.
+Responsabilidades:
+
+Enrutamiento
+Validacion inicial
+Autorizacion
+Rate limiting
+Trazabilidad
+Manejo uniforme de errores
+end note
+
+note bottom of AI
+El servicio de IA no ejecuta
+operaciones financieras.
+Produce:
+
+Predicciones
+Clasificaciones
+Confianza
+Factores explicativos
+end note
+
+note bottom of Recommendation
+Las salidas son informativas.
+No utiliza categorias como:
+
+Comprar
+Vender
+Ejecutar orden
+Utiliza categorias de
+compatibilidad y riesgo.
+end note
+
+note bottom of PostgreSQL
+Almacena informacion estructurada,
+transaccional y relacionada.
+end note
+
+note bottom of MongoDB
+Almacena documentos variables,
+noticias, texto y series extensas.
+end note
+
+@enduml
