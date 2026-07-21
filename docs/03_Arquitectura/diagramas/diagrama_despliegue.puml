@@ -1,0 +1,372 @@
+@startuml
+title AlphaInvest AI - Diagrama de Despliegue
+
+left to right direction
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam nodeStyle rectangle
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+actor "Usuario inversionista" as Usuario
+actor "Administrador" as Administrador
+
+node "Dispositivo del usuario" as ClientDevice {
+    node "Navegador web" as Browser {
+        artifact "Aplicacion React\nHTML + CSS + JavaScript" as ReactApp
+        component "Almacenamiento de sesion" as BrowserSession
+    }
+}
+
+cloud "Internet" as Internet
+
+cloud "Vercel Cloud" as Vercel {
+    node "Vercel Edge Network" as VercelEdge {
+        component "CDN" as CDN
+        component "HTTPS / TLS" as VercelTLS
+        component "Enrutamiento del frontend" as FrontRouting
+    }
+
+    node "Proyecto Frontend\nAlphaInvest Web" as VercelProject {
+        artifact "Build React + TypeScript" as FrontendBuild
+        artifact "Archivos estaticos" as StaticFiles
+        component "Variables publicas\nde compilacion" as PublicEnv
+    }
+}
+
+cloud "Render Cloud" as Render {
+    node "Red privada de servicios" as PrivateNetwork {
+
+        node "API Gateway Service" as GatewayNode {
+            artifact "Contenedor Docker\nAPI Gateway" as GatewayContainer
+
+            component "FastAPI" as GatewayAPI
+            component "Uvicorn / Gunicorn" as GatewayServer
+            component "Validacion JWT" as GatewayJWT
+            component "Rate Limiting" as GatewayRateLimit
+            component "Trazabilidad" as GatewayTracing
+        }
+
+        node "Auth Service Instance" as AuthNode {
+            artifact "Contenedor Docker\nAuth Service" as AuthContainer
+
+            component "API de autenticacion" as AuthAPI
+            component "Gestion de usuarios" as UserModule
+            component "Roles y permisos" as RoleModule
+            component "Gestion de sesiones" as SessionModule
+        }
+
+        node "Market Service Instance" as MarketNode {
+            artifact "Contenedor Docker\nMarket Service" as MarketContainer
+
+            component "API de mercado" as MarketAPI
+            component "Normalizador financiero" as FinancialNormalizer
+            component "Actualizador de precios" as PriceUpdater
+        }
+
+        node "News Service Instance" as NewsNode {
+            artifact "Contenedor Docker\nNews Service" as NewsContainer
+
+            component "API de noticias" as NewsServiceAPI
+            component "Normalizador de noticias" as NewsNormalizer
+            component "Eliminador de duplicados" as NewsDeduplication
+        }
+
+        node "Portfolio Service Instance" as PortfolioNode {
+            artifact "Contenedor Docker\nPortfolio Service" as PortfolioContainer
+
+            component "API de portafolios" as PortfolioAPI
+            component "Watchlists" as WatchlistModule
+            component "Portafolios virtuales" as VirtualPortfolioModule
+        }
+
+        node "Simulation Service Instance" as SimulationNode {
+            artifact "Contenedor Docker\nSimulation Service" as SimulationContainer
+
+            component "API de simulaciones" as SimulationAPI
+            component "Motor historico" as HistoricalEngine
+            component "Metricas financieras" as FinancialMetrics
+        }
+
+        node "AI Service Instance" as AINode {
+            artifact "Contenedor Docker\nAI Service" as AIContainer
+
+            component "API de inteligencia artificial" as AIAPI
+            component "Random Forest" as RandomForestModel
+            component "XGBoost" as XGBoostModel
+            component "Modelo NLP" as NLPModel
+            component "SHAP" as SHAPEngine
+            component "Motor de recomendaciones" as RecommendationEngine
+        }
+
+        node "Worker Service Instance" as WorkerNode {
+            artifact "Contenedor Docker\nBackground Workers" as WorkerContainer
+
+            component "Worker de mercado" as MarketWorker
+            component "Worker de noticias" as NewsWorker
+            component "Worker de analisis" as AIWorker
+            component "Tareas programadas" as ScheduledTasks
+        }
+    }
+
+    node "Render Key-Value" as RedisNode {
+        database "Redis" as RedisDB
+    }
+
+    node "Render Persistent Disk\nopcional" as PersistentDisk {
+        folder "Cache temporal\nde modelos" as ModelCache
+    }
+
+    component "Variables secretas\nde entorno" as RenderSecrets
+    component "Health Checks" as RenderHealth
+    component "Automatic Deploy" as RenderDeploy
+}
+
+cloud "Supabase Cloud" as Supabase {
+    node "Proyecto Supabase" as SupabaseProject {
+
+        database "PostgreSQL administrado" as PostgreSQL {
+            component "Esquema de autenticacion" as AuthSchema
+            component "Esquema de perfiles" as ProfileSchema
+            component "Esquema de mercado" as MarketSchema
+            component "Esquema de portafolios" as PortfolioSchema
+            component "Esquema de simulaciones" as SimulationSchema
+            component "Esquema de IA" as AISchema
+            component "Esquema de auditoria" as AuditSchema
+        }
+
+        component "Connection Pooler" as DBPooler
+        component "Copias de seguridad" as DBBackups
+        component "Restricciones y politicas" as DBPolicies
+    }
+}
+
+cloud "MongoDB Atlas" as Atlas {
+    node "Cluster MongoDB" as MongoCluster {
+
+        database "Base documental\nalphainvest_documents" as MongoDatabase {
+            component "Coleccion noticias" as NewsCollection
+            component "Coleccion sentimiento" as SentimentCollection
+            component "Coleccion series temporales" as TimeSeriesCollection
+            component "Coleccion metadatos" as MetadataCollection
+        }
+
+        component "Replica Set" as ReplicaSet
+        component "Backups Atlas" as AtlasBackups
+        component "Reglas de acceso de red" as AtlasNetworkRules
+    }
+}
+
+cloud "Almacenamiento de artefactos IA" as AIStorage {
+    node "Object Storage" as ObjectStorage {
+        artifact "risk_model.joblib" as RiskModelArtifact
+        artifact "trend_model.json" as TrendModelArtifact
+        artifact "sentiment_transformer/" as SentimentArtifact
+        artifact "shap_explainer.pkl" as SHAPArtifact
+        artifact "model_metadata.json" as ModelMetadata
+    }
+}
+
+cloud "Servicios externos" as ExternalServices {
+    node "Proveedor financiero" as FinancialProvider {
+        component "API de activos" as AssetsExternalAPI
+        component "API de precios" as PricesExternalAPI
+        component "API de indicadores" as IndicatorsExternalAPI
+    }
+
+    node "Proveedor de noticias" as NewsProvider {
+        component "API de noticias financieras" as ExternalNewsAPI
+    }
+
+    node "Proveedor de correo" as EmailProvider {
+        component "API transaccional de correo" as EmailAPI
+    }
+}
+
+cloud "Observabilidad" as Observability {
+    node "Plataforma de monitoreo" as MonitoringPlatform {
+        component "Logs centralizados" as CentralLogs
+        component "Metricas" as MonitoringMetrics
+        component "Alertas" as MonitoringAlerts
+        component "Seguimiento de errores" as ErrorTracking
+    }
+}
+
+node "Repositorio GitHub" as GitHub {
+    artifact "Codigo frontend" as FrontendRepository
+    artifact "Codigo backend" as BackendRepository
+    artifact "Dockerfiles" as Dockerfiles
+    artifact "Workflows CI/CD" as CICDWorkflows
+    artifact "Documentacion" as Documentation
+}
+
+Usuario --> Browser : Utiliza
+Administrador --> Browser : Administra
+
+Browser --> Internet : HTTPS
+Internet --> VercelEdge : HTTPS : 443
+
+VercelEdge --> VercelProject : Entrega de contenido
+VercelProject --> Browser : React SPA
+
+Browser --> Internet : Solicitudes REST\nHTTPS
+Internet --> GatewayNode : api.alphainvest...\nHTTPS : 443
+
+GatewayNode --> AuthNode : HTTP interno\n/auth y /users
+GatewayNode --> MarketNode : HTTP interno\n/market
+GatewayNode --> NewsNode : HTTP interno\n/news
+GatewayNode --> PortfolioNode : HTTP interno\n/portfolios
+GatewayNode --> SimulationNode : HTTP interno\n/simulations
+GatewayNode --> AINode : HTTP interno\n/ai
+
+GatewayNode --> RedisNode : Cache y rate limiting\nTLS
+AuthNode --> RedisNode : Sesiones y tokens\nTLS
+MarketNode --> RedisNode : Cache de precios\nTLS
+NewsNode --> RedisNode : Cache de noticias\nTLS
+
+AuthNode --> DBPooler : PostgreSQL + TLS
+MarketNode --> DBPooler : PostgreSQL + TLS
+PortfolioNode --> DBPooler : PostgreSQL + TLS
+SimulationNode --> DBPooler : PostgreSQL + TLS
+AINode --> DBPooler : PostgreSQL + TLS
+WorkerNode --> DBPooler : PostgreSQL + TLS
+
+DBPooler --> PostgreSQL : Pool de conexiones
+
+NewsNode --> MongoCluster : MongoDB Driver + TLS
+SimulationNode --> MongoCluster : Series temporales + TLS
+AINode --> MongoCluster : NLP y documentos + TLS
+WorkerNode --> MongoCluster : Actualizaciones + TLS
+
+MarketNode --> FinancialProvider : HTTPS + API Key
+WorkerNode --> FinancialProvider : HTTPS + API Key
+
+NewsNode --> NewsProvider : HTTPS + API Key
+WorkerNode --> NewsProvider : HTTPS + API Key
+
+AuthNode --> EmailProvider : HTTPS + API Key
+
+AINode --> ObjectStorage : Descargar modelos\nHTTPS
+WorkerNode --> ObjectStorage : Publicar modelos\nHTTPS
+AINode --> PersistentDisk : Cache de modelos
+
+WorkerNode --> MarketNode : Actualizar precios
+WorkerNode --> NewsNode : Actualizar noticias
+WorkerNode --> AINode : Ejecutar analisis programados
+
+GatewayNode --> CentralLogs : Logs de acceso
+AuthNode --> CentralLogs : Logs de seguridad
+MarketNode --> CentralLogs : Logs de mercado
+NewsNode --> CentralLogs : Logs de noticias
+PortfolioNode --> CentralLogs : Logs de portafolio
+SimulationNode --> CentralLogs : Logs de simulacion
+AINode --> CentralLogs : Logs de IA
+WorkerNode --> CentralLogs : Logs de tareas
+
+GatewayNode --> MonitoringMetrics : Metricas
+AuthNode --> MonitoringMetrics
+MarketNode --> MonitoringMetrics
+NewsNode --> MonitoringMetrics
+PortfolioNode --> MonitoringMetrics
+SimulationNode --> MonitoringMetrics
+AINode --> MonitoringMetrics
+WorkerNode --> MonitoringMetrics
+
+CentralLogs --> ErrorTracking : Errores detectados
+MonitoringMetrics --> MonitoringAlerts : Umbrales y disponibilidad
+
+RenderSecrets --> GatewayNode
+RenderSecrets --> AuthNode
+RenderSecrets --> MarketNode
+RenderSecrets --> NewsNode
+RenderSecrets --> PortfolioNode
+RenderSecrets --> SimulationNode
+RenderSecrets --> AINode
+RenderSecrets --> WorkerNode
+
+RenderHealth --> GatewayNode : GET /health
+RenderHealth --> AuthNode : GET /health
+RenderHealth --> MarketNode : GET /health
+RenderHealth --> NewsNode : GET /health
+RenderHealth --> PortfolioNode : GET /health
+RenderHealth --> SimulationNode : GET /health
+RenderHealth --> AINode : GET /health
+RenderHealth --> WorkerNode : Estado de workers
+
+GitHub --> RenderDeploy : Webhook / integracion
+RenderDeploy --> GatewayNode : Construir y desplegar
+RenderDeploy --> AuthNode : Construir y desplegar
+RenderDeploy --> MarketNode : Construir y desplegar
+RenderDeploy --> NewsNode : Construir y desplegar
+RenderDeploy --> PortfolioNode : Construir y desplegar
+RenderDeploy --> SimulationNode : Construir y desplegar
+RenderDeploy --> AINode : Construir y desplegar
+RenderDeploy --> WorkerNode : Construir y desplegar
+
+FrontendRepository --> VercelProject : Integracion Git
+BackendRepository --> RenderDeploy
+Dockerfiles --> RenderDeploy
+CICDWorkflows --> VercelProject
+CICDWorkflows --> RenderDeploy
+
+note right of Browser
+El navegador almacena solamente
+informacion de sesion necesaria.
+
+No contiene:
+
+* Claves privadas
+* Credenciales de proveedores
+* Modelos de IA
+* Logica financiera sensible
+end note
+
+note top of Vercel
+Vercel distribuye el frontend
+estatico mediante CDN.
+
+La aplicacion React consume
+exclusivamente el API Gateway.
+end note
+
+note top of Render
+Cada servicio se ejecuta dentro
+de un contenedor independiente.
+
+Los servicios internos no deben
+exponerse directamente a internet.
+end note
+
+note bottom of PostgreSQL
+PostgreSQL conserva datos
+estructurados y transaccionales.
+
+Las conexiones utilizan TLS
+y un pool de conexiones.
+end note
+
+note bottom of MongoDatabase
+MongoDB conserva noticias,
+resultados NLP y documentos
+de estructura variable.
+end note
+
+note bottom of ObjectStorage
+Los artefactos de IA se versionan.
+
+PostgreSQL conserva sus metadatos,
+pero los archivos permanecen en
+almacenamiento de objetos.
+end note
+
+note bottom of AINode
+AI Service genera resultados
+informativos y explicables.
+
+No compra activos, no vende activos
+y no administra fondos reales.
+end note
+
+@enduml
