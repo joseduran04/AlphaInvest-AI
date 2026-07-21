@@ -1,0 +1,266 @@
+@startuml
+title AlphaInvest AI - Secuencia de Simulacion Historica
+
+autonumber
+
+actor "Usuario inversionista" as USR
+boundary "Frontend React" as WEB
+control "API Gateway" as GW
+control "Simulation Service" as SIM
+control "Market Service" as MARKET
+control "API Financiera" as API
+database "PostgreSQL" as DB
+control "Servicio de Auditoria" as AUD
+
+== Configurar simulacion ==
+
+USR -> WEB : Abrir modulo de simulacion
+WEB --> USR : Mostrar formulario
+
+USR -> WEB : Capturar capital, moneda,\nfechas y activos
+USR -> WEB : Asignar porcentaje a cada activo
+
+WEB -> WEB : Validar campos obligatorios
+WEB -> WEB : Validar capital mayor que cero
+WEB -> WEB : Validar fechas
+WEB -> WEB : Calcular suma de porcentajes
+
+alt Capital invalido
+    WEB --> USR : El capital debe ser mayor que cero
+else Fechas invalidas
+    WEB --> USR : La fecha inicial debe ser\nanterior a la fecha final
+else Porcentajes diferentes de 100
+    WEB --> USR : La distribucion debe sumar 100 por ciento
+else Configuracion valida
+    WEB --> USR : Permitir ejecutar simulacion
+end
+
+== Ejecutar simulacion ==
+
+USR -> WEB : Seleccionar ejecutar simulacion
+WEB -> GW : POST /simulations/execute
+activate GW
+
+GW -> GW : Validar access token
+GW -> GW : Validar estructura JSON
+GW -> GW : Aplicar limite de solicitudes
+
+alt Token invalido
+    GW --> WEB : HTTP 401 Unauthorized
+    deactivate GW
+    WEB --> USR : Solicitar inicio de sesion
+else Solicitud invalida
+    GW --> WEB : HTTP 422 Unprocessable Entity
+    deactivate GW
+    WEB --> USR : Mostrar errores de validacion
+else Solicitud valida
+    GW -> SIM : ejecutarSimulacion(usuarioId, configuracion)
+    activate SIM
+
+    SIM -> SIM : Validar capital
+    SIM -> SIM : Validar rango de fechas
+    SIM -> SIM : Validar activos sin duplicados
+    SIM -> SIM : Validar suma de porcentajes
+
+    alt Distribucion diferente de 100
+        SIM --> GW : Error DISTRIBUCION_INVALIDA
+        deactivate SIM
+        GW --> WEB : HTTP 422
+        deactivate GW
+        WEB --> USR : Corregir porcentajes
+    else Parametros validos
+        loop Por cada activo
+            SIM -> MARKET : obtenerPreciosHistoricos(\nsimbolo, fechaInicio, fechaFin)
+            activate MARKET
+
+            MARKET -> DB : Buscar precios en almacenamiento local
+            activate DB
+            DB --> MARKET : Precios disponibles y fecha de actualizacion
+            deactivate DB
+
+            alt Datos locales completos y vigentes
+                MARKET --> SIM : Serie historica normalizada
+            else Datos inexistentes o incompletos
+                MARKET -> API : Solicitar precios historicos
+                activate API
+
+                alt Proveedor responde
+                    API --> MARKET : Datos historicos
+                    deactivate API
+
+                    MARKET -> MARKET : Normalizar fechas y precios
+                    MARKET -> MARKET : Eliminar duplicados
+                    MARKET -> MARKET : Validar calidad de datos
+
+                    MARKET -> DB : Guardar o actualizar precios
+                    activate DB
+                    DB --> MARKET : Datos almacenados
+                    deactivate DB
+
+                    MARKET --> SIM : Serie historica normalizada
+                else Proveedor no disponible
+                    API --> MARKET : Error del proveedor
+                    deactivate API
+
+                    alt Existen datos locales parciales utilizables
+                        MARKET --> SIM : Datos parciales y advertencia
+                    else No existen datos suficientes
+                        MARKET --> SIM : Error DATOS_INSUFICIENTES
+                    end
+                end
+            end
+
+            deactivate MARKET
+        end
+
+        SIM -> SIM : Validar series recibidas
+
+        alt Uno o mas activos sin datos suficientes
+            SIM -> AUD : registrarError(\nDATOS_HISTORICOS_INSUFICIENTES)
+            AUD --> SIM : Error registrado
+
+            SIM --> GW : Simulacion no ejecutable
+            deactivate SIM
+            GW --> WEB : HTTP 422
+            deactivate GW
+            WEB --> USR : Mostrar activos sin datos suficientes
+        else Datos suficientes
+            SIM -> SIM : Ajustar fecha inicial efectiva
+            SIM -> SIM : Ajustar fecha final efectiva
+            SIM -> SIM : Alinear calendarios bursatiles
+            SIM -> SIM : Distribuir capital por porcentaje
+
+            loop Por cada activo
+                SIM -> SIM : Obtener precio inicial efectivo
+                SIM -> SIM : Obtener precio final efectivo
+                SIM -> SIM : Calcular cantidad virtual
+                SIM -> SIM : Calcular valor diario de posicion
+            end
+
+            SIM -> SIM : Sumar valor diario del portafolio
+            SIM -> SIM : Calcular valor final
+            SIM -> SIM : Calcular ganancia o perdida
+            SIM -> SIM : Calcular rendimiento porcentual
+            SIM -> SIM : Calcular volatilidad
+            SIM -> SIM : Calcular maximo drawdown
+            SIM -> SIM : Generar serie temporal
+
+            SIM -> DB : Guardar ejecucion temporal
+            activate DB
+            DB --> SIM : Identificador temporal
+            deactivate DB
+
+            SIM -> AUD : registrarEvento(\nSIMULACION_EJECUTADA)
+            AUD --> SIM : Evento registrado
+
+            SIM --> GW : Resultado de simulacion
+            deactivate SIM
+
+            GW --> WEB : HTTP 200 OK
+            deactivate GW
+
+            WEB -> WEB : Preparar graficas y metricas
+            WEB --> USR : Mostrar capital inicial
+            WEB --> USR : Mostrar valor final
+            WEB --> USR : Mostrar rendimiento y riesgo
+            WEB --> USR : Mostrar grafica historica
+            WEB --> USR : Mostrar fechas efectivas
+            WEB --> USR : Mostrar advertencia informativa
+        end
+    end
+end
+
+== Guardar simulacion ==
+
+USR -> WEB : Seleccionar guardar simulacion
+WEB -> GW : POST /simulations/{simulationId}/save
+activate GW
+
+GW -> GW : Validar token
+GW -> SIM : guardarSimulacion(usuarioId, simulationId)
+activate SIM
+
+SIM -> DB : Buscar simulacion temporal
+activate DB
+DB --> SIM : Simulacion y propietario
+deactivate DB
+
+alt Simulacion no encontrada
+    SIM --> GW : Simulacion no encontrada
+    deactivate SIM
+    GW --> WEB : HTTP 404 Not Found
+    deactivate GW
+    WEB --> USR : La simulacion ya no esta disponible
+else Usuario no es propietario
+    SIM -> AUD : registrarAccesoNoAutorizado()
+    AUD --> SIM : Evento registrado
+
+    SIM --> GW : Acceso denegado
+    deactivate SIM
+    GW --> WEB : HTTP 403 Forbidden
+    deactivate GW
+    WEB --> USR : No autorizado
+else Simulacion valida
+    SIM -> DB : Iniciar transaccion
+    activate DB
+
+    SIM -> DB : Actualizar estado a GUARDADA
+    SIM -> DB : Guardar configuracion
+    SIM -> DB : Guardar activos simulados
+    SIM -> DB : Guardar resultado
+    SIM -> DB : Guardar serie historica
+
+    alt Error al guardar
+        SIM -> DB : Revertir transaccion
+        DB --> SIM : Transaccion revertida
+        deactivate DB
+
+        SIM -> AUD : registrarError(\nGUARDAR_SIMULACION)
+        AUD --> SIM : Error registrado
+
+        SIM --> GW : Error de persistencia
+        deactivate SIM
+        GW --> WEB : HTTP 500
+        deactivate GW
+        WEB --> USR : No fue posible guardar
+    else Guardado exitoso
+        SIM -> DB : Confirmar transaccion
+        DB --> SIM : Transaccion confirmada
+        deactivate DB
+
+        SIM -> AUD : registrarEvento(\nSIMULACION_GUARDADA)
+        AUD --> SIM : Evento registrado
+
+        SIM --> GW : Simulacion guardada
+        deactivate SIM
+        GW --> WEB : HTTP 200 OK
+        deactivate GW
+        WEB --> USR : Simulacion agregada al historial
+    end
+end
+
+note right of SIM
+Reglas principales:
+
+* Capital mayor que cero
+* Fecha inicial anterior a la final
+* Distribucion igual a 100 por ciento
+* Uno o mas activos validos
+* Datos historicos suficientes
+end note
+
+note right of MARKET
+Las fechas solicitadas pueden
+ajustarse a dias bursatiles.
+
+La respuesta debe indicar las
+fechas efectivas utilizadas.
+end note
+
+note over USR,WEB
+La simulacion representa un escenario historico hipotetico.
+
+No ejecuta operaciones reales ni garantiza resultados futuros.
+end note
+
+@enduml
