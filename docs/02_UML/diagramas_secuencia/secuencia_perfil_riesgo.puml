@@ -1,0 +1,256 @@
+@startuml
+title AlphaInvest AI - Secuencia de Perfil de Riesgo
+
+autonumber
+
+actor "Usuario inversionista" as USR
+boundary "Frontend React" as WEB
+control "API Gateway" as GW
+control "Profile Service" as PROFILE
+control "AI Service" as AI
+database "PostgreSQL" as DB
+control "Servicio de Auditoria" as AUD
+
+== Consultar cuestionario vigente ==
+
+USR -> WEB : Abrir modulo de perfil de riesgo
+WEB -> GW : GET /risk-profile/questionnaire
+activate GW
+
+GW -> GW : Validar access token
+
+alt Token invalido o vencido
+    GW --> WEB : HTTP 401 Unauthorized
+    deactivate GW
+    WEB --> USR : Solicitar inicio de sesion
+else Token valido
+    GW -> PROFILE : obtenerCuestionarioVigente()
+    activate PROFILE
+
+    PROFILE -> DB : Consultar cuestionario activo
+    activate DB
+    DB --> PROFILE : Cuestionario vigente
+    deactivate DB
+
+    alt No existe cuestionario activo
+        PROFILE --> GW : Cuestionario no disponible
+        deactivate PROFILE
+        GW --> WEB : HTTP 503 Service Unavailable
+        deactivate GW
+        WEB --> USR : Evaluacion no disponible
+    else Cuestionario disponible
+        PROFILE -> DB : Consultar preguntas y opciones
+        activate DB
+        DB --> PROFILE : Preguntas ordenadas
+        deactivate DB
+
+        PROFILE --> GW : Cuestionario completo
+        deactivate PROFILE
+        GW --> WEB : HTTP 200 OK
+        deactivate GW
+
+        WEB --> USR : Mostrar instrucciones,\npreguntas y opciones
+    end
+end
+
+== CU-007 Completar cuestionario ==
+
+USR -> WEB : Seleccionar respuestas
+WEB -> WEB : Guardar respuestas temporalmente
+
+USR -> WEB : Enviar cuestionario
+WEB -> WEB : Validar respuestas obligatorias
+
+alt Existen preguntas sin responder
+    WEB --> USR : Resaltar preguntas pendientes
+else Respuestas completas
+    WEB -> GW : POST /risk-profile/evaluations
+    activate GW
+
+    GW -> GW : Validar token
+    GW -> GW : Validar estructura JSON
+
+    alt Solicitud invalida
+        GW --> WEB : HTTP 422 Unprocessable Entity
+        deactivate GW
+        WEB --> USR : Mostrar errores de validacion
+    else Solicitud valida
+        GW -> PROFILE : evaluarRiesgo(usuarioId, respuestas)
+        activate PROFILE
+
+        PROFILE -> DB : Consultar cuestionario y opciones
+        activate DB
+        DB --> PROFILE : Configuracion vigente
+        deactivate DB
+
+        PROFILE -> PROFILE : Validar cuestionario
+        PROFILE -> PROFILE : Validar preguntas obligatorias
+        PROFILE -> PROFILE : Validar opciones permitidas
+
+        alt Cuestionario desactualizado
+            PROFILE --> GW : Version de cuestionario no vigente
+            deactivate PROFILE
+            GW --> WEB : HTTP 409 Conflict
+            deactivate GW
+            WEB --> USR : Actualizar cuestionario
+        else Respuestas invalidas
+            PROFILE --> GW : Respuestas no validas
+            deactivate PROFILE
+            GW --> WEB : HTTP 422
+            deactivate GW
+            WEB --> USR : Corregir respuestas
+        else Respuestas validas
+            PROFILE -> PROFILE : Transformar respuestas\nen variables de entrada
+            PROFILE -> PROFILE : Calcular puntuacion base
+
+            PROFILE -> AI : clasificarPerfilRiesgo(variables)
+            activate AI
+
+            AI -> DB : Consultar modelo activo
+            activate DB
+            DB --> AI : Version del modelo
+            deactivate DB
+
+            alt Modelo de IA disponible
+                AI -> AI : Preparar variables
+                AI -> AI : Ejecutar modelo
+                AI -> AI : Calcular confianza
+                AI -> AI : Identificar factores principales
+
+                AI --> PROFILE : Clasificacion,\nconfianza y factores
+            else Modelo no disponible
+                AI -> AI : Aplicar reglas de puntuacion
+                AI -> AI : Calcular clasificacion alternativa
+
+                AI --> PROFILE : Clasificacion por reglas,\nconfianza y factores
+            end
+
+            deactivate AI
+
+            PROFILE -> PROFILE : Generar explicacion comprensible
+            PROFILE -> PROFILE : Preparar nueva evaluacion
+
+            PROFILE -> DB : Iniciar transaccion
+            activate DB
+
+            PROFILE -> DB : Insertar evaluacion
+            PROFILE -> DB : Insertar respuestas
+            PROFILE -> DB : Desactivar perfil vigente anterior
+            PROFILE -> DB : Insertar nuevo perfil vigente
+            PROFILE -> DB : Registrar version del modelo
+
+            alt Error al guardar
+                PROFILE -> DB : Revertir transaccion
+                DB --> PROFILE : Transaccion revertida
+                deactivate DB
+
+                PROFILE -> AUD : registrarError(\nEVALUACION_RIESGO)
+                AUD --> PROFILE : Error registrado
+
+                PROFILE --> GW : Error de persistencia
+                deactivate PROFILE
+                GW --> WEB : HTTP 500
+                deactivate GW
+                WEB --> USR : No fue posible guardar el perfil
+            else Datos guardados
+                PROFILE -> DB : Confirmar transaccion
+                DB --> PROFILE : Transaccion confirmada
+                deactivate DB
+
+                PROFILE -> AUD : registrarEvento(\nPERFIL_RIESGO_GENERADO)
+                AUD --> PROFILE : Evento registrado
+
+                PROFILE --> GW : Perfil generado
+                deactivate PROFILE
+
+                GW --> WEB : HTTP 201 Created
+                deactivate GW
+
+                WEB --> USR : Mostrar clasificacion
+                WEB --> USR : Mostrar nivel de confianza
+                WEB --> USR : Mostrar explicacion
+                WEB --> USR : Mostrar advertencia informativa
+            end
+        end
+    end
+end
+
+== CU-008 Consultar perfil vigente ==
+
+USR -> WEB : Abrir mi perfil de riesgo
+WEB -> GW : GET /risk-profile/current
+activate GW
+
+GW -> GW : Validar access token
+GW -> PROFILE : obtenerPerfilVigente(usuarioId)
+activate PROFILE
+
+PROFILE -> DB : Consultar perfil vigente
+activate DB
+DB --> PROFILE : Resultado
+deactivate DB
+
+alt Usuario sin perfil vigente
+    PROFILE --> GW : Perfil no encontrado
+    deactivate PROFILE
+    GW --> WEB : HTTP 404 Not Found
+    deactivate GW
+    WEB --> USR : Invitar a realizar cuestionario
+else Perfil vigente encontrado
+    PROFILE -> DB : Consultar factores y evaluacion
+    activate DB
+    DB --> PROFILE : Detalle del perfil
+    deactivate DB
+
+    PROFILE --> GW : Perfil, confianza,\nexplicacion y fecha
+    deactivate PROFILE
+
+    GW --> WEB : HTTP 200 OK
+    deactivate GW
+
+    WEB --> USR : Mostrar perfil vigente
+end
+
+== Repetir evaluacion ==
+
+USR -> WEB : Seleccionar repetir cuestionario
+WEB -> GW : GET /risk-profile/questionnaire
+activate GW
+
+GW -> PROFILE : obtenerCuestionarioVigente()
+activate PROFILE
+PROFILE -> DB : Consultar cuestionario
+activate DB
+DB --> PROFILE : Cuestionario
+deactivate DB
+PROFILE --> GW : Cuestionario
+deactivate PROFILE
+GW --> WEB : HTTP 200 OK
+deactivate GW
+
+WEB --> USR : Mostrar confirmacion
+
+note right of PROFILE
+Solo un PerfilRiesgo puede
+estar vigente por usuario.
+
+Los perfiles anteriores
+permanecen en el historial.
+end note
+
+note right of AI
+Cada clasificacion registra:
+
+* Modelo utilizado
+* Version
+* Nivel de confianza
+* Factores explicativos
+* Metodo de clasificacion
+end note
+
+note over USR,WEB
+La clasificacion de riesgo es informativa
+y no sustituye asesoria financiera profesional.
+end note
+
+@enduml
