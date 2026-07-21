@@ -1,0 +1,163 @@
+@startuml
+title AlphaInvest AI - Casos de Uso
+
+left to right direction
+
+actor "Usuario inversionista" as USR
+actor "Administrador" as ADM
+actor "API financiera" as FIN
+actor "API de noticias" as NEWS
+actor "Servicio de correo" as MAIL
+
+rectangle "AlphaInvest AI" {
+
+  package "Autenticacion" {
+    usecase "CU-001 Registrar usuario" as CU001
+    usecase "CU-002 Iniciar sesion" as CU002
+    usecase "CU-003 Cerrar sesion" as CU003
+    usecase "CU-004 Recuperar acceso" as CU004
+    usecase "CU-005 Consultar perfil" as CU005
+    usecase "CU-006 Actualizar perfil" as CU006
+    usecase "Validar credenciales" as UCVALIDAR
+    usecase "Enviar correo" as UCMAIL
+  }
+
+  package "Perfil de inversion" {
+    usecase "CU-007 Completar cuestionario" as CU007
+    usecase "CU-008 Consultar perfil de riesgo" as CU008
+    usecase "Calcular perfil de riesgo" as UCPERFIL
+  }
+
+  package "Mercado" {
+    usecase "CU-009 Buscar activo" as CU009
+    usecase "CU-010 Consultar empresa" as CU010
+    usecase "CU-011 Consultar historico" as CU011
+    usecase "CU-012 Consultar indicadores" as CU012
+    usecase "CU-013 Comparar activos" as CU013
+    usecase "Consultar datos financieros" as UCMERCADO
+  }
+
+  package "Noticias" {
+    usecase "CU-014 Consultar noticias" as CU014
+    usecase "CU-015 Filtrar noticias" as CU015
+    usecase "CU-016 Consultar sentimiento" as CU016
+    usecase "Obtener noticias externas" as UCNEWS
+  }
+
+  package "Watchlist" {
+    usecase "CU-017 Crear watchlist" as CU017
+    usecase "CU-018 Administrar watchlist" as CU018
+  }
+
+  package "Portafolios" {
+    usecase "CU-019 Crear portafolio" as CU019
+    usecase "CU-020 Administrar posiciones" as CU020
+    usecase "CU-021 Consultar rendimiento" as CU021
+  }
+
+  package "Simulacion" {
+    usecase "CU-022 Crear simulacion" as CU022
+    usecase "CU-023 Ejecutar simulacion" as CU023
+    usecase "CU-024 Guardar simulacion" as CU024
+    usecase "CU-025 Comparar simulaciones" as CU025
+    usecase "Calcular resultados" as UCSIMULAR
+  }
+
+  package "Inteligencia artificial" {
+    usecase "CU-026 Analizar activo" as CU026
+    usecase "CU-027 Clasificar riesgo" as CU027
+    usecase "CU-028 Estimar tendencia" as CU028
+    usecase "CU-029 Obtener recomendacion" as CU029
+    usecase "CU-030 Consultar explicacion" as CU030
+    usecase "CU-031 Consultar historial" as CU031
+    usecase "Ejecutar modelos de IA" as UCIA
+    usecase "Generar explicacion" as UCEXPLICAR
+    usecase "Mostrar advertencia" as UCADVERTENCIA
+  }
+
+  package "Administracion" {
+    usecase "CU-032 Consultar usuarios" as CU032
+    usecase "CU-033 Administrar usuarios" as CU033
+    usecase "CU-034 Consultar auditoria" as CU034
+    usecase "CU-035 Consultar errores" as CU035
+    usecase "CU-036 Consultar estadisticas" as CU036
+    usecase "CU-037 Consultar servicios" as CU037
+    usecase "CU-038 Consultar modelos" as CU038
+  }
+}
+
+USR --> CU001
+USR --> CU002
+USR --> CU003
+USR --> CU004
+USR --> CU005
+USR --> CU006
+USR --> CU007
+USR --> CU008
+USR --> CU009
+USR --> CU010
+USR --> CU011
+USR --> CU012
+USR --> CU013
+USR --> CU014
+USR --> CU015
+USR --> CU016
+USR --> CU017
+USR --> CU018
+USR --> CU019
+USR --> CU020
+USR --> CU021
+USR --> CU022
+USR --> CU023
+USR --> CU024
+USR --> CU025
+USR --> CU026
+USR --> CU027
+USR --> CU028
+USR --> CU029
+USR --> CU030
+USR --> CU031
+
+ADM --> CU002
+ADM --> CU003
+ADM --> CU032
+ADM --> CU033
+ADM --> CU034
+ADM --> CU035
+ADM --> CU036
+ADM --> CU037
+ADM --> CU038
+
+CU002 ..> UCVALIDAR : <<include>>
+CU004 ..> UCMAIL : <<include>>
+CU007 ..> UCPERFIL : <<include>>
+
+CU009 ..> UCMERCADO : <<include>>
+CU010 ..> UCMERCADO : <<include>>
+CU011 ..> UCMERCADO : <<include>>
+CU012 ..> UCMERCADO : <<include>>
+
+CU014 ..> UCNEWS : <<include>>
+
+CU023 ..> UCSIMULAR : <<include>>
+CU024 ..> CU023 : <<extend>>
+
+CU026 ..> UCIA : <<include>>
+CU027 ..> UCIA : <<include>>
+CU028 ..> UCIA : <<include>>
+CU029 ..> UCIA : <<include>>
+CU029 ..> UCEXPLICAR : <<include>>
+CU029 ..> UCADVERTENCIA : <<include>>
+CU030 ..> UCEXPLICAR : <<include>>
+
+FIN --> UCMERCADO
+NEWS --> UCNEWS
+MAIL --> UCMAIL
+
+note right of CU029
+Resultado informativo.
+No garantiza rendimientos.
+No ejecuta compras ni ventas.
+end note
+
+@enduml

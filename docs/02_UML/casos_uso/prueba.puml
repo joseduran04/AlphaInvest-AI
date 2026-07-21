@@ -1,0 +1,9 @@
+@startuml
+actor Usuario
+
+rectangle "AlphaInvest AI" {
+    usecase "Registrar usuario" as Registro
+}
+
+Usuario --> Registro
+@enduml
