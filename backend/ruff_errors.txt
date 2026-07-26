@@ -1,0 +1,221 @@
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\dependencies.py:27:56
+   |
+26 | async def current_context(
+27 |     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+   |                                                        ^^^^^^^^^^^^^^^
+28 |     session: AsyncSession = Depends(get_db_session),
+29 |     settings: Settings = Depends(get_settings),
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\dependencies.py:28:29
+   |
+26 | async def current_context(
+27 |     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+28 |     session: AsyncSession = Depends(get_db_session),
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^
+29 |     settings: Settings = Depends(get_settings),
+30 | ) -> AuthContext:
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\dependencies.py:29:26
+   |
+27 |     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+28 |     session: AsyncSession = Depends(get_db_session),
+29 |     settings: Settings = Depends(get_settings),
+   |                          ^^^^^^^^^^^^^^^^^^^^^
+30 | ) -> AuthContext:
+31 |     if credentials is None:
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> src\alphainvest\modules\auth\presentation\dependencies.py:36:9
+   |
+34 |         payload = TokenService(settings).decode(credentials.credentials, "access")
+35 |     except jwt.ExpiredSignatureError:
+36 |         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token expirado")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+37 |     except jwt.PyJWTError:
+38 |         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido")
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> src\alphainvest\modules\auth\presentation\dependencies.py:38:9
+   |
+36 |         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token expirado")
+37 |     except jwt.PyJWTError:
+38 |         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+39 |     repo = AuthRepository(session)
+40 |     user = await repo.get_user(UUID(payload["sub"]))
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\dependencies.py:69:28
+   |
+67 | ) -> Callable[..., Coroutine[Any, Any, AuthContext]]:
+68 |     async def dependency(
+69 |         ctx: AuthContext = Depends(current_context),
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^
+70 |     ) -> AuthContext:
+71 |         if code not in ctx.user.permisos:
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:38:29
+   |
+36 |     data: RegisterRequest,
+37 |     request: Request,
+38 |     session: AsyncSession = Depends(get_db_session),
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^
+39 |     settings: Settings = Depends(get_settings),
+40 | ) -> UserResponse:
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:39:26
+   |
+37 |     request: Request,
+38 |     session: AsyncSession = Depends(get_db_session),
+39 |     settings: Settings = Depends(get_settings),
+   |                          ^^^^^^^^^^^^^^^^^^^^^
+40 | ) -> UserResponse:
+41 |     try:
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> src\alphainvest\modules\auth\presentation\router.py:44:9
+   |
+42 |         return await AuthService(session, settings).register(data, client_ip(request))
+43 |     except DuplicateEmail:
+44 |         raise HTTPException(status.HTTP_409_CONFLICT, "El correo ya está registrado")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:54:29
+   |
+52 |     data: LoginRequest,
+53 |     request: Request,
+54 |     session: AsyncSession = Depends(get_db_session),
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^
+55 |     settings: Settings = Depends(get_settings),
+56 | ) -> TokenResponse:
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:55:26
+   |
+53 |     request: Request,
+54 |     session: AsyncSession = Depends(get_db_session),
+55 |     settings: Settings = Depends(get_settings),
+   |                          ^^^^^^^^^^^^^^^^^^^^^
+56 | ) -> TokenResponse:
+57 |     try:
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> src\alphainvest\modules\auth\presentation\router.py:62:9
+   |
+60 |         )
+61 |     except InvalidCredentials:
+62 |         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Credenciales inválidas")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+63 |     except AccountUnavailable:
+64 |         raise HTTPException(status.HTTP_403_FORBIDDEN, "Cuenta no disponible")
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> src\alphainvest\modules\auth\presentation\router.py:64:9
+   |
+62 |         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Credenciales inválidas")
+63 |     except AccountUnavailable:
+64 |         raise HTTPException(status.HTTP_403_FORBIDDEN, "Cuenta no disponible")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:73:29
+   |
+71 | async def refresh(
+72 |     data: RefreshRequest,
+73 |     session: AsyncSession = Depends(get_db_session),
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^
+74 |     settings: Settings = Depends(get_settings),
+75 | ) -> TokenResponse:
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:74:26
+   |
+72 |     data: RefreshRequest,
+73 |     session: AsyncSession = Depends(get_db_session),
+74 |     settings: Settings = Depends(get_settings),
+   |                          ^^^^^^^^^^^^^^^^^^^^^
+75 | ) -> TokenResponse:
+76 |     try:
+   |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> src\alphainvest\modules\auth\presentation\router.py:79:9
+   |
+77 |         return await AuthService(session, settings).refresh(data.refresh_token)
+78 |     except InvalidRefreshToken:
+79 |         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Refresh token inválido")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:85:29
+   |
+83 | async def logout(
+84 |     data: LogoutRequest,
+85 |     session: AsyncSession = Depends(get_db_session),
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^
+86 |     settings: Settings = Depends(get_settings),
+87 | ) -> None:
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:86:26
+   |
+84 |     data: LogoutRequest,
+85 |     session: AsyncSession = Depends(get_db_session),
+86 |     settings: Settings = Depends(get_settings),
+   |                          ^^^^^^^^^^^^^^^^^^^^^
+87 | ) -> None:
+88 |     await AuthService(session, settings).logout(data.refresh_token)
+   |
+
+B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+  --> src\alphainvest\modules\auth\presentation\router.py:92:33
+   |
+91 | @router.get("/me", response_model=UserResponse)
+92 | async def me(ctx: AuthContext = Depends(current_context)) -> UserResponse:
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+93 |     return ctx.user
+   |
+
+UP046 Generic class `AbstractRepository` uses `Generic` subclass instead of type parameters
+ --> src\alphainvest\shared\domain\repositories\base.py:8:31
+  |
+8 | class AbstractRepository(ABC, Generic[EntityT]):
+  |                               ^^^^^^^^^^^^^^^^
+9 |     """Contrato mínimo; cada dominio ampliará únicamente lo que necesite."""
+  |
+help: Use type parameters
+
+UP046 Generic class `ApiResponse` uses `Generic` subclass instead of type parameters
+  --> src\alphainvest\shared\presentation.py:12:30
+   |
+12 | class ApiResponse(BaseModel, Generic[T]):
+   |                              ^^^^^^^^^^
+13 |     success: bool = True
+14 |     data: T
+   |
+help: Use type parameters
+
+Found 21 errors.
+No fixes available (2 hidden fixes can be enabled with the `--unsafe-fixes` option).

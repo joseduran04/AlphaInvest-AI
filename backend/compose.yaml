@@ -1,0 +1,17 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: alphainvest-backend:0.2.0
+    container_name: alphainvest-api
+    env_file:
+      - .env
+    environment:
+      # Dentro de Docker, localhost sería el contenedor. Se reemplaza solo el host.
+      APP_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@host.docker.internal:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-alphainvest_db}
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
