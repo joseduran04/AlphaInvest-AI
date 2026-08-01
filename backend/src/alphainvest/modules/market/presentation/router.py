@@ -11,13 +11,18 @@ from alphainvest.modules.market.domain.exceptions import (
     FinancialSourceNotFoundError,
     HistoricalPriceNotFoundError,
     InvalidPriceDateRangeError,
+    JobExecutionNotFoundError,
     PriceSynchronizationError,
+    ProcessLockUnavailableError,
     ProviderConfigurationError,
     ProviderRateLimitError,
     ProviderRequestError,
     ProviderResponseError,
+    ScheduledJobNotFoundError,
 )
 from alphainvest.modules.market.presentation.dependencies import (
+    JobReadContext,
+    MarketExecutionServiceDependency,
     MarketReadContext,
     MarketServiceDependency,
     PriceReadContext,
@@ -34,6 +39,13 @@ from alphainvest.modules.market.presentation.schemas import (
     LatestPriceResponse,
     MarketListResponse,
     PriceSynchronizationResponse,
+)
+from alphainvest.modules.operation.domain.enums import (
+    JobExecutionStatus,
+)
+from alphainvest.modules.operation.presentation.schemas import (
+    JobExecutionListResponse,
+    JobExecutionResponse,
 )
 
 router = APIRouter(
@@ -262,38 +274,44 @@ async def get_latest_asset_price(
 )
 async def synchronize_asset_prices(
     asset_id: UUID,
-    _: PriceWriteContext,
+    context: PriceWriteContext,
     service: PriceSynchronizationServiceDependency,
 ) -> PriceSynchronizationResponse:
     try:
         return await service.synchronize_asset(
-            asset_id=asset_id
+            asset_id=asset_id,
+            requested_by=context.user.id,
         )
-
     except AssetNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
-
     except FinancialSourceNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
-
+    except ScheduledJobNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except ProcessLockUnavailableError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        ) from error
     except ProviderConfigurationError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(error),
         ) from error
-
     except ProviderRateLimitError as error:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=str(error),
         ) from error
-
     except (
         ProviderRequestError,
         ProviderResponseError,
@@ -302,9 +320,60 @@ async def synchronize_asset_prices(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(error),
         ) from error
-
     except PriceSynchronizationError as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        ) from error
+
+
+@router.get(
+    "/synchronizations",
+    response_model=JobExecutionListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Listar sincronizaciones de mercado",
+)
+async def list_market_synchronizations(
+    _: JobReadContext,
+    service: MarketExecutionServiceDependency,
+    execution_status: JobExecutionStatus | None = Query(
+        default=None,
+        alias="status",
+    ),
+    limit: int = Query(
+        default=20,
+        ge=1,
+        le=100,
+    ),
+    offset: int = Query(
+        default=0,
+        ge=0,
+    ),
+) -> JobExecutionListResponse:
+    return await service.list_synchronizations(
+        status=execution_status,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/synchronizations/{execution_id}",
+    response_model=JobExecutionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Consultar sincronización de mercado",
+)
+async def get_market_synchronization(
+    execution_id: UUID,
+    _: JobReadContext,
+    service: MarketExecutionServiceDependency,
+) -> JobExecutionResponse:
+    try:
+        return await service.get_synchronization(
+            execution_id
+        )
+    except JobExecutionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error

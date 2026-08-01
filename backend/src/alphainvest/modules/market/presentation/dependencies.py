@@ -11,6 +11,9 @@ from alphainvest.modules.auth.presentation.dependencies import (
     AuthContext,
     require_permission,
 )
+from alphainvest.modules.market.application.execution_service import (
+    MarketExecutionService,
+)
 from alphainvest.modules.market.application.service import (
     MarketService,
 )
@@ -23,6 +26,9 @@ from alphainvest.modules.market.infrastructure.providers.factory import (
 from alphainvest.modules.market.infrastructure.repository import (
     MarketRepository,
 )
+from alphainvest.modules.operation.infrastructure.repository import (
+    OperationRepository,
+)
 
 
 def get_market_service(
@@ -32,17 +38,27 @@ def get_market_service(
 
     return MarketService(repository)
 
+
 def get_price_synchronization_service(
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
 ) -> PriceSynchronizationService:
-    repository = MarketRepository(session)
+    market_repository = MarketRepository(session)
+    operation_repository = OperationRepository(session)
     provider = create_alpha_vantage_provider(settings)
 
     return PriceSynchronizationService(
-        repository=repository,
+        market_repository=market_repository,
+        operation_repository=operation_repository,
         provider=provider,
     )
+
+def get_market_execution_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> MarketExecutionService:
+    repository = OperationRepository(session)
+
+    return MarketExecutionService(repository)
 
 MarketServiceDependency = Annotated[
     MarketService,
@@ -72,4 +88,14 @@ PriceSynchronizationServiceDependency = Annotated[
 PriceWriteContext = Annotated[
     AuthContext,
     Depends(require_permission("precios.cargar")),
+]
+
+JobReadContext = Annotated[
+    AuthContext,
+    Depends(require_permission("trabajos.leer")),
+]
+
+MarketExecutionServiceDependency = Annotated[
+    MarketExecutionService,
+    Depends(get_market_execution_service),
 ]

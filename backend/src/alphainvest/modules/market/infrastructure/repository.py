@@ -171,6 +171,28 @@ class MarketRepository:
 
         return result.scalar_one_or_none()
 
+    async def get_active_asset_by_symbol(
+        self,
+        symbol: str,
+    ) -> AssetModel | None:
+        statement = (
+            select(AssetModel)
+            .where(
+                AssetModel.simbolo == symbol.strip().upper(),
+                AssetModel.estado == "ACTIVO",
+            )
+            .options(
+                selectinload(AssetModel.mercado),
+                selectinload(AssetModel.tipo_activo),
+            )
+            .order_by(AssetModel.fecha_alta.asc())
+            .limit(1)
+        )
+
+        result = await self._session.execute(statement)
+
+        return result.scalar_one_or_none()
+
     async def list_financial_sources(
         self,
         *,

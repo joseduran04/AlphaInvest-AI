@@ -105,6 +105,7 @@ class AssetListResponse(BaseModel):
     limit: int
     offset: int
 
+
 class FinancialSourceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -195,6 +196,7 @@ class LatestPriceResponse(BaseModel):
 
 
 class PriceSynchronizationResponse(BaseModel):
+    execution_id: UUID
     asset_id: UUID
     symbol: str
     source_id: UUID

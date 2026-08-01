@@ -40,3 +40,15 @@ class ProviderRateLimitError(MarketProviderError):
 
 class PriceSynchronizationError(MarketError):
     """No fue posible guardar la sincronización de precios."""
+
+
+class ScheduledJobNotFoundError(MarketError):
+    """No existe la definición operativa del trabajo."""
+
+
+class JobExecutionNotFoundError(MarketError):
+    """La ejecución operativa solicitada no existe."""
+
+
+class ProcessLockUnavailableError(MarketError):
+    """Otro proceso ya está sincronizando el mismo activo."""

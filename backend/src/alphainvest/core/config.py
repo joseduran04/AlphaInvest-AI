@@ -50,12 +50,30 @@ class Settings(BaseSettings):
         le=120,
     )
     alpha_vantage_output_size: str = "compact"
+    worker_enabled: bool = False
+    worker_run_on_startup: bool = False
+    worker_run_once: bool = False
+    worker_timezone: str = "America/Mexico_City"
+    worker_price_sync_symbols: str = "AAPL"
+    worker_max_instances: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+    )
+    worker_misfire_grace_seconds: int = Field(
+        default=300,
+        ge=0,
+        le=86400,
+    )
+
     @field_validator("database_url")
     @classmethod
     def validate_async_driver(cls, value: PostgresDsn) -> PostgresDsn:
         if value.scheme != "postgresql+asyncpg":
             raise ValueError("APP_DATABASE_URL debe usar postgresql+asyncpg")
+        
         return value
+    
     @field_validator("alpha_vantage_output_size")
     @classmethod
     def validate_alpha_vantage_output_size(
@@ -71,6 +89,7 @@ class Settings(BaseSettings):
             )
 
         return normalized
+    
     @property
     def database_url_string(self) -> str:
         return str(self.database_url)
@@ -78,7 +97,16 @@ class Settings(BaseSettings):
     @property
     def alembic_database_url(self) -> str:
         """Alembic usa un driver síncrono solo para ejecutar comandos de migración."""
+
         return self.database_url_string.replace("postgresql+asyncpg", "postgresql+psycopg")
+    
+    @property
+    def worker_price_symbols(self) -> list[str]:
+        return [
+            symbol.strip().upper()
+            for symbol in self.worker_price_sync_symbols.split(",")
+            if symbol.strip()
+        ]
 
 
 @lru_cache

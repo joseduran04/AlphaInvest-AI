@@ -28,3 +28,16 @@ def test_default_settings() -> None:
     )
     assert settings.alpha_vantage_timeout_seconds == 15.0
     assert settings.alpha_vantage_output_size == "compact"
+    assert settings.worker_enabled is False
+    assert settings.worker_run_on_startup is False
+    assert settings.worker_run_once is False
+    assert (
+        settings.worker_timezone
+        == "America/Mexico_City"
+    )
+    assert settings.worker_price_symbols == ["AAPL"]
+    assert settings.worker_max_instances == 1
+    assert (
+        settings.worker_misfire_grace_seconds
+        == 300
+    )
