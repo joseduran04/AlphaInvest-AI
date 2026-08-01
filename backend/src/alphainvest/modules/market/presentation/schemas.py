@@ -192,3 +192,16 @@ class LatestPriceResponse(BaseModel):
     asset_id: UUID
     symbol: str
     price: HistoricalPriceResponse
+
+
+class PriceSynchronizationResponse(BaseModel):
+    asset_id: UUID
+    symbol: str
+    source_id: UUID
+    source_name: str
+    received: int
+    created: int
+    updated: int
+    synchronized_at: datetime
+    first_date: DateType | None
+    last_date: DateType | None

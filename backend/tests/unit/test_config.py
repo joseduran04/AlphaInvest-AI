@@ -20,3 +20,11 @@ def test_default_settings() -> None:
     assert settings.max_failed_login_attempts == 5
     assert settings.login_lock_minutes == 15
     assert settings.default_role == "INVERSIONISTA"
+
+    assert settings.alpha_vantage_api_key is None
+    assert (
+        settings.alpha_vantage_base_url
+        == "https://www.alphavantage.co"
+    )
+    assert settings.alpha_vantage_timeout_seconds == 15.0
+    assert settings.alpha_vantage_output_size == "compact"

@@ -11,11 +11,18 @@ from alphainvest.modules.market.domain.exceptions import (
     FinancialSourceNotFoundError,
     HistoricalPriceNotFoundError,
     InvalidPriceDateRangeError,
+    PriceSynchronizationError,
+    ProviderConfigurationError,
+    ProviderRateLimitError,
+    ProviderRequestError,
+    ProviderResponseError,
 )
 from alphainvest.modules.market.presentation.dependencies import (
     MarketReadContext,
     MarketServiceDependency,
     PriceReadContext,
+    PriceSynchronizationServiceDependency,
+    PriceWriteContext,
     SourceReadContext,
 )
 from alphainvest.modules.market.presentation.schemas import (
@@ -26,6 +33,7 @@ from alphainvest.modules.market.presentation.schemas import (
     HistoricalPriceListResponse,
     LatestPriceResponse,
     MarketListResponse,
+    PriceSynchronizationResponse,
 )
 
 router = APIRouter(
@@ -238,5 +246,65 @@ async def get_latest_asset_price(
     ) as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+
+@router.post(
+    "/assets/{asset_id}/prices/sync",
+    response_model=PriceSynchronizationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Sincronizar precios diarios",
+    description=(
+        "Consulta Alpha Vantage y realiza upsert de los "
+        "precios diarios del activo."
+    ),
+)
+async def synchronize_asset_prices(
+    asset_id: UUID,
+    _: PriceWriteContext,
+    service: PriceSynchronizationServiceDependency,
+) -> PriceSynchronizationResponse:
+    try:
+        return await service.synchronize_asset(
+            asset_id=asset_id
+        )
+
+    except AssetNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+    except FinancialSourceNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+    except ProviderConfigurationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+
+    except ProviderRateLimitError as error:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(error),
+        ) from error
+
+    except (
+        ProviderRequestError,
+        ProviderResponseError,
+    ) as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+
+    except PriceSynchronizationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(error),
         ) from error

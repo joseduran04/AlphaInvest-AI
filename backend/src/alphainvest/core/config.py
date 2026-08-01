@@ -40,14 +40,37 @@ class Settings(BaseSettings):
     max_failed_login_attempts: int = Field(default=5, ge=1, le=20)
     login_lock_minutes: int = Field(default=15, ge=1, le=1440)
     default_role: str = "INVERSIONISTA"
-
+    alpha_vantage_api_key: str | None = None
+    alpha_vantage_base_url: str = (
+        "https://www.alphavantage.co"
+    )
+    alpha_vantage_timeout_seconds: float = Field(
+        default=15.0,
+        gt=0,
+        le=120,
+    )
+    alpha_vantage_output_size: str = "compact"
     @field_validator("database_url")
     @classmethod
     def validate_async_driver(cls, value: PostgresDsn) -> PostgresDsn:
         if value.scheme != "postgresql+asyncpg":
             raise ValueError("APP_DATABASE_URL debe usar postgresql+asyncpg")
         return value
+    @field_validator("alpha_vantage_output_size")
+    @classmethod
+    def validate_alpha_vantage_output_size(
+        cls,
+        value: str,
+    ) -> str:
+        normalized = value.strip().lower()
 
+        if normalized not in {"compact", "full"}:
+            raise ValueError(
+                "APP_ALPHA_VANTAGE_OUTPUT_SIZE debe ser "
+                "'compact' o 'full'"
+            )
+
+        return normalized
     @property
     def database_url_string(self) -> str:
         return str(self.database_url)

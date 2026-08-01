@@ -1,10 +1,14 @@
-from datetime import date
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from alphainvest.modules.market.domain.value_objects import (
+    DailyPricePoint,
+)
 from alphainvest.modules.market.infrastructure.models import (
     AssetModel,
     AssetTypeModel,
@@ -287,3 +291,113 @@ class MarketRepository:
         result = await self._session.execute(statement)
 
         return result.scalar_one_or_none()
+
+    async def get_financial_source_by_name(
+        self,
+        *,
+        name: str,
+        active_only: bool = True,
+    ) -> FinancialSourceModel | None:
+        statement = select(FinancialSourceModel).where(
+            FinancialSourceModel.nombre == name
+        )
+
+        if active_only:
+            statement = statement.where(
+                FinancialSourceModel.activa.is_(True)
+            )
+
+        result = await self._session.execute(statement)
+
+        return result.scalar_one_or_none()
+
+    async def get_existing_price_dates(
+        self,
+        *,
+        asset_id: UUID,
+        source_id: UUID,
+        dates: list[date],
+    ) -> set[date]:
+        if not dates:
+            return set()
+
+        statement = select(
+            HistoricalPriceModel.fecha
+        ).where(
+            HistoricalPriceModel.activo_id == asset_id,
+            HistoricalPriceModel.fuente_id == source_id,
+            HistoricalPriceModel.fecha.in_(dates),
+        )
+
+        result = await self._session.execute(statement)
+
+        return set(result.scalars().all())
+
+    async def upsert_daily_prices(
+        self,
+        *,
+        asset_id: UUID,
+        source_id: UUID,
+        prices: list[DailyPricePoint],
+    ) -> None:
+        if not prices:
+            return
+
+        values = [
+            {
+                "activo_id": asset_id,
+                "fuente_id": source_id,
+                "fecha": price.date,
+                "apertura": price.open,
+                "maximo": price.high,
+                "minimo": price.low,
+                "cierre": price.close,
+                "cierre_ajustado": price.adjusted_close,
+                "volumen": price.volume,
+                "moneda": price.currency,
+            }
+            for price in prices
+        ]
+
+        statement = insert(
+            HistoricalPriceModel
+        ).values(values)
+
+        statement = statement.on_conflict_do_update(
+            index_elements=[
+                HistoricalPriceModel.activo_id,
+                HistoricalPriceModel.fuente_id,
+                HistoricalPriceModel.fecha,
+            ],
+            set_={
+                "apertura": statement.excluded.apertura,
+                "maximo": statement.excluded.maximo,
+                "minimo": statement.excluded.minimo,
+                "cierre": statement.excluded.cierre,
+                "cierre_ajustado": (
+                    statement.excluded.cierre_ajustado
+                ),
+                "volumen": statement.excluded.volumen,
+                "moneda": statement.excluded.moneda,
+                "fecha_registro": func.now(),
+            },
+        )
+
+        await self._session.execute(statement)
+
+    async def mark_source_requested(
+        self,
+        source: FinancialSourceModel,
+    ) -> datetime:
+        synchronized_at = datetime.now(UTC)
+        source.ultima_consulta = synchronized_at
+
+        await self._session.flush()
+
+        return synchronized_at
+
+    async def commit(self) -> None:
+        await self._session.commit()
+
+    async def rollback(self) -> None:
+        await self._session.rollback()

@@ -1,0 +1,34 @@
+from enum import StrEnum
+
+
+class QuestionnaireStatus(StrEnum):
+    DRAFT = "BORRADOR"
+    PUBLISHED = "PUBLICADO"
+    INACTIVE = "INACTIVO"
+
+
+class QuestionType(StrEnum):
+    SINGLE_OPTION = "OPCION_UNICA"
+    MULTIPLE_OPTION = "OPCION_MULTIPLE"
+    NUMERIC = "NUMERICA"
+    TEXT = "TEXTO"
+
+
+class EvaluationStatus(StrEnum):
+    COMPLETED = "COMPLETADA"
+    INVALID = "INVALIDA"
+    CANCELLED = "CANCELADA"
+
+
+class ClassificationMethod(StrEnum):
+    RULES = "REGLAS"
+    ARTIFICIAL_INTELLIGENCE = "INTELIGENCIA_ARTIFICIAL"
+    HYBRID = "HIBRIDO"
+
+
+class RiskClassification(StrEnum):
+    CONSERVATIVE = "CONSERVADOR"
+    MODERATE_CONSERVATIVE = "MODERADO_CONSERVADOR"
+    MODERATE = "MODERADO"
+    MODERATE_AGGRESSIVE = "MODERADO_AGRESIVO"
+    AGGRESSIVE = "AGRESIVO"
