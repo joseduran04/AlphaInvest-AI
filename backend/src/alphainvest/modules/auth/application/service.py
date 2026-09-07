@@ -45,6 +45,7 @@ class AuthService:
             apellidos=data.apellidos.strip(),
             correo=str(data.correo).lower(),
             password_hash=self.passwords.hash(data.password),
+            estado="ACTIVO",
         )
         role = await self.repo.role_by_name(self.settings.default_role)
         if role is None:

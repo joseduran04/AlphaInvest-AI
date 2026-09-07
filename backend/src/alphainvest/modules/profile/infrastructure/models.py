@@ -378,7 +378,7 @@ class RiskEvaluationModel(Base):
     usuario_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         ForeignKey(
-            "auth.usuarios.id",
+            "app_auth.usuarios.id",
             name="fk_evaluaciones_riesgo_usuario",
         ),
         nullable=False,
@@ -628,7 +628,7 @@ class RiskProfileModel(Base):
     usuario_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         ForeignKey(
-            "auth.usuarios.id",
+            "app_auth.usuarios.id",
             name="fk_perfiles_riesgo_usuario",
         ),
         nullable=False,

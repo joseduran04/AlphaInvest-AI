@@ -25,14 +25,30 @@ class PasswordService:
 
 
 class TokenService:
+    REQUIRED_CLAIMS = (
+        "sub",
+        "sid",
+        "type",
+        "iat",
+        "exp",
+        "jti",
+    )
+
     def __init__(self, settings: Settings):
         self.settings = settings
 
     def create_access(
-        self, user_id: UUID, session_id: UUID, roles: list[str], permissions: list[str]
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        roles: list[str],
+        permissions: list[str],
     ) -> str:
         now = datetime.now(UTC)
-        exp = now + timedelta(minutes=self.settings.access_token_minutes)
+        exp = now + timedelta(
+            minutes=self.settings.access_token_minutes
+        )
+
         payload = {
             "sub": str(user_id),
             "sid": str(session_id),
@@ -43,13 +59,23 @@ class TokenService:
             "exp": exp,
             "jti": str(uuid4()),
         }
+
         return jwt.encode(
-            payload, self.settings.jwt_secret_key, algorithm=self.settings.jwt_algorithm
+            payload,
+            self.settings.jwt_secret_key,
+            algorithm=self.settings.jwt_algorithm,
         )
 
-    def create_refresh(self, user_id: UUID, session_id: UUID) -> tuple[str, datetime]:
+    def create_refresh(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+    ) -> tuple[str, datetime]:
         now = datetime.now(UTC)
-        exp = now + timedelta(days=self.settings.refresh_token_days)
+        exp = now + timedelta(
+            days=self.settings.refresh_token_days
+        )
+
         payload = {
             "sub": str(user_id),
             "sid": str(session_id),
@@ -58,18 +84,49 @@ class TokenService:
             "exp": exp,
             "jti": str(uuid4()),
         }
-        return jwt.encode(
-            payload, self.settings.jwt_secret_key, algorithm=self.settings.jwt_algorithm
-        ), exp
 
-    def decode(self, token: str, expected_type: str) -> dict[str, Any]:
-        payload = jwt.decode(
-            token, self.settings.jwt_secret_key, algorithms=[self.settings.jwt_algorithm]
+        return (
+            jwt.encode(
+                payload,
+                self.settings.jwt_secret_key,
+                algorithm=self.settings.jwt_algorithm,
+            ),
+            exp,
         )
+
+    def decode(
+        self,
+        token: str,
+        expected_type: str,
+    ) -> dict[str, Any]:
+        payload = jwt.decode(
+            token,
+            self.settings.jwt_secret_key,
+            algorithms=[
+                self.settings.jwt_algorithm,
+            ],
+            options={
+                "require": list(self.REQUIRED_CLAIMS),
+            },
+        )
+
         if payload.get("type") != expected_type:
-            raise jwt.InvalidTokenError("Tipo de token inválido")
+            raise jwt.InvalidTokenError(
+                "Tipo de token inválido"
+            )
+
+        try:
+            UUID(str(payload["sub"]))
+            UUID(str(payload["sid"]))
+            UUID(str(payload["jti"]))
+        except (TypeError, ValueError) as exc:
+            raise jwt.InvalidTokenError(
+                "Claims de identidad inválidas"
+            ) from exc
+
         return payload
 
     @staticmethod
     def hash_refresh(token: str) -> str:
         return sha256(token.encode()).hexdigest()
+    

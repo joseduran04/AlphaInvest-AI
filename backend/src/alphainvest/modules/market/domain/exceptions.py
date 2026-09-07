@@ -52,3 +52,11 @@ class JobExecutionNotFoundError(MarketError):
 
 class ProcessLockUnavailableError(MarketError):
     """Otro proceso ya está sincronizando el mismo activo."""
+
+
+class InsufficientPriceHistoryError(MarketError):
+    """No existen precios suficientes para calcular."""
+
+
+class IndicatorCalculationError(MarketError):
+    """No fue posible calcular los indicadores."""

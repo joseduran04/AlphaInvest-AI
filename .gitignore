@@ -1,1 +1,45 @@
+# ==============================
+# AlphaInvest AI
+# ==============================
 
+# Variables de entorno / secretos
+.env
+.env.*
+!.env.example
+
+# Llaves, certificados y credenciales privadas
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# IDE / configuración local
+.vscode/
+.idea/
+
+# Configuración local de shell
+.bashrc
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Datasets locales de Machine Learning
+machine_learning/datasets/
+
+# Modelos experimentales externos/locales
+machine_learning/saved_models/
+
+# Artefactos generados por el backend
+backend/artifacts/

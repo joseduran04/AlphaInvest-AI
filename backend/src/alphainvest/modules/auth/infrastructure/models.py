@@ -12,18 +12,18 @@ from alphainvest.infrastructure.database.base import Base
 
 class UserRoleModel(Base):
     __tablename__ = "usuario_roles"
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "app_auth"}
 
     usuario_id: Mapped[UUID] = mapped_column(
-        ForeignKey("auth.usuarios.id", ondelete="CASCADE"),
+        ForeignKey("app_auth.usuarios.id", ondelete="CASCADE"),
         primary_key=True,
     )
     rol_id: Mapped[UUID] = mapped_column(
-        ForeignKey("auth.roles.id", ondelete="CASCADE"),
+        ForeignKey("app_auth.roles.id", ondelete="CASCADE"),
         primary_key=True,
     )
     asignado_por: Mapped[UUID | None] = mapped_column(
-        ForeignKey("auth.usuarios.id"),
+        ForeignKey("app_auth.usuarios.id"),
         nullable=True,
     )
     fecha_asignacion: Mapped[datetime] = mapped_column(
@@ -34,7 +34,7 @@ class UserRoleModel(Base):
 
 class UserModel(Base):
     __tablename__ = "usuarios"
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "app_auth"}
 
     id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
@@ -88,7 +88,7 @@ class UserModel(Base):
 
 class RoleModel(Base):
     __tablename__ = "roles"
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "app_auth"}
 
     id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
@@ -104,7 +104,7 @@ class RoleModel(Base):
     )
 
     permisos: Mapped[list["PermissionModel"]] = relationship(
-        secondary="auth.rol_permisos",
+        secondary="app_auth.rol_permisos",
         lazy="selectin",
         viewonly=True,
     )
@@ -124,7 +124,7 @@ class RoleModel(Base):
 
 class PermissionModel(Base):
     __tablename__ = "permisos"
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "app_auth"}
     id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
@@ -140,12 +140,12 @@ class PermissionModel(Base):
 
 class RolePermissionModel(Base):
     __tablename__ = "rol_permisos"
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "app_auth"}
     rol_id: Mapped[UUID] = mapped_column(
-        ForeignKey("auth.roles.id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("app_auth.roles.id", ondelete="CASCADE"), primary_key=True
     )
     permiso_id: Mapped[UUID] = mapped_column(
-        ForeignKey("auth.permisos.id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("app_auth.permisos.id", ondelete="CASCADE"), primary_key=True
     )
     fecha_asignacion: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -154,11 +154,11 @@ class RolePermissionModel(Base):
 
 class SessionModel(Base):
     __tablename__ = "sesiones"
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "app_auth"}
     id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
-    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("auth.usuarios.id", ondelete="CASCADE"))
+    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("app_auth.usuarios.id", ondelete="CASCADE"))
     refresh_token_hash: Mapped[str] = mapped_column(String(255), unique=True)
     direccion_ip: Mapped[IPv4Address | IPv6Address | None] = mapped_column(INET)
     agente_usuario: Mapped[str | None] = mapped_column(String(500))
@@ -172,11 +172,16 @@ class SessionModel(Base):
 
 class TermsAcceptanceModel(Base):
     __tablename__ = "aceptaciones_terminos"
-    __table_args__ = {"schema": "auth"}
+    __table_args__ = {"schema": "app_auth"}
     id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
-    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("auth.usuarios.id", ondelete="RESTRICT"))
+    usuario_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "app_auth.usuarios.id",
+            ondelete="RESTRICT",
+        )
+    )
     version_terminos: Mapped[str] = mapped_column(String(30))
     version_privacidad: Mapped[str] = mapped_column(String(30))
     fecha_aceptacion: Mapped[datetime] = mapped_column(

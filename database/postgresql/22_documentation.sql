@@ -81,7 +81,7 @@ VALUES
         'modulos',
         jsonb_build_array
         (
-            'auth',
+            'app_auth',
             'profile',
             'ai',
             'market',
@@ -137,7 +137,7 @@ LEFT JOIN pg_proc p
     ON p.pronamespace = n.oid
 WHERE n.nspname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -182,7 +182,7 @@ JOIN pg_namespace n
     ON n.oid = c.relnamespace
 WHERE n.nspname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -222,7 +222,7 @@ LEFT JOIN pg_catalog.pg_description pgd
    AND pgd.objsubid = c.ordinal_position
 WHERE c.table_schema IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -258,7 +258,7 @@ LEFT JOIN information_schema.constraint_column_usage ccu
    AND ccu.constraint_name = tc.constraint_name
 WHERE tc.constraint_schema IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -291,7 +291,7 @@ SELECT
 FROM pg_indexes
 WHERE schemaname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -331,7 +331,7 @@ JOIN pg_language l
     ON l.oid = p.prolang
 WHERE n.nspname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -365,7 +365,7 @@ JOIN pg_proc p
 WHERE NOT t.tgisinternal
 AND n.nspname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -414,7 +414,7 @@ JOIN pg_namespace destino_ns
     ON destino_ns.oid = destino.relnamespace
 WHERE origen_ns.nspname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -426,7 +426,7 @@ WHERE origen_ns.nspname IN
 )
 AND destino_ns.nspname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -453,7 +453,7 @@ SELECT
 FROM information_schema.role_table_grants
 WHERE table_schema IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -485,7 +485,7 @@ JOIN pg_namespace n
 WHERE c.relkind IN ('r', 'p')
 AND n.nspname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -529,7 +529,7 @@ BEGIN
     FROM pg_namespace
     WHERE nspname IN
     (
-        'auth',
+        'app_auth',
         'profile',
         'ai',
         'market',
@@ -563,7 +563,7 @@ BEGIN
     WHERE c.relkind IN ('r', 'p')
       AND n.nspname IN
       (
-          'auth',
+          'app_auth',
           'profile',
           'ai',
           'market',
@@ -589,7 +589,7 @@ BEGIN
     WHERE c.relkind = 'v'
       AND n.nspname IN
       (
-          'auth',
+          'app_auth',
           'profile',
           'ai',
           'market',
@@ -615,7 +615,7 @@ BEGIN
     WHERE c.relkind = 'm'
       AND n.nspname IN
       (
-          'auth',
+          'app_auth',
           'profile',
           'ai',
           'market',
@@ -640,7 +640,7 @@ BEGIN
         ON n.oid = p.pronamespace
     WHERE n.nspname IN
     (
-        'auth',
+        'app_auth',
         'profile',
         'ai',
         'market',
@@ -668,7 +668,7 @@ BEGIN
     WHERE NOT t.tgisinternal
       AND n.nspname IN
       (
-          'auth',
+          'app_auth',
           'profile',
           'ai',
           'market',
@@ -773,7 +773,7 @@ WITH foreign_keys AS
     WHERE con.contype = 'f'
       AND ns.nspname IN
       (
-          'auth',
+          'app_auth',
           'profile',
           'ai',
           'market',
@@ -1040,7 +1040,7 @@ SELECT
 FROM pg_stat_user_tables
 WHERE schemaname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -1061,7 +1061,7 @@ SELECT
 FROM pg_matviews
 WHERE schemaname IN
 (
-    'auth',
+    'app_auth',
     'profile',
     'ai',
     'market',
@@ -1103,3 +1103,4 @@ git commit -m "docs: agregar inventario y verificacion final de base de datos"
 git push
 
 ===============================================================================
+*/

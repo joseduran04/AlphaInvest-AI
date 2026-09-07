@@ -1,10 +1,3 @@
-Biblioteca
-/
-AlphaInvest_AI
-/
-16_views.sql
-
-
 /*
 ===============================================================================
 Proyecto: AlphaInvest AI
@@ -32,7 +25,7 @@ BEGIN;
 Resume los datos básicos de cada usuario y todos sus roles activos.
 La agregación evita devolver una fila duplicada por cada rol asignado.
 */
-CREATE OR REPLACE VIEW auth.v_usuarios_roles AS
+CREATE OR REPLACE VIEW app_auth.v_usuarios_roles AS
 SELECT
     u.id AS usuario_id,
     u.nombres,
@@ -51,10 +44,10 @@ SELECT
             FILTER (WHERE r.id IS NOT NULL AND r.activo),
         ARRAY[]::VARCHAR[]
     ) AS roles
-FROM auth.usuarios u
-LEFT JOIN auth.usuario_roles ur
+FROM app_auth.usuarios u
+LEFT JOIN app_auth.usuario_roles ur
     ON ur.usuario_id = u.id
-LEFT JOIN auth.roles r
+LEFT JOIN app_auth.roles r
     ON r.id = ur.rol_id
 GROUP BY
     u.id,
@@ -69,7 +62,7 @@ GROUP BY
     u.fecha_creacion,
     u.fecha_actualizacion;
 
-COMMENT ON VIEW auth.v_usuarios_roles IS
+COMMENT ON VIEW app_auth.v_usuarios_roles IS
 'Usuarios del sistema con sus roles activos agregados en un arreglo.';
 
 /*
@@ -205,7 +198,7 @@ SELECT
         0
     ) AS ganancia_perdida_posiciones
 FROM portfolio.portafolios p
-JOIN auth.usuarios u
+JOIN app_auth.usuarios u
     ON u.id = p.usuario_id
 LEFT JOIN portfolio.posiciones pos
     ON pos.portafolio_id = p.id
@@ -261,7 +254,7 @@ SELECT
     er.fecha_evaluacion,
     er.estado AS evaluacion_estado
 FROM profile.perfiles_riesgo pr
-JOIN auth.usuarios u
+JOIN app_auth.usuarios u
     ON u.id = pr.usuario_id
 JOIN profile.evaluaciones_riesgo er
     ON er.id = pr.evaluacion_id
@@ -318,7 +311,7 @@ SELECT
 FROM simulation.ejecuciones e
 JOIN simulation.configuraciones c
     ON c.id = e.configuracion_id
-JOIN auth.usuarios u
+JOIN app_auth.usuarios u
     ON u.id = e.usuario_id
 LEFT JOIN ai.versiones_modelo vm
     ON vm.id = e.version_modelo_id
@@ -431,7 +424,7 @@ COMMIT;
 CONSULTAS DE VALIDACIÓN SUGERIDAS
 ===============================================================================
 
-SELECT * FROM auth.v_usuarios_roles LIMIT 10;
+SELECT * FROM app_auth.v_usuarios_roles LIMIT 10;
 SELECT * FROM market.v_activos_catalogo ORDER BY mercado_codigo, simbolo;
 SELECT * FROM market.v_ultimos_precios ORDER BY mercado_codigo, simbolo;
 SELECT * FROM portfolio.v_resumen_portafolios LIMIT 10;

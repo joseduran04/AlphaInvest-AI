@@ -24,7 +24,7 @@
  - 12_functions.sql
 
  Esquemas utilizados:
- - auth
+ - app_auth
  - profile
  - portfolio
  - simulation
@@ -904,31 +904,21 @@ LANGUAGE plpgsql
 AS
 $$
 DECLARE
-    v_solicitud_relacionada UUID;
+    v_solicitud_prediccion UUID;
+    v_solicitud_recomendacion UUID;
+    v_solicitud_prediccion_origen TEXT;
 BEGIN
-    IF NEW.prediccion_id IS NOT NULL THEN
-        SELECT solicitud_id
-        INTO v_solicitud_relacionada
-        FROM ai.predicciones_activo
-        WHERE id = NEW.prediccion_id;
-
-        IF NOT FOUND THEN
-            RAISE EXCEPTION
-                'No existe la predicción %.',
-                NEW.prediccion_id
-                USING ERRCODE = '23503';
-        END IF;
-
-        IF v_solicitud_relacionada <> NEW.solicitud_id THEN
-            RAISE EXCEPTION
-                'La predicción de la evidencia pertenece a otra solicitud.'
-                USING ERRCODE = '23514';
-        END IF;
-    END IF;
+    /*
+    ============================================================
+    1. VALIDAR RECOMENDACIÓN
+    ============================================================
+    La recomendación sí debe pertenecer siempre a la misma
+    solicitud que la evidencia.
+    */
 
     IF NEW.recomendacion_id IS NOT NULL THEN
         SELECT solicitud_id
-        INTO v_solicitud_relacionada
+        INTO v_solicitud_recomendacion
         FROM ai.recomendaciones
         WHERE id = NEW.recomendacion_id;
 
@@ -939,10 +929,71 @@ BEGIN
                 USING ERRCODE = '23503';
         END IF;
 
-        IF v_solicitud_relacionada <> NEW.solicitud_id THEN
+        IF v_solicitud_recomendacion <> NEW.solicitud_id THEN
             RAISE EXCEPTION
                 'La recomendación de la evidencia pertenece a otra solicitud.'
                 USING ERRCODE = '23514';
+        END IF;
+    END IF;
+
+    /*
+    ============================================================
+    2. VALIDAR PREDICCIÓN
+    ============================================================
+
+    Una predicción puede pertenecer:
+
+    A) A la misma solicitud de la evidencia.
+
+    B) A una solicitud ACTIVO utilizada como origen de una
+       solicitud RECOMENDACION.
+
+       En este segundo caso, la solicitud de recomendación debe
+       declarar explícitamente prediction_request_id dentro de
+       parametros.
+    */
+
+    IF NEW.prediccion_id IS NOT NULL THEN
+        SELECT solicitud_id
+        INTO v_solicitud_prediccion
+        FROM ai.predicciones_activo
+        WHERE id = NEW.prediccion_id;
+
+        IF NOT FOUND THEN
+            RAISE EXCEPTION
+                'No existe la predicción %.',
+                NEW.prediccion_id
+                USING ERRCODE = '23503';
+        END IF;
+
+        IF v_solicitud_prediccion <> NEW.solicitud_id THEN
+
+            /*
+             La referencia cruzada solamente es válida cuando
+             la evidencia pertenece a una recomendación.
+            */
+
+            IF NEW.recomendacion_id IS NULL THEN
+                RAISE EXCEPTION
+                    'La predicción de la evidencia pertenece a otra solicitud.'
+                    USING ERRCODE = '23514';
+            END IF;
+
+            SELECT
+                parametros ->> 'prediction_request_id'
+            INTO v_solicitud_prediccion_origen
+            FROM ai.solicitudes_analisis
+            WHERE id = NEW.solicitud_id;
+
+            IF
+                v_solicitud_prediccion_origen IS NULL
+                OR v_solicitud_prediccion_origen
+                    <> v_solicitud_prediccion::TEXT
+            THEN
+                RAISE EXCEPTION
+                    'La predicción de la evidencia no corresponde a la solicitud ACTIVO declarada como origen.'
+                    USING ERRCODE = '23514';
+            END IF;
         END IF;
     END IF;
 
@@ -952,7 +1003,7 @@ $$;
 
 COMMENT ON FUNCTION
 ai.fn_trg_validar_evidencia() IS
-'Garantiza que las predicciones y recomendaciones de una evidencia pertenezcan a la misma solicitud de análisis.';
+'Garantiza la consistencia entre evidencias, recomendaciones y predicciones, permitiendo predicciones de una solicitud ACTIVO origen cuando una solicitud RECOMENDACION la referencia explícitamente mediante prediction_request_id.';
 
 
 /*
@@ -978,7 +1029,7 @@ EXECUTE FUNCTION ai.fn_trg_validar_evidencia();
 COMMENT ON TRIGGER
 trg_evidencias_analisis_validar
 ON ai.evidencias_analisis IS
-'Impide asociar evidencias con predicciones o recomendaciones de otra solicitud.';
+'Valida la trazabilidad de evidencias con su recomendación y permite predicciones externas únicamente cuando corresponden a la solicitud ACTIVO declarada como origen.';
 
 
 /*
@@ -1415,17 +1466,17 @@ audit.fn_trg_auditoria_generica() IS
 
 /*
 ------------------------------------------------------------
- auth.usuarios
+ app_auth.usuarios
 ------------------------------------------------------------
 */
 
 DROP TRIGGER IF EXISTS
 trg_usuarios_fecha_actualizacion
-ON auth.usuarios;
+ON app_auth.usuarios;
 
 CREATE TRIGGER trg_usuarios_fecha_actualizacion
 BEFORE UPDATE
-ON auth.usuarios
+ON app_auth.usuarios
 FOR EACH ROW
 EXECUTE FUNCTION
 operation.fn_actualizar_fecha_actualizacion();
@@ -1557,34 +1608,34 @@ operation.fn_actualizar_fecha_actualizacion();
 
 /*
 ------------------------------------------------------------
- auth.usuarios
+ app_auth.usuarios
 ------------------------------------------------------------
 */
 
 DROP TRIGGER IF EXISTS
 trg_auditoria_usuarios
-ON auth.usuarios;
+ON app_auth.usuarios;
 
 CREATE TRIGGER trg_auditoria_usuarios
 AFTER INSERT OR UPDATE OR DELETE
-ON auth.usuarios
+ON app_auth.usuarios
 FOR EACH ROW
 EXECUTE FUNCTION audit.fn_trg_auditoria_generica();
 
 
 /*
 ------------------------------------------------------------
- auth.roles
+ app_auth.roles
 ------------------------------------------------------------
 */
 
 DROP TRIGGER IF EXISTS
 trg_auditoria_roles
-ON auth.roles;
+ON app_auth.roles;
 
 CREATE TRIGGER trg_auditoria_roles
 AFTER INSERT OR UPDATE OR DELETE
-ON auth.roles
+ON app_auth.roles
 FOR EACH ROW
 EXECUTE FUNCTION audit.fn_trg_auditoria_generica();
 
@@ -1699,7 +1750,7 @@ EXECUTE FUNCTION audit.fn_trg_auditoria_generica();
 
 COMMENT ON TRIGGER
 trg_usuarios_fecha_actualizacion
-ON auth.usuarios IS
+ON app_auth.usuarios IS
 'Actualiza automáticamente fecha_actualizacion cuando se modifica un usuario.';
 
 COMMENT ON TRIGGER

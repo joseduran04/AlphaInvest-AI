@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS simulation.configuraciones
 
     CONSTRAINT fk_configuraciones_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 
@@ -371,7 +371,7 @@ CREATE TABLE IF NOT EXISTS simulation.ejecuciones
 
     CONSTRAINT fk_ejecuciones_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 

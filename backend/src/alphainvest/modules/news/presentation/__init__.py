@@ -1,0 +1,1 @@
+"""Presentación HTTP del módulo News."""

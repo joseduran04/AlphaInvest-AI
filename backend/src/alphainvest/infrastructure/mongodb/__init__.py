@@ -1,0 +1,1 @@
+"""Infraestructura documental MongoDB de AlphaInvest AI."""

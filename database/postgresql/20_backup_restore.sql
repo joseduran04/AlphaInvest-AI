@@ -494,7 +494,7 @@ COMMIT;
 --   --compress=9 `
 --   --no-owner `
 --   --no-privileges `
---   --schema=auth `
+--   --schema=app_auth `
 --   --schema=ai `
 --   --schema=profile `
 --   --schema=market `
@@ -602,7 +602,7 @@ COMMIT;
 --     ON n.oid = c.relnamespace
 -- WHERE n.nspname IN
 -- (
---     'auth',
+--     'app_auth',
 --     'ai',
 --     'profile',
 --     'market',
@@ -620,10 +620,10 @@ COMMIT;
 -- FROM market.activos;
 --
 -- SELECT COUNT(*) AS total_roles
--- FROM auth.roles;
+-- FROM app_auth.roles;
 --
 -- SELECT COUNT(*) AS total_permisos
--- FROM auth.permisos;
+-- FROM app_auth.permisos;
 --
 -- SELECT
 --     schemaname,
@@ -631,7 +631,7 @@ COMMIT;
 -- FROM pg_catalog.pg_views
 -- WHERE schemaname IN
 -- (
---     'auth',
+--     'app_auth',
 --     'ai',
 --     'profile',
 --     'market',

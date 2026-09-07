@@ -5,6 +5,9 @@ from alphainvest.modules.market.domain.provider import (
 from alphainvest.modules.market.infrastructure.providers.alpha_vantage import (
     AlphaVantageProvider,
 )
+from alphainvest.modules.market.infrastructure.providers.yahoo_finance import (
+    YahooFinanceProvider,
+)
 
 
 def create_alpha_vantage_provider(
@@ -18,3 +21,6 @@ def create_alpha_vantage_provider(
         ),
         output_size=settings.alpha_vantage_output_size,
     )
+
+def create_yahoo_finance_provider() -> MarketDataProvider:
+    return YahooFinanceProvider()

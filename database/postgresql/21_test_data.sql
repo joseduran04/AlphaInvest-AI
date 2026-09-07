@@ -47,9 +47,9 @@ $$;
 1. USUARIOS DE PRUEBA
 ===============================================================================
 Se utiliza crypt/gen_salt de pgcrypto, habilitada en 01_extensions.sql.
-La clave natural esperada es auth.usuarios.correo.
+La clave natural esperada es app_auth.usuarios.correo.
 */
-INSERT INTO auth.usuarios
+INSERT INTO app_auth.usuarios
 (
     nombres,
     apellidos,
@@ -101,7 +101,7 @@ DO UPDATE SET
 2. ASIGNACIÓN DEL ROL INVERSIONISTA
 ===============================================================================
 */
-INSERT INTO auth.usuario_roles
+INSERT INTO app_auth.usuario_roles
 (
     usuario_id,
     rol_id
@@ -109,8 +109,8 @@ INSERT INTO auth.usuario_roles
 SELECT
     u.id,
     r.id
-FROM auth.usuarios u
-JOIN auth.roles r
+FROM app_auth.usuarios u
+JOIN app_auth.roles r
     ON r.nombre = 'INVERSIONISTA'
 WHERE u.correo IN
 (
@@ -239,7 +239,7 @@ FROM
         ('test.agresivo@example.test', 'TEST_Portafolio_Agresivo',
          'Portafolio de prueba concentrado en acciones de crecimiento.', 20000.00, 5000.00)
 ) AS v(correo, nombre, descripcion, capital_inicial, saldo_efectivo)
-JOIN auth.usuarios u
+JOIN app_auth.usuarios u
     ON u.correo = v.correo
 ON CONFLICT (usuario_id, nombre)
 DO UPDATE SET
@@ -418,7 +418,7 @@ SELECT
     20260723,
     '{"activo":"SPY","estrategia":"comprar_y_mantener","entorno":"TEST"}'::JSONB,
     'LISTA'
-FROM auth.usuarios u
+FROM app_auth.usuarios u
 WHERE u.correo = 'test.moderado@example.test'
 ON CONFLICT (usuario_id, nombre)
 DO UPDATE SET
@@ -648,7 +648,7 @@ VALIDACIÓN
 ===============================================================================
 
 SELECT correo, estado, roles
-FROM auth.v_usuarios_roles
+FROM app_auth.v_usuarios_roles
 WHERE correo LIKE '%@example.test'
 ORDER BY correo;
 
@@ -737,15 +737,15 @@ AND activo_id IN
 )
 AND fecha BETWEEN CURRENT_DATE - 4 AND CURRENT_DATE;
 
-DELETE FROM auth.usuario_roles
+DELETE FROM app_auth.usuario_roles
 WHERE usuario_id IN
 (
     SELECT id
-    FROM auth.usuarios
+    FROM app_auth.usuarios
     WHERE correo LIKE '%@example.test'
 );
 
-DELETE FROM auth.usuarios
+DELETE FROM app_auth.usuarios
 WHERE correo LIKE '%@example.test';
 
 REFRESH MATERIALIZED VIEW market.mv_resumen_diario_activos;

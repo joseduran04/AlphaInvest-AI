@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS ai.solicitudes_analisis
     porcentaje_progreso NUMERIC(7,4) NOT NULL
         DEFAULT 0,
 
+    intentos_procesamiento INTEGER NOT NULL
+        DEFAULT 0,
+
     fecha_solicitud TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
 
@@ -77,7 +80,7 @@ CREATE TABLE IF NOT EXISTS ai.solicitudes_analisis
 
     CONSTRAINT fk_solicitudes_analisis_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 
@@ -147,6 +150,12 @@ CREATE TABLE IF NOT EXISTS ai.solicitudes_analisis
         CHECK
         (
             porcentaje_progreso BETWEEN 0 AND 100
+        ),
+
+    CONSTRAINT ck_solicitudes_analisis_intentos
+        CHECK
+        (
+            intentos_procesamiento >= 0
         ),
 
     CONSTRAINT ck_solicitudes_analisis_parametros
@@ -790,7 +799,7 @@ CREATE TABLE IF NOT EXISTS ai.recomendaciones
 
     CONSTRAINT fk_recomendaciones_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 

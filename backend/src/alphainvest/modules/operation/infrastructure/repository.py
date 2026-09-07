@@ -11,18 +11,290 @@ from sqlalchemy.orm import selectinload
 from alphainvest.modules.operation.domain.enums import (
     JobExecutionStatus,
     JobTrigger,
+    NotificationChannel,
+    NotificationPriority,
+    NotificationStatus,
+    NotificationType,
 )
 from alphainvest.modules.operation.infrastructure.models import (
     JobExecutionModel,
+    NotificationModel,
     ScheduledJobModel,
 )
 
 
 class OperationRepository:
-    """Acceso a trabajos y ejecuciones operativas."""
+    """Acceso a notificaciones, trabajos y ejecuciones operativas."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def create_notification(
+        self,
+        *,
+        user_id: UUID,
+        notification_type: NotificationType,
+        channel: NotificationChannel,
+        title: str,
+        message: str,
+        priority: NotificationPriority,
+        status: NotificationStatus,
+        data: dict[str, Any] | None = None,
+        scheduled_at: datetime | None = None,
+        reference_type: str | None = None,
+        reference_id: str | None = None,
+    ) -> NotificationModel:
+        notification = NotificationModel(
+            usuario_id=user_id,
+            tipo=notification_type.value,
+            canal=channel.value,
+            titulo=title,
+            mensaje=message,
+            prioridad=priority.value,
+            estado=status.value,
+            datos=data,
+            fecha_programada=scheduled_at,
+            referencia_tipo=reference_type,
+            referencia_id=reference_id,
+        )
+
+        self._session.add(notification)
+
+        await self._session.flush()
+        await self._session.refresh(notification)
+
+        return notification
+
+    async def get_notification_for_user(
+        self,
+        *,
+        notification_id: UUID,
+        user_id: UUID,
+    ) -> NotificationModel | None:
+        statement = select(NotificationModel).where(
+            NotificationModel.id == notification_id,
+            NotificationModel.usuario_id == user_id,
+        )
+
+        result = await self._session.execute(statement)
+
+        return result.scalar_one_or_none()
+
+    async def get_notification(
+        self,
+        *,
+        notification_id: UUID,
+    ) -> NotificationModel | None:
+        statement = select(
+            NotificationModel
+        ).where(
+            NotificationModel.id
+            == notification_id
+        )
+
+        result = await self._session.execute(
+            statement
+        )
+
+        return result.scalar_one_or_none()
+
+    async def get_notification_by_reference(
+        self,
+        *,
+        user_id: UUID,
+        notification_type: NotificationType,
+        channel: NotificationChannel,
+        reference_type: str,
+        reference_id: str,
+    ) -> NotificationModel | None:
+        statement = select(
+            NotificationModel
+        ).where(
+            NotificationModel.usuario_id
+            == user_id,
+            NotificationModel.tipo
+            == notification_type.value,
+            NotificationModel.canal
+            == channel.value,
+            NotificationModel.referencia_tipo
+            == reference_type,
+            NotificationModel.referencia_id
+            == reference_id,
+        )
+
+        result = await self._session.execute(
+            statement
+        )
+
+        return result.scalar_one_or_none()
+
+    async def list_notifications(
+        self,
+        *,
+        user_id: UUID | None,
+        status: NotificationStatus | None,
+        notification_type: NotificationType | None,
+        channel: NotificationChannel | None,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[NotificationModel], int]:
+        filters = []
+
+        if user_id is not None:
+            filters.append(
+                NotificationModel.usuario_id
+                == user_id
+            )
+
+        if status is not None:
+            filters.append(
+                NotificationModel.estado
+                == status.value
+            )
+
+        if notification_type is not None:
+            filters.append(
+                NotificationModel.tipo
+                == notification_type.value
+            )
+
+        if channel is not None:
+            filters.append(
+                NotificationModel.canal
+                == channel.value
+            )
+
+        statement = (
+            select(NotificationModel)
+            .where(*filters)
+            .order_by(
+                NotificationModel
+                .fecha_creacion
+                .desc(),
+                NotificationModel.id.desc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+
+        count_statement = (
+            select(
+                func.count(
+                    NotificationModel.id
+                )
+            )
+            .where(*filters)
+        )
+
+        result = await self._session.execute(
+            statement
+        )
+
+        count_result = (
+            await self._session.execute(
+                count_statement
+            )
+        )
+
+        return (
+            list(
+                result.scalars().all()
+            ),
+            int(
+                count_result.scalar_one()
+            ),
+        )
+
+    async def cancel_notification(
+        self,
+        notification: NotificationModel,
+    ) -> NotificationModel:
+        notification.estado = (
+            NotificationStatus.CANCELLED.value
+        )
+
+        await self._session.flush()
+        await self._session.refresh(
+            notification
+        )
+
+        return notification
+
+    async def list_notifications_for_user(
+        self,
+        *,
+        user_id: UUID,
+        unread_only: bool,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[NotificationModel], int]:
+        filters = [
+            NotificationModel.usuario_id == user_id,
+            NotificationModel.estado
+            == NotificationStatus.SENT.value,
+        ]
+
+        if unread_only:
+            filters.append(
+                NotificationModel.fecha_lectura.is_(None)
+            )
+
+        statement = (
+            select(NotificationModel)
+            .where(*filters)
+            .order_by(
+                NotificationModel.fecha_creacion.desc(),
+                NotificationModel.id.desc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+
+        count_statement = (
+            select(func.count(NotificationModel.id))
+            .where(*filters)
+        )
+
+        result = await self._session.execute(statement)
+
+        count_result = await self._session.execute(
+            count_statement
+        )
+
+        return (
+            list(result.scalars().all()),
+            int(count_result.scalar_one()),
+        )
+
+    async def count_unread_notifications(
+        self,
+        *,
+        user_id: UUID,
+    ) -> int:
+        statement = (
+            select(func.count(NotificationModel.id))
+            .where(
+                NotificationModel.usuario_id == user_id,
+                NotificationModel.estado
+                == NotificationStatus.SENT.value,
+                NotificationModel.fecha_lectura.is_(None),
+            )
+        )
+
+        result = await self._session.execute(statement)
+
+        return int(result.scalar_one())
+
+    async def mark_notification_read(
+        self,
+        notification: NotificationModel,
+    ) -> NotificationModel:
+        notification.fecha_lectura = func.now()
+
+        await self._session.flush()
+        await self._session.refresh(notification)
+
+        return notification
 
     async def get_job_by_code(
         self,
@@ -69,12 +341,13 @@ class OperationRepository:
         job_id: UUID,
         requested_by: UUID | None,
         process_id: str,
+        trigger: JobTrigger = JobTrigger.MANUAL,
     ) -> JobExecutionModel:
         execution = JobExecutionModel(
             trabajo_id=job_id,
             estado=JobExecutionStatus.RUNNING.value,
             numero_intento=1,
-            disparador=JobTrigger.MANUAL.value,
+            disparador=trigger.value,
             solicitado_por=requested_by,
             identificador_proceso=process_id,
         )
@@ -239,6 +512,49 @@ class OperationRepository:
         )
 
         return bool(result.scalar_one())
+
+    async def is_process_lock_active(
+        self,
+        *,
+        lock_key: str,
+    ) -> bool:
+        statement = text(
+            """
+            SELECT EXISTS
+            (
+                SELECT 1
+                FROM operation.control_procesos
+                WHERE clave_bloqueo = :lock_key
+                  AND estado = 'ADQUIRIDO'
+                  AND fecha_expiracion
+                      > CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        result = await self._session.execute(
+            statement,
+            {
+                "lock_key": lock_key,
+            },
+        )
+
+        return bool(result.scalar_one())
+
+    async def mark_expired_process_locks(
+        self,
+    ) -> int:
+        statement = text(
+            """
+            SELECT operation.fn_marcar_bloqueos_expirados()
+            """
+        )
+
+        result = await self._session.execute(
+            statement
+        )
+
+        return int(result.scalar_one())
 
     async def release_process_lock(
         self,

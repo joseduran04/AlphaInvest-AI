@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS profile.evaluaciones_riesgo
 
     CONSTRAINT fk_evaluaciones_riesgo_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 
@@ -464,7 +464,7 @@ CREATE TABLE IF NOT EXISTS profile.perfiles_riesgo
 
     CONSTRAINT fk_perfiles_riesgo_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 

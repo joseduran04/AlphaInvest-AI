@@ -31,7 +31,9 @@ async def run_worker() -> None:
                 "Iniciando ejecución única controlada"
             )
 
-            await scheduler.run_price_sync_now()
+            await scheduler.run_job_now(
+                settings.worker_run_once_job
+            )
 
             logger.info(
                 "Ejecución única finalizada"
@@ -49,7 +51,9 @@ async def run_worker() -> None:
             logger.info(
                 "Ejecutando sincronización inicial"
             )
-            await scheduler.run_price_sync_now()
+            await scheduler.run_job_now(
+                "ACTUALIZAR_PRECIOS_DIARIOS"
+            )
 
         scheduler.start()
 

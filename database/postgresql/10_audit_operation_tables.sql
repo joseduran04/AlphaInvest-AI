@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS audit.registros_auditoria
 
     CONSTRAINT fk_registros_auditoria_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
@@ -233,13 +233,13 @@ CREATE TABLE IF NOT EXISTS audit.eventos_seguridad
 
     CONSTRAINT fk_eventos_seguridad_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
     CONSTRAINT fk_eventos_seguridad_revisor
         FOREIGN KEY (revisado_por)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
@@ -423,13 +423,13 @@ CREATE TABLE IF NOT EXISTS audit.errores_aplicacion
 
     CONSTRAINT fk_errores_aplicacion_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
     CONSTRAINT fk_errores_aplicacion_resuelto_por
         FOREIGN KEY (resuelto_por)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
@@ -643,7 +643,7 @@ CREATE TABLE IF NOT EXISTS operation.notificaciones
 
     CONSTRAINT fk_notificaciones_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
@@ -863,7 +863,7 @@ CREATE TABLE IF NOT EXISTS operation.trabajos_programados
 
     CONSTRAINT fk_trabajos_programados_creado_por
         FOREIGN KEY (creado_por)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
@@ -1053,7 +1053,7 @@ CREATE TABLE IF NOT EXISTS operation.ejecuciones_trabajo
 
     CONSTRAINT fk_ejecuciones_trabajo_solicitado_por
         FOREIGN KEY (solicitado_por)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 

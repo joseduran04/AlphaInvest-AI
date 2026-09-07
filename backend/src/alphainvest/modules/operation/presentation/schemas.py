@@ -8,6 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from alphainvest.modules.operation.domain.enums import (
     JobExecutionStatus,
     JobTrigger,
+    NotificationChannel,
+    NotificationPriority,
+    NotificationStatus,
+    NotificationType,
 )
 
 
@@ -76,3 +80,78 @@ class JobExecutionListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class NotificationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID = Field(
+        validation_alias="usuario_id"
+    )
+    type: NotificationType = Field(
+        validation_alias="tipo"
+    )
+    channel: NotificationChannel = Field(
+        validation_alias="canal"
+    )
+    title: str = Field(
+        validation_alias="titulo"
+    )
+    message: str = Field(
+        validation_alias="mensaje"
+    )
+    priority: NotificationPriority = Field(
+        validation_alias="prioridad"
+    )
+    status: NotificationStatus = Field(
+        validation_alias="estado"
+    )
+    data: dict[str, Any] | None = Field(
+        validation_alias="datos"
+    )
+    created_at: datetime = Field(
+        validation_alias="fecha_creacion"
+    )
+    scheduled_at: datetime | None = Field(
+        validation_alias="fecha_programada"
+    )
+    sent_at: datetime | None = Field(
+        validation_alias="fecha_envio"
+    )
+    read_at: datetime | None = Field(
+        validation_alias="fecha_lectura"
+    )
+    delivery_attempts: int = Field(
+        validation_alias="intentos_envio"
+    )
+    last_error: str | None = Field(
+        validation_alias="ultimo_error"
+    )
+    reference_type: str | None = Field(
+        validation_alias="referencia_tipo"
+    )
+    reference_id: str | None = Field(
+        validation_alias="referencia_id"
+    )
+
+
+class NotificationListResponse(BaseModel):
+    items: list[NotificationResponse]
+    total: int
+    limit: int
+    offset: int
+    unread_only: bool
+
+
+class AdminNotificationListResponse(
+    BaseModel
+):
+    items: list[NotificationResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class UnreadNotificationCountResponse(BaseModel):
+    unread: int

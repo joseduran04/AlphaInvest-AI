@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -19,6 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -326,10 +328,130 @@ class AssetModel(Base):
         back_populates="activos",
     )
 
-    precios_historicos: Mapped[list[HistoricalPriceModel]] = relationship(
-    back_populates="activo",
-    lazy="selectin",
+    precios_historicos: Mapped[
+        list[HistoricalPriceModel]
+          ] = relationship(
+              back_populates="activo",
+              lazy="selectin",
+          )
+
+    indicadores_financieros: Mapped[
+        list[FinancialIndicatorModel]
+          ] = relationship(
+              back_populates="activo",
+              lazy="selectin",
+          )
+
+
+class NewsReferenceModel(Base):
+    __tablename__ = "noticias_referencia"
+    __table_args__ = (
+        CheckConstraint(
+            "length(trim(mongo_document_id)) > 0",
+            name="ck_noticias_documento_no_vacio",
+        ),
+        CheckConstraint(
+            "length(trim(titulo)) > 0",
+            name="ck_noticias_titulo_no_vacio",
+        ),
+        CheckConstraint(
+            "length(trim(fuente)) > 0",
+            name="ck_noticias_fuente_no_vacia",
+        ),
+        CheckConstraint(
+            """
+            url IS NULL
+            OR length(trim(url)) > 0
+            """,
+            name="ck_noticias_url",
+        ),
+        CheckConstraint(
+            """
+            idioma IS NULL
+            OR length(trim(idioma))
+               BETWEEN 2 AND 10
+            """,
+            name="ck_noticias_idioma",
+        ),
+        CheckConstraint(
+            """
+            relevancia IS NULL
+            OR relevancia BETWEEN 0 AND 1
+            """,
+            name="ck_noticias_relevancia",
+        ),
+        UniqueConstraint(
+            "activo_id",
+            "mongo_document_id",
+            name="uq_noticias_activo_documento",
+        ),
+        {"schema": "market"},
     )
+
+    id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    activo_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey(
+            "market.activos.id",
+            name="fk_noticias_referencia_activo",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+
+    mongo_document_id: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    titulo: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False,
+    )
+
+    fuente: Mapped[str] = mapped_column(
+        String(150),
+        nullable=False,
+    )
+
+    url: Mapped[str | None] = mapped_column(
+        String(1000),
+        nullable=True,
+    )
+
+    fecha_publicacion: Mapped[
+        datetime
+    ] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+
+    idioma: Mapped[str | None] = mapped_column(
+        String(10),
+        nullable=True,
+    )
+
+    relevancia: Mapped[
+        Decimal | None
+    ] = mapped_column(
+        Numeric(12, 8),
+        nullable=True,
+    )
+
+    fecha_registro: Mapped[
+        datetime
+    ] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
+
 
 class FinancialSourceModel(Base):
     __tablename__ = "fuentes_financieras"
@@ -428,10 +550,12 @@ class FinancialSourceModel(Base):
         server_default=text("CURRENT_TIMESTAMP"),
     )
 
-    precios_historicos: Mapped[list[HistoricalPriceModel]] = relationship(
-    back_populates="fuente",
-    lazy="selectin",
-)
+    precios_historicos: Mapped[
+        list[HistoricalPriceModel]
+    ] = relationship(
+        back_populates="fuente",
+        lazy="selectin",
+    )
 
 
 class HistoricalPriceModel(Base):
@@ -594,4 +718,112 @@ class HistoricalPriceModel(Base):
 
     fuente: Mapped[FinancialSourceModel] = relationship(
         back_populates="precios_historicos",
+    )
+
+
+class FinancialIndicatorModel(Base):
+    __tablename__ = "indicadores_financieros"
+    __table_args__ = (
+        CheckConstraint(
+            "length(trim(tipo_indicador)) > 0",
+            name="ck_indicadores_tipo_no_vacio",
+        ),
+        CheckConstraint(
+            "length(trim(periodo)) > 0",
+            name="ck_indicadores_periodo_no_vacio",
+        ),
+        CheckConstraint(
+            """
+            parametros IS NULL
+            OR jsonb_typeof(parametros) = 'object'
+            """,
+            name="ck_indicadores_parametros_json",
+        ),
+        CheckConstraint(
+            """
+            fuente_calculo IS NULL
+            OR length(trim(fuente_calculo)) > 0
+            """,
+            name="ck_indicadores_fuente_calculo",
+        ),
+        UniqueConstraint(
+            "activo_id",
+            "tipo_indicador",
+            "fecha",
+            "periodo",
+            name=(
+                "uq_indicadores_activo_tipo_"
+                "fecha_periodo"
+            ),
+        ),
+        Index(
+            "idx_indicadores_activo_tipo_fecha",
+            "activo_id",
+            "tipo_indicador",
+            text("fecha DESC"),
+        ),
+        Index(
+            "idx_indicadores_fecha",
+            text("fecha DESC"),
+        ),
+        {"schema": "market"},
+    )
+
+    id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    activo_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey(
+            "market.activos.id",
+            name="fk_indicadores_financieros_activo",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+
+    tipo_indicador: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )
+
+    fecha: Mapped[date] = mapped_column(
+        Date,
+        nullable=False,
+    )
+
+    valor: Mapped[Decimal] = mapped_column(
+        Numeric(24, 8),
+        nullable=False,
+    )
+
+    periodo: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+    )
+
+    parametros: Mapped[
+        dict[str, Any] | None
+    ] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+
+    fuente_calculo: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    fecha_calculo: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
+
+    activo: Mapped[AssetModel] = relationship(
+        back_populates="indicadores_financieros",
     )

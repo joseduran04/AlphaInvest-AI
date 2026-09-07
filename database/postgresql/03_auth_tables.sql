@@ -12,7 +12,7 @@
  - 02_schemas.sql
 
  Esquema:
- - auth
+ - app_auth
 ============================================================
 */
 
@@ -20,11 +20,11 @@ BEGIN;
 
 /*
 ============================================================
- 1. TABLA: auth.usuarios
+ 1. TABLA: app_auth.usuarios
 ============================================================
 */
 
-CREATE TABLE IF NOT EXISTS auth.usuarios
+CREATE TABLE IF NOT EXISTS app_auth.usuarios
 (
     id UUID
         CONSTRAINT pk_usuarios
@@ -89,35 +89,35 @@ CREATE TABLE IF NOT EXISTS auth.usuarios
         )
 );
 
-COMMENT ON TABLE auth.usuarios IS
+COMMENT ON TABLE app_auth.usuarios IS
 'Usuarios registrados en AlphaInvest AI.';
 
-COMMENT ON COLUMN auth.usuarios.id IS
+COMMENT ON COLUMN app_auth.usuarios.id IS
 'Identificador UUID del usuario.';
 
-COMMENT ON COLUMN auth.usuarios.correo IS
+COMMENT ON COLUMN app_auth.usuarios.correo IS
 'Correo único del usuario, comparado sin distinguir mayúsculas y minúsculas.';
 
-COMMENT ON COLUMN auth.usuarios.password_hash IS
+COMMENT ON COLUMN app_auth.usuarios.password_hash IS
 'Hash seguro de la contraseña. Nunca debe contener la contraseña en texto plano.';
 
-COMMENT ON COLUMN auth.usuarios.estado IS
+COMMENT ON COLUMN app_auth.usuarios.estado IS
 'Estado operativo de la cuenta del usuario.';
 
-COMMENT ON COLUMN auth.usuarios.bloqueado_hasta IS
+COMMENT ON COLUMN app_auth.usuarios.bloqueado_hasta IS
 'Fecha y hora hasta la que permanecerá bloqueada temporalmente la cuenta.';
 
-COMMENT ON COLUMN auth.usuarios.fecha_actualizacion IS
+COMMENT ON COLUMN app_auth.usuarios.fecha_actualizacion IS
 'Fecha de la modificación más reciente del usuario.';
 
 
 /*
 ============================================================
- 2. TABLA: auth.roles
+ 2. TABLA: app_auth.roles
 ============================================================
 */
 
-CREATE TABLE IF NOT EXISTS auth.roles
+CREATE TABLE IF NOT EXISTS app_auth.roles
 (
     id UUID
         CONSTRAINT pk_roles
@@ -141,20 +141,20 @@ CREATE TABLE IF NOT EXISTS auth.roles
         CHECK (LENGTH(TRIM(nombre)) > 0)
 );
 
-COMMENT ON TABLE auth.roles IS
+COMMENT ON TABLE app_auth.roles IS
 'Catálogo de roles disponibles en AlphaInvest AI.';
 
-COMMENT ON COLUMN auth.roles.nombre IS
+COMMENT ON COLUMN app_auth.roles.nombre IS
 'Nombre único del rol, por ejemplo INVERSIONISTA o ADMINISTRADOR.';
 
 
 /*
 ============================================================
- 3. TABLA: auth.permisos
+ 3. TABLA: app_auth.permisos
 ============================================================
 */
 
-CREATE TABLE IF NOT EXISTS auth.permisos
+CREATE TABLE IF NOT EXISTS app_auth.permisos
 (
     id UUID
         CONSTRAINT pk_permisos
@@ -188,23 +188,23 @@ CREATE TABLE IF NOT EXISTS auth.permisos
         CHECK (LENGTH(TRIM(modulo)) > 0)
 );
 
-COMMENT ON TABLE auth.permisos IS
+COMMENT ON TABLE app_auth.permisos IS
 'Catálogo de acciones permitidas dentro del sistema.';
 
-COMMENT ON COLUMN auth.permisos.codigo IS
+COMMENT ON COLUMN app_auth.permisos.codigo IS
 'Código técnico único del permiso, por ejemplo users.read.';
 
-COMMENT ON COLUMN auth.permisos.modulo IS
+COMMENT ON COLUMN app_auth.permisos.modulo IS
 'Módulo funcional al que pertenece el permiso.';
 
 
 /*
 ============================================================
- 4. TABLA: auth.usuario_roles
+ 4. TABLA: app_auth.usuario_roles
 ============================================================
 */
 
-CREATE TABLE IF NOT EXISTS auth.usuario_roles
+CREATE TABLE IF NOT EXISTS app_auth.usuario_roles
 (
     usuario_id UUID NOT NULL,
 
@@ -220,19 +220,19 @@ CREATE TABLE IF NOT EXISTS auth.usuario_roles
 
     CONSTRAINT fk_usuario_roles_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
     CONSTRAINT fk_usuario_roles_rol
         FOREIGN KEY (rol_id)
-        REFERENCES auth.roles (id)
+        REFERENCES app_auth.roles (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_usuario_roles_asignado_por
         FOREIGN KEY (asignado_por)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
@@ -244,20 +244,20 @@ CREATE TABLE IF NOT EXISTS auth.usuario_roles
         )
 );
 
-COMMENT ON TABLE auth.usuario_roles IS
+COMMENT ON TABLE app_auth.usuario_roles IS
 'Relación muchos a muchos entre usuarios y roles.';
 
-COMMENT ON COLUMN auth.usuario_roles.asignado_por IS
+COMMENT ON COLUMN app_auth.usuario_roles.asignado_por IS
 'Administrador que realizó la asignación. Puede ser NULL para asignaciones automáticas.';
 
 
 /*
 ============================================================
- 5. TABLA: auth.rol_permisos
+ 5. TABLA: app_auth.rol_permisos
 ============================================================
 */
 
-CREATE TABLE IF NOT EXISTS auth.rol_permisos
+CREATE TABLE IF NOT EXISTS app_auth.rol_permisos
 (
     rol_id UUID NOT NULL,
 
@@ -271,28 +271,28 @@ CREATE TABLE IF NOT EXISTS auth.rol_permisos
 
     CONSTRAINT fk_rol_permisos_rol
         FOREIGN KEY (rol_id)
-        REFERENCES auth.roles (id)
+        REFERENCES app_auth.roles (id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
     CONSTRAINT fk_rol_permisos_permiso
         FOREIGN KEY (permiso_id)
-        REFERENCES auth.permisos (id)
+        REFERENCES app_auth.permisos (id)
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
 
-COMMENT ON TABLE auth.rol_permisos IS
+COMMENT ON TABLE app_auth.rol_permisos IS
 'Relación muchos a muchos entre roles y permisos.';
 
 
 /*
 ============================================================
- 6. TABLA: auth.sesiones
+ 6. TABLA: app_auth.sesiones
 ============================================================
 */
 
-CREATE TABLE IF NOT EXISTS auth.sesiones
+CREATE TABLE IF NOT EXISTS app_auth.sesiones
 (
     id UUID
         CONSTRAINT pk_sesiones
@@ -319,7 +319,7 @@ CREATE TABLE IF NOT EXISTS auth.sesiones
 
     CONSTRAINT fk_sesiones_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
@@ -347,26 +347,26 @@ CREATE TABLE IF NOT EXISTS auth.sesiones
         )
 );
 
-COMMENT ON TABLE auth.sesiones IS
+COMMENT ON TABLE app_auth.sesiones IS
 'Sesiones autenticadas y refresh tokens revocables de los usuarios.';
 
-COMMENT ON COLUMN auth.sesiones.refresh_token_hash IS
+COMMENT ON COLUMN app_auth.sesiones.refresh_token_hash IS
 'Hash del refresh token. El token original no debe guardarse.';
 
-COMMENT ON COLUMN auth.sesiones.direccion_ip IS
+COMMENT ON COLUMN app_auth.sesiones.direccion_ip IS
 'Dirección IPv4 o IPv6 desde la cual se inició la sesión.';
 
-COMMENT ON COLUMN auth.sesiones.fecha_revocacion IS
+COMMENT ON COLUMN app_auth.sesiones.fecha_revocacion IS
 'Fecha en la que la sesión fue cerrada o revocada.';
 
 
 /*
 ============================================================
- 7. TABLA: auth.aceptaciones_terminos
+ 7. TABLA: app_auth.aceptaciones_terminos
 ============================================================
 */
 
-CREATE TABLE IF NOT EXISTS auth.aceptaciones_terminos
+CREATE TABLE IF NOT EXISTS app_auth.aceptaciones_terminos
 (
     id UUID
         CONSTRAINT pk_aceptaciones_terminos
@@ -386,7 +386,7 @@ CREATE TABLE IF NOT EXISTS auth.aceptaciones_terminos
 
     CONSTRAINT fk_aceptaciones_terminos_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 
@@ -405,13 +405,13 @@ CREATE TABLE IF NOT EXISTS auth.aceptaciones_terminos
         CHECK (LENGTH(TRIM(version_privacidad)) > 0)
 );
 
-COMMENT ON TABLE auth.aceptaciones_terminos IS
+COMMENT ON TABLE app_auth.aceptaciones_terminos IS
 'Historial de aceptación de términos de servicio y políticas de privacidad.';
 
-COMMENT ON COLUMN auth.aceptaciones_terminos.version_terminos IS
+COMMENT ON COLUMN app_auth.aceptaciones_terminos.version_terminos IS
 'Versión de los términos aceptados por el usuario.';
 
-COMMENT ON COLUMN auth.aceptaciones_terminos.version_privacidad IS
+COMMENT ON COLUMN app_auth.aceptaciones_terminos.version_privacidad IS
 'Versión de la política de privacidad aceptada por el usuario.';
 
 

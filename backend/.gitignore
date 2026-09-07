@@ -1,17 +1,41 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Testing / calidad
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
 htmlcov/
+
+# Entornos virtuales
 .venv/
 venv/
+
+# Variables de entorno y configuración sensible
 .env
+.env.*
+!.env.example
+
+# Llaves, certificados y credenciales privadas
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# IDE
 .idea/
 .vscode/
+
+# Build / packaging
 dist/
 build/
 *.egg-info/
+
+# Sistema operativo
 .DS_Store
+Thumbs.db

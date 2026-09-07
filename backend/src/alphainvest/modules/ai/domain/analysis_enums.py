@@ -1,0 +1,26 @@
+from enum import StrEnum
+
+
+class AnalysisType(StrEnum):
+    ASSET = "ACTIVO"
+    PORTFOLIO = "PORTAFOLIO"
+    MARKET = "MERCADO"
+    SENTIMENT = "SENTIMIENTO"
+    RECOMMENDATION = "RECOMENDACION"
+    SIMULATION = "SIMULACION"
+    INTEGRAL = "INTEGRAL"
+
+
+class AnalysisHorizon(StrEnum):
+    INTRADAY = "INTRADIA"
+    SHORT_TERM = "CORTO_PLAZO"
+    MEDIUM_TERM = "MEDIANO_PLAZO"
+    LONG_TERM = "LARGO_PLAZO"
+
+
+class AnalysisRequestStatus(StrEnum):
+    PENDING = "PENDIENTE"
+    RUNNING = "EJECUTANDO"
+    COMPLETED = "COMPLETADA"
+    FAILED = "FALLIDA"
+    CANCELLED = "CANCELADA"

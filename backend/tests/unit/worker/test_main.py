@@ -29,15 +29,18 @@ async def test_disabled_worker_does_not_create_scheduler() -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_once_executes_job_and_finishes() -> None:
+async def test_run_once_executes_selected_job() -> None:
     settings = SimpleNamespace(
         worker_enabled=True,
         worker_run_once=True,
+        worker_run_once_job=(
+            "CALCULAR_INDICADORES_DIARIOS"
+        ),
         worker_run_on_startup=False,
     )
 
     scheduler = SimpleNamespace(
-        run_price_sync_now=AsyncMock(),
+        run_job_now=AsyncMock(),
         shutdown=Mock(),
     )
 
@@ -57,7 +60,9 @@ async def test_run_once_executes_job_and_finishes() -> None:
     ):
         await run_worker()
 
-    scheduler.run_price_sync_now.assert_awaited_once()
+    scheduler.run_job_now.assert_awaited_once_with(
+        "CALCULAR_INDICADORES_DIARIOS"
+    )
     scheduler.shutdown.assert_called_once()
     dispose_engine.assert_awaited_once()
 
@@ -67,11 +72,14 @@ async def test_run_once_does_not_load_cron_jobs() -> None:
     settings = SimpleNamespace(
         worker_enabled=True,
         worker_run_once=True,
+        worker_run_once_job=(
+            "ACTUALIZAR_PRECIOS_DIARIOS"
+        ),
         worker_run_on_startup=False,
     )
 
     scheduler = SimpleNamespace(
-        run_price_sync_now=AsyncMock(),
+        run_job_now=AsyncMock(),
         load_jobs=AsyncMock(),
         start=Mock(),
         shutdown=Mock(),
@@ -93,6 +101,54 @@ async def test_run_once_does_not_load_cron_jobs() -> None:
     ):
         await run_worker()
 
-    scheduler.run_price_sync_now.assert_awaited_once()
+    scheduler.run_job_now.assert_awaited_once_with(
+        "ACTUALIZAR_PRECIOS_DIARIOS"
+    )
     scheduler.load_jobs.assert_not_awaited()
     scheduler.start.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_run_once_executes_news_job(
+) -> None:
+    settings = SimpleNamespace(
+        worker_enabled=True,
+        worker_run_once=True,
+        worker_run_once_job=(
+            "SINCRONIZAR_NOTICIAS"
+        ),
+        worker_run_on_startup=False,
+    )
+
+    scheduler = SimpleNamespace(
+        run_job_now=AsyncMock(),
+        shutdown=Mock(),
+    )
+
+    with (
+        patch(
+            "alphainvest.worker.main.get_settings",
+            return_value=settings,
+        ),
+        patch(
+            (
+                "alphainvest.worker.main."
+                "AlphaInvestScheduler"
+            ),
+            return_value=scheduler,
+        ),
+        patch(
+            (
+                "alphainvest.worker.main."
+                "dispose_engine"
+            ),
+            new=AsyncMock(),
+        ),
+    ):
+        await run_worker()
+
+    scheduler.run_job_now.assert_awaited_once_with(
+        "SINCRONIZAR_NOTICIAS"
+    )
+
+    scheduler.shutdown.assert_called_once()

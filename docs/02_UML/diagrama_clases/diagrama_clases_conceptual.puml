@@ -1,0 +1,504 @@
+@startuml
+title AlphaInvest AI - Diagrama de Clases Conceptual
+
+left to right direction
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "Identidad y acceso" {
+
+class Usuario {
+- idUsuario: UUID
+- nombre: String
+- correo: String
+- hashPassword: String
+- estado: EstadoUsuario
+- fechaRegistro: DateTime
+- fechaActualizacion: DateTime
++ registrar()
++ actualizarPerfil()
++ cambiarEstado()
+}
+
+class Rol {
+- idRol: Integer
+- nombre: String
+- descripcion: String
++ asignarPermiso()
+}
+
+class Permiso {
+- idPermiso: Integer
+- codigo: String
+- descripcion: String
+}
+
+class Sesion {
+- idSesion: UUID
+- tokenHash: String
+- fechaInicio: DateTime
+- fechaExpiracion: DateTime
+- activa: Boolean
+- direccionIP: String
++ validar()
++ renovar()
++ invalidar()
+}
+
+class AceptacionTerminos {
+- idAceptacion: UUID
+- versionTerminos: String
+- fechaAceptacion: DateTime
+- direccionIP: String
+}
+
+enum EstadoUsuario {
+ACTIVO
+INACTIVO
+BLOQUEADO
+}
+}
+
+package "Perfil de inversion" {
+
+class Cuestionario {
+- idCuestionario: UUID
+- nombre: String
+- version: String
+- activo: Boolean
+- fechaCreacion: DateTime
++ obtenerPreguntas()
+}
+
+class Pregunta {
+- idPregunta: UUID
+- texto: String
+- orden: Integer
+- obligatoria: Boolean
+- tipo: String
+}
+
+class OpcionRespuesta {
+- idOpcion: UUID
+- texto: String
+- valor: Decimal
+- orden: Integer
+}
+
+class EvaluacionRiesgo {
+- idEvaluacion: UUID
+- fechaEvaluacion: DateTime
+- puntuacion: Decimal
+- nivelConfianza: Decimal
+- vigente: Boolean
++ calcularResultado()
++ marcarComoHistorica()
+}
+
+class RespuestaUsuario {
+- idRespuesta: UUID
+- valorSeleccionado: String
+- puntuacionObtenida: Decimal
+}
+
+class PerfilRiesgo {
+- idPerfil: UUID
+- clasificacion: ClasificacionRiesgo
+- puntuacion: Decimal
+- nivelConfianza: Decimal
+- explicacion: Text
+- fechaInicio: DateTime
+- vigente: Boolean
++ actualizar()
++ obtenerCompatibilidad()
+}
+
+enum ClasificacionRiesgo {
+CONSERVADOR
+MODERADO
+AGRESIVO
+}
+}
+
+package "Mercado financiero" {
+
+class Activo {
+- idActivo: UUID
+- simbolo: String
+- nombre: String
+- tipo: TipoActivo
+- moneda: String
+- pais: String
+- estado: String
++ consultarDetalle()
++ consultarHistorico()
+}
+
+class Empresa {
+- idEmpresa: UUID
+- nombreLegal: String
+- sector: String
+- industria: String
+- descripcion: Text
+- sitioWeb: String
+}
+
+class Mercado {
+- idMercado: UUID
+- nombre: String
+- codigo: String
+- pais: String
+- zonaHoraria: String
+}
+
+class PrecioHistorico {
+- idPrecio: UUID
+- fecha: Date
+- apertura: Decimal
+- maximo: Decimal
+- minimo: Decimal
+- cierre: Decimal
+- cierreAjustado: Decimal
+- volumen: Decimal
+}
+
+class IndicadorFinanciero {
+- idIndicador: UUID
+- nombre: String
+- valor: Decimal
+- periodo: String
+- fechaCalculo: DateTime
+}
+
+class FuenteFinanciera {
+- idFuente: UUID
+- nombre: String
+- proveedor: String
+- endpoint: String
+- activo: Boolean
+}
+
+enum TipoActivo {
+ACCION
+ETF
+}
+}
+
+package "Noticias y sentimiento" {
+
+class Noticia {
+- idNoticia: UUID
+- titulo: String
+- resumen: Text
+- url: String
+- autor: String
+- fechaPublicacion: DateTime
+- fechaConsulta: DateTime
+}
+
+class FuenteNoticia {
+- idFuenteNoticia: UUID
+- nombre: String
+- proveedor: String
+- activo: Boolean
+}
+
+class AnalisisSentimiento {
+- idSentimiento: UUID
+- etiqueta: EtiquetaSentimiento
+- puntuacion: Decimal
+- nivelConfianza: Decimal
+- fechaAnalisis: DateTime
++ analizarTexto()
+}
+
+enum EtiquetaSentimiento {
+POSITIVO
+NEUTRAL
+NEGATIVO
+}
+}
+
+package "Watchlists y portafolios" {
+
+class Watchlist {
+- idWatchlist: UUID
+- nombre: String
+- descripcion: String
+- fechaCreacion: DateTime
++ agregarActivo()
++ eliminarActivo()
+}
+
+class WatchlistActivo {
+- idWatchlistActivo: UUID
+- fechaAgregado: DateTime
+}
+
+class Portafolio {
+- idPortafolio: UUID
+- nombre: String
+- descripcion: String
+- monedaBase: String
+- estado: String
+- fechaCreacion: DateTime
++ agregarPosicion()
++ eliminarPosicion()
++ calcularValor()
+}
+
+class PosicionPortafolio {
+- idPosicion: UUID
+- cantidadVirtual: Decimal
+- precioPromedio: Decimal
+- porcentajeAsignado: Decimal
+- fechaApertura: DateTime
++ calcularValorActual()
++ calcularRendimiento()
+}
+}
+
+package "Simulaciones" {
+
+class Simulacion {
+- idSimulacion: UUID
+- nombre: String
+- capitalInicial: Decimal
+- moneda: String
+- fechaInicioSolicitada: Date
+- fechaFinSolicitada: Date
+- fechaInicioEfectiva: Date
+- fechaFinEfectiva: Date
+- estado: EstadoSimulacion
+- fechaEjecucion: DateTime
++ validarDistribucion()
++ ejecutar()
++ guardar()
+}
+
+class SimulacionActivo {
+- idSimulacionActivo: UUID
+- porcentaje: Decimal
+- capitalAsignado: Decimal
+- precioInicial: Decimal
+- precioFinal: Decimal
+- cantidadVirtual: Decimal
+}
+
+class ResultadoSimulacion {
+- idResultado: UUID
+- valorInicial: Decimal
+- valorFinal: Decimal
+- gananciaPerdida: Decimal
+- rendimientoPorcentual: Decimal
+- volatilidad: Decimal
+- maximoDrawdown: Decimal
+- fechaCalculo: DateTime
++ calcularMetricas()
+}
+
+class PuntoSerieSimulacion {
+- idPunto: UUID
+- fecha: Date
+- valorPortafolio: Decimal
+}
+
+enum EstadoSimulacion {
+BORRADOR
+EJECUTADA
+GUARDADA
+FALLIDA
+}
+}
+
+package "Inteligencia artificial" {
+
+class ModeloIA {
+- idModelo: UUID
+- nombre: String
+- tipo: TipoModelo
+- descripcion: String
+- activo: Boolean
++ activarVersion()
++ desactivar()
+}
+
+class VersionModelo {
+- idVersion: UUID
+- version: String
+- fechaEntrenamiento: DateTime
+- fechaDespliegue: DateTime
+- rutaArtefacto: String
+- metricas: Text
+- activa: Boolean
++ desplegar()
++ validar()
+}
+
+class AnalisisActivo {
+- idAnalisis: UUID
+- periodoInicio: Date
+- periodoFin: Date
+- riesgoEstimado: String
+- tendenciaEstimada: String
+- nivelConfianza: Decimal
+- explicacion: Text
+- fechaGeneracion: DateTime
+- vigenteHasta: DateTime
++ ejecutarAnalisis()
++ generarExplicacion()
+}
+
+class Prediccion {
+- idPrediccion: UUID
+- tipo: String
+- resultado: String
+- valorNumerico: Decimal
+- confianza: Decimal
+- fechaGeneracion: DateTime
+}
+
+class FactorExplicativo {
+- idFactor: UUID
+- variable: String
+- importancia: Decimal
+- impacto: String
+- descripcion: Text
+}
+
+class Recomendacion {
+- idRecomendacion: UUID
+- categoria: CategoriaRecomendacion
+- nivelConfianza: Decimal
+- explicacion: Text
+- advertencia: Text
+- fechaGeneracion: DateTime
+- vigenteHasta: DateTime
++ generar()
++ validarVigencia()
+}
+
+enum TipoModelo {
+ARBOL_DECISION
+RANDOM_FOREST
+XGBOOST
+NLP
+TRANSFORMER
+REGLAS
+}
+
+enum CategoriaRecomendacion {
+COMPATIBLE
+COMPATIBLE_CON_PRECAUCION
+RIESGO_SUPERIOR_AL_PERFIL
+INFORMACION_INSUFICIENTE
+REQUIERE_DIVERSIFICACION
+}
+}
+
+package "Administracion y auditoria" {
+
+class Auditoria {
+- idAuditoria: UUID
+- accion: String
+- entidad: String
+- idEntidad: String
+- valorAnterior: Text
+- valorNuevo: Text
+- fechaEvento: DateTime
+- direccionIP: String
++ registrarEvento()
+}
+
+class RegistroError {
+- idError: UUID
+- servicio: String
+- codigo: String
+- mensaje: Text
+- detalleTecnico: Text
+- fechaError: DateTime
+- resuelto: Boolean
++ marcarResuelto()
+}
+}
+
+Usuario "1" -- "1..*" Sesion : inicia
+Usuario "*" -- "*" Rol : posee
+Rol "*" -- "*" Permiso : contiene
+Usuario "1" -- "1..*" AceptacionTerminos : acepta
+
+Usuario "1" -- "0..*" EvaluacionRiesgo : realiza
+Cuestionario "1" -- "1..*" Pregunta : contiene
+Pregunta "1" -- "1..*" OpcionRespuesta : ofrece
+EvaluacionRiesgo "1" -- "1..*" RespuestaUsuario : contiene
+RespuestaUsuario "*" -- "1" Pregunta : responde
+RespuestaUsuario "0..*" -- "0..1" OpcionRespuesta : selecciona
+EvaluacionRiesgo "1" -- "1" Cuestionario : utiliza
+EvaluacionRiesgo "1" -- "1" PerfilRiesgo : genera
+Usuario "1" -- "0..*" PerfilRiesgo : posee
+
+Activo "0..*" -- "0..1" Empresa : representa
+Activo "*" -- "1" Mercado : cotiza_en
+Activo "1" -- "0..*" PrecioHistorico : posee
+Activo "1" -- "0..*" IndicadorFinanciero : posee
+PrecioHistorico "*" -- "1" FuenteFinanciera : proviene_de
+IndicadorFinanciero "*" -- "1" FuenteFinanciera : proviene_de
+
+Noticia "*" -- "*" Activo : relaciona
+Noticia "*" -- "1" FuenteNoticia : proviene_de
+Noticia "1" -- "0..1" AnalisisSentimiento : recibe
+
+Usuario "1" -- "0..*" Watchlist : crea
+Watchlist "1" -- "0..*" WatchlistActivo : contiene
+WatchlistActivo "*" -- "1" Activo : referencia
+
+Usuario "1" -- "0..*" Portafolio : posee
+Portafolio "1" -- "0..*" PosicionPortafolio : contiene
+PosicionPortafolio "*" -- "1" Activo : referencia
+
+Usuario "1" -- "0..*" Simulacion : ejecuta
+Simulacion "1" -- "1..*" SimulacionActivo : distribuye
+SimulacionActivo "*" -- "1" Activo : utiliza
+Simulacion "1" -- "0..1" ResultadoSimulacion : genera
+ResultadoSimulacion "1" -- "1..*" PuntoSerieSimulacion : contiene
+
+ModeloIA "1" -- "1..*" VersionModelo : posee
+VersionModelo "1" -- "0..*" EvaluacionRiesgo : clasifica
+VersionModelo "1" -- "0..*" AnalisisSentimiento : procesa
+VersionModelo "1" -- "0..*" AnalisisActivo : genera
+
+Usuario "1" -- "0..*" AnalisisActivo : solicita
+Activo "1" -- "0..*" AnalisisActivo : recibe
+AnalisisActivo "1" -- "1..*" Prediccion : contiene
+AnalisisActivo "1" -- "0..*" FactorExplicativo : explica
+
+Usuario "1" -- "0..*" Recomendacion : recibe
+Activo "1" -- "0..*" Recomendacion : corresponde
+PerfilRiesgo "1" -- "0..*" Recomendacion : personaliza
+AnalisisActivo "1" -- "0..*" Recomendacion : fundamenta
+Recomendacion "1" -- "1..*" FactorExplicativo : explica
+VersionModelo "1" -- "0..*" Recomendacion : genera
+
+Usuario "1" -- "0..*" Auditoria : ejecuta
+Usuario "0..1" -- "0..*" Auditoria : afectado
+Usuario "0..1" -- "0..*" RegistroError : reporta
+
+note right of Recomendacion
+La recomendacion es informativa.
+No representa asesoria financiera.
+No ejecuta compras ni ventas.
+end note
+
+note bottom of Simulacion
+La suma de los porcentajes
+de SimulacionActivo debe ser 100.
+end note
+
+note bottom of PerfilRiesgo
+Solo un perfil de riesgo puede
+estar vigente por usuario.
+end note
+
+@enduml

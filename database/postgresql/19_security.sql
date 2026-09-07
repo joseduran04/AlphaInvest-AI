@@ -113,7 +113,7 @@ $database_privileges$;
 ===============================================================================
 */
 REVOKE ALL ON SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -125,7 +125,7 @@ REVOKE ALL ON SCHEMA
 FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -136,7 +136,7 @@ GRANT USAGE ON SCHEMA
 TO alphainvest_app;
 
 GRANT USAGE ON SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -148,7 +148,7 @@ GRANT USAGE ON SCHEMA
 TO alphainvest_worker;
 
 GRANT USAGE ON SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -160,7 +160,7 @@ GRANT USAGE ON SCHEMA
 TO alphainvest_readonly;
 
 GRANT USAGE, CREATE ON SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -180,7 +180,7 @@ configuración técnica de trabajos ni la estructura de la base.
 ===============================================================================
 */
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA
-    auth,
+    app_auth,
     profile,
     portfolio,
     simulation
@@ -193,7 +193,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA market, operation, reporting
 TO alphainvest_app;
 
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     portfolio,
@@ -208,7 +208,7 @@ Los workers pueden ejecutar ingesta, cálculos, simulaciones, IA y tareas
 programadas. Auditoría permanece de solo lectura salvo inserción controlada.
 ===============================================================================
 */
-GRANT SELECT ON ALL TABLES IN SCHEMA auth, profile, reporting
+GRANT SELECT ON ALL TABLES IN SCHEMA app_auth, profile, reporting
 TO alphainvest_worker;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA
@@ -237,7 +237,7 @@ TO alphainvest_worker;
 ===============================================================================
 */
 GRANT SELECT ON ALL TABLES IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -257,7 +257,7 @@ roles que necesitan invocar lógica almacenada.
 ===============================================================================
 */
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -269,7 +269,7 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA
 FROM PUBLIC;
 
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -280,7 +280,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA
 TO alphainvest_app;
 
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -300,7 +300,7 @@ objeto se deja para el despliegue porque requiere conocer al propietario actual.
 ===============================================================================
 */
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -312,7 +312,7 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA
 TO alphainvest_owner;
 
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -324,7 +324,7 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA
 TO alphainvest_owner;
 
 GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA
-    auth,
+    app_auth,
     ai,
     profile,
     market,
@@ -347,46 +347,46 @@ usando: ALTER DEFAULT PRIVILEGES FOR ROLE <rol_creador> ...
 
 -- Eliminar accesos públicos automáticos.
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 REVOKE ALL ON TABLES FROM PUBLIC;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 REVOKE ALL ON SEQUENCES FROM PUBLIC;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
 -- Propietario técnico.
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 GRANT ALL PRIVILEGES ON TABLES TO alphainvest_owner;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 GRANT ALL PRIVILEGES ON SEQUENCES TO alphainvest_owner;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 GRANT ALL PRIVILEGES ON FUNCTIONS TO alphainvest_owner;
 
 -- Aplicación principal.
-ALTER DEFAULT PRIVILEGES IN SCHEMA auth, profile, portfolio, simulation, ai
+ALTER DEFAULT PRIVILEGES IN SCHEMA app_auth, profile, portfolio, simulation, ai
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO alphainvest_app;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA market, operation, reporting
 GRANT SELECT ON TABLES TO alphainvest_app;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA auth, profile, portfolio, simulation, ai
+ALTER DEFAULT PRIVILEGES IN SCHEMA app_auth, profile, portfolio, simulation, ai
 GRANT USAGE, SELECT ON SEQUENCES TO alphainvest_app;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, operation, reporting
 GRANT EXECUTE ON FUNCTIONS TO alphainvest_app;
 
 -- Procesos internos.
-ALTER DEFAULT PRIVILEGES IN SCHEMA auth, profile, reporting
+ALTER DEFAULT PRIVILEGES IN SCHEMA app_auth, profile, reporting
 GRANT SELECT ON TABLES TO alphainvest_worker;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA ai, market, portfolio, simulation, operation
@@ -399,12 +399,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA ai, market, portfolio, simulation, audit, ope
 GRANT USAGE, SELECT ON SEQUENCES TO alphainvest_worker;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 GRANT EXECUTE ON FUNCTIONS TO alphainvest_worker;
 
 -- Consulta y reportes.
 ALTER DEFAULT PRIVILEGES IN SCHEMA
-    auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
+    app_auth, ai, profile, market, portfolio, simulation, audit, operation, reporting
 GRANT SELECT ON TABLES TO alphainvest_readonly;
 
 COMMIT;

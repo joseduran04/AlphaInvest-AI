@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS ai.versiones_modelo
 
     CONSTRAINT fk_versiones_modelo_creada_por
         FOREIGN KEY (creada_por)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 

@@ -1,0 +1,1 @@
+"""Módulo de noticias financieras de AlphaInvest AI."""

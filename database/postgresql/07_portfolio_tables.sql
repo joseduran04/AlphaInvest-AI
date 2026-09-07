@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS portfolio.listas_seguimiento
 
     CONSTRAINT fk_listas_seguimiento_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS portfolio.portafolios
 
     CONSTRAINT fk_portafolios_usuario
         FOREIGN KEY (usuario_id)
-        REFERENCES auth.usuarios (id)
+        REFERENCES app_auth.usuarios (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 

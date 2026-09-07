@@ -37,11 +37,11 @@ BEGIN;
 /*
 ============================================================
  1. ROLES
- Clave natural real: auth.roles.nombre
+ Clave natural real: app_auth.roles.nombre
 ============================================================
 */
 
-INSERT INTO auth.roles
+INSERT INTO app_auth.roles
 (
     nombre,
     descripcion,
@@ -82,11 +82,11 @@ DO UPDATE SET
 /*
 ============================================================
  2. PERMISOS
- Clave natural real: auth.permisos.codigo
+ Clave natural real: app_auth.permisos.codigo
 ============================================================
 */
 
-INSERT INTO auth.permisos
+INSERT INTO app_auth.permisos
 (
     codigo,
     nombre,
@@ -115,6 +115,16 @@ VALUES
     ('versiones_modelo.leer', 'Consultar versiones de modelos', 'Permite consultar versiones, métricas y artefactos registrados.', 'AI', TRUE),
     ('versiones_modelo.administrar', 'Administrar versiones de modelos', 'Permite registrar y actualizar versiones de modelos.', 'AI', TRUE),
     ('versiones_modelo.activar', 'Activar versiones de modelos', 'Permite activar o desactivar versiones de modelos de IA.', 'AI', TRUE),
+    ('analisis.solicitar',
+     'Solicitar análisis de IA',
+     'Permite crear solicitudes de análisis mediante modelos de inteligencia artificial.',
+     'AI',
+     TRUE),
+    ('analisis.leer',
+     'Consultar análisis de IA',
+     'Permite consultar solicitudes y resultados de análisis autorizados.',
+     'AI',
+     TRUE),
 
     -- Mercado
     ('mercados.leer', 'Consultar mercados', 'Permite consultar el catálogo de mercados.', 'MARKET', TRUE),
@@ -131,7 +141,10 @@ VALUES
     ('noticias.cargar', 'Cargar noticias financieras', 'Permite registrar referencias de noticias financieras.', 'MARKET', TRUE),
     ('fuentes.leer', 'Consultar fuentes financieras', 'Permite consultar proveedores de datos financieros.', 'MARKET', TRUE),
     ('fuentes.administrar', 'Administrar fuentes financieras', 'Permite configurar proveedores y prioridades de consulta.', 'MARKET', TRUE),
-
+    -- Reportes
+    ('reportes.leer', 'Consultar reportes', 'Permite consultar reportes funcionales propios y de mercado.', 'REPORTING', TRUE),
+    ('reportes.exportar', 'Exportar reportes', 'Permite exportar reportes autorizados a formatos soportados.', 'REPORTING', TRUE),
+    ('reportes.administrar', 'Administrar reportes', 'Permite consultar reportes administrativos y globales.', 'REPORTING', TRUE),
     -- Auditoría y seguridad
     ('auditoria.leer', 'Consultar auditoría', 'Permite consultar registros de auditoría.', 'AUDIT', TRUE),
     ('seguridad.leer', 'Consultar eventos de seguridad', 'Permite consultar eventos de seguridad.', 'AUDIT', TRUE),
@@ -164,7 +177,7 @@ DO UPDATE SET
 */
 
 -- ADMINISTRADOR: todos los permisos activos.
-INSERT INTO auth.rol_permisos
+INSERT INTO app_auth.rol_permisos
 (
     rol_id,
     permiso_id
@@ -172,8 +185,8 @@ INSERT INTO auth.rol_permisos
 SELECT
     r.id,
     p.id
-FROM auth.roles AS r
-CROSS JOIN auth.permisos AS p
+FROM app_auth.roles AS r
+CROSS JOIN app_auth.permisos AS p
 WHERE r.nombre = 'ADMINISTRADOR'
   AND r.activo = TRUE
   AND p.activo = TRUE
@@ -181,10 +194,10 @@ ON CONFLICT (rol_id, permiso_id)
 DO NOTHING;
 
 -- ANALISTA: consulta y análisis de información financiera y de IA.
-INSERT INTO auth.rol_permisos (rol_id, permiso_id)
+INSERT INTO app_auth.rol_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
-FROM auth.roles AS r
-JOIN auth.permisos AS p
+FROM app_auth.roles AS r
+JOIN app_auth.permisos AS p
   ON p.codigo IN
   (
       'modelos.leer',
@@ -199,17 +212,21 @@ JOIN auth.permisos AS p
       'fuentes.leer',
       'trabajos.leer',
       'trabajos.ejecutar',
-      'ejecuciones.leer'
+      'ejecuciones.leer',
+      'analisis.solicitar',
+      'analisis.leer',
+      'reportes.leer',
+      'reportes.exportar'
   )
 WHERE r.nombre = 'ANALISTA'
 ON CONFLICT (rol_id, permiso_id)
 DO NOTHING;
 
 -- INVERSIONISTA: acceso de consulta a información funcional.
-INSERT INTO auth.rol_permisos (rol_id, permiso_id)
+INSERT INTO app_auth.rol_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
-FROM auth.roles AS r
-JOIN auth.permisos AS p
+FROM app_auth.roles AS r
+JOIN app_auth.permisos AS p
   ON p.codigo IN
   (
       'modelos.leer',
@@ -219,17 +236,21 @@ JOIN auth.permisos AS p
       'precios.leer',
       'indicadores.leer',
       'noticias.leer',
-      'notificaciones.leer'
+      'notificaciones.leer',
+      'analisis.solicitar',
+      'analisis.leer',
+      'reportes.leer',
+      'reportes.exportar'
   )
 WHERE r.nombre = 'INVERSIONISTA'
 ON CONFLICT (rol_id, permiso_id)
 DO NOTHING;
 
 -- OPERADOR: administración de fuentes, cargas y procesos automáticos.
-INSERT INTO auth.rol_permisos (rol_id, permiso_id)
+INSERT INTO app_auth.rol_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
-FROM auth.roles AS r
-JOIN auth.permisos AS p
+FROM app_auth.roles AS r
+JOIN app_auth.permisos AS p
   ON p.codigo IN
   (
       'mercados.leer',
@@ -252,17 +273,20 @@ JOIN auth.permisos AS p
       'trabajos.ejecutar',
       'ejecuciones.leer',
       'procesos.leer',
-      'procesos.administrar'
+      'procesos.administrar',
+      'reportes.leer',
+      'reportes.exportar',
+      'reportes.administrar'
   )
 WHERE r.nombre = 'OPERADOR'
 ON CONFLICT (rol_id, permiso_id)
 DO NOTHING;
 
 -- AUDITOR: acceso de lectura a seguridad, errores, procesos y configuración.
-INSERT INTO auth.rol_permisos (rol_id, permiso_id)
+INSERT INTO app_auth.rol_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
-FROM auth.roles AS r
-JOIN auth.permisos AS p
+FROM app_auth.roles AS r
+JOIN app_auth.permisos AS p
   ON p.codigo IN
   (
       'usuarios.leer',
@@ -281,7 +305,10 @@ JOIN auth.permisos AS p
       'errores.leer',
       'trabajos.leer',
       'ejecuciones.leer',
-      'procesos.leer'
+      'procesos.leer',
+      'reportes.leer',
+      'reportes.exportar',
+      'reportes.administrar'
   )
 WHERE r.nombre = 'AUDITOR'
 ON CONFLICT (rol_id, permiso_id)
@@ -549,6 +576,20 @@ VALUES
         2
     ),
     (
+        'PROCESAR_SIMULACIONES_PENDIENTES',
+        'Procesar simulaciones pendientes',
+        'Procesa ejecuciones históricas pendientes y persiste sus resultados.',
+        'INTERVALO',
+        NULL,
+        60,
+        'America/Mexico_City',
+        '{"tipo_simulacion":"HISTORICA","procesamiento":"pendientes"}'::JSONB,
+        TRUE,
+        FALSE,
+        1800,
+        2
+    ),
+    (
         'REENTRENAR_MODELOS',
         'Reentrenar modelos de IA',
         'Trabajo manual para solicitar el reentrenamiento controlado de modelos.',
@@ -561,6 +602,62 @@ VALUES
         FALSE,
         14400,
         1
+    ),
+    (
+        'PROCESAR_ANALISIS_ACTIVOS_PENDIENTES',
+        'Procesar análisis de activos pendientes',
+        'Procesa solicitudes ACTIVO pendientes y persiste sus predicciones.',
+        'INTERVALO',
+        NULL,
+        60,
+        'America/Mexico_City',
+        '{"tipo_analisis":"ACTIVO","horizonte":"CORTO_PLAZO"}'::JSONB,
+        TRUE,
+        FALSE,
+        1800,
+        3
+    ),
+        (
+        'PROCESAR_ANALISIS_SENTIMIENTO_PENDIENTES',
+        'Procesar análisis de sentimiento pendientes',
+        'Procesa solicitudes SENTIMIENTO pendientes y persiste el análisis NLP de noticias.',
+        'INTERVALO',
+        NULL,
+        60,
+        'America/Mexico_City',
+        '{"tipo_analisis":"SENTIMIENTO"}'::JSONB,
+        TRUE,
+        FALSE,
+        1800,
+        3
+    ),
+    (
+        'PROCESAR_RECOMENDACIONES_PENDIENTES',
+        'Procesar recomendaciones pendientes',
+        'Procesa solicitudes RECOMENDACION pendientes y persiste recomendaciones explicables basadas en predicciones de activos.',
+        'INTERVALO',
+        NULL,
+        60,
+        'America/Mexico_City',
+        '{"tipo_analisis":"RECOMENDACION"}'::JSONB,
+        TRUE,
+        FALSE,
+        1800,
+        3
+    ),
+    (
+        'PROCESAR_ANALISIS_INTEGRALES_PENDIENTES',
+        'Procesar análisis integrales pendientes',
+        'Procesa solicitudes INTEGRAL pendientes y orquesta predicciones, sentimiento y recomendaciones explicables.',
+        'INTERVALO',
+        NULL,
+        60,
+        'America/Mexico_City',
+        '{"tipo_analisis":"INTEGRAL"}'::JSONB,
+        TRUE,
+        FALSE,
+        1800,
+        3
     )
 ON CONFLICT (codigo)
 DO UPDATE SET

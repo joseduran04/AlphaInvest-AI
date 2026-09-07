@@ -16,6 +16,9 @@ from alphainvest.modules.market.infrastructure.providers.factory import (
 from alphainvest.modules.market.infrastructure.repository import (
     MarketRepository,
 )
+from alphainvest.modules.operation.domain.enums import (
+    JobTrigger,
+)
 from alphainvest.modules.operation.infrastructure.repository import (
     OperationRepository,
 )
@@ -64,6 +67,7 @@ async def synchronize_configured_market_prices(
                 result = await service.synchronize_asset(
                     asset_id=asset.id,
                     requested_by=None,
+                    trigger=JobTrigger.SCHEDULED,
                 )
 
                 logger.info(

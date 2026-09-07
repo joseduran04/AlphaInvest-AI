@@ -18,7 +18,7 @@ class SecurityEventModel(Base):
         PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
     usuario_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("auth.usuarios.id", ondelete="SET NULL")
+        ForeignKey("app_auth.usuarios.id", ondelete="SET NULL")
     )
     correo_intentado: Mapped[str | None] = mapped_column(CITEXT)
     tipo_evento: Mapped[str] = mapped_column(String(50))
@@ -34,7 +34,7 @@ class SecurityEventModel(Base):
     )
     revisado: Mapped[bool] = mapped_column(Boolean, server_default="false")
     revisado_por: Mapped[UUID | None] = mapped_column(
-        ForeignKey("auth.usuarios.id", ondelete="SET NULL")
+        ForeignKey("app_auth.usuarios.id", ondelete="SET NULL")
     )
     fecha_revision: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     observaciones_revision: Mapped[str | None] = mapped_column(Text)

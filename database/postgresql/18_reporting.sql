@@ -57,7 +57,7 @@ SELECT
             THEN TRUE
         ELSE FALSE
     END AS bloqueado_actualmente
-FROM auth.v_usuarios_roles u;
+FROM app_auth.v_usuarios_roles u;
 
 COMMENT ON VIEW reporting.v_reporte_usuarios IS
 'Reporte consolidado de usuarios, roles y estado actual de bloqueo.';
@@ -262,7 +262,7 @@ SELECT
         ELSE FALSE
     END AS expirada_por_fecha
 FROM ai.recomendaciones r
-JOIN auth.usuarios u
+JOIN app_auth.usuarios u
     ON u.id = r.usuario_id
 JOIN ai.versiones_modelo vm
     ON vm.id = r.version_modelo_id

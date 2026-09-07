@@ -14,8 +14,19 @@ RUN python -m venv /opt/venv \
 COPY pyproject.toml README.md ./
 COPY src ./src
 
+# Instala explícitamente la distribución CPU-only de PyTorch.
+# Esto evita que `pip install .` descargue CUDA/NVIDIA dentro
+# de una imagen destinada a ejecución CPU.
 RUN pip install --upgrade pip \
+    && pip install \
+        "torch==2.13.0+cpu" \
+        --index-url https://download.pytorch.org/whl/cpu \
     && pip install .
+
+# Los modelos IA se registran en PostgreSQL mediante rutas relativas:
+# artifacts/ai/<modelo>/<version>/<archivo>.
+# WORKDIR=/app garantiza que esas rutas resuelvan a /app/artifacts/...
+COPY --chown=app:app artifacts ./artifacts
 
 USER app
 

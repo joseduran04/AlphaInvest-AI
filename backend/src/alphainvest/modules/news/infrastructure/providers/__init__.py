@@ -1,0 +1,1 @@
+"""Providers externos de noticias."""

@@ -10,6 +10,8 @@ from alphainvest.modules.market.domain.exceptions import (
     AssetNotFoundError,
     FinancialSourceNotFoundError,
     HistoricalPriceNotFoundError,
+    IndicatorCalculationError,
+    InsufficientPriceHistoryError,
     InvalidPriceDateRangeError,
     JobExecutionNotFoundError,
     PriceSynchronizationError,
@@ -20,7 +22,13 @@ from alphainvest.modules.market.domain.exceptions import (
     ProviderResponseError,
     ScheduledJobNotFoundError,
 )
+from alphainvest.modules.market.domain.indicator_enums import (
+    FinancialIndicatorType,
+)
 from alphainvest.modules.market.presentation.dependencies import (
+    FinancialIndicatorServiceDependency,
+    IndicatorCalculateContext,
+    IndicatorReadContext,
     JobReadContext,
     MarketExecutionServiceDependency,
     MarketReadContext,
@@ -34,8 +42,11 @@ from alphainvest.modules.market.presentation.schemas import (
     AssetListResponse,
     AssetResponse,
     AssetTypeListResponse,
+    FinancialIndicatorListResponse,
     FinancialSourceListResponse,
     HistoricalPriceListResponse,
+    IndicatorCalculationRequest,
+    IndicatorCalculationResponse,
     LatestPriceResponse,
     MarketListResponse,
     PriceSynchronizationResponse,
@@ -323,6 +334,106 @@ async def synchronize_asset_prices(
     except PriceSynchronizationError as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        ) from error
+
+
+@router.post(
+    "/assets/{asset_id}/indicators/calculate",
+    response_model=IndicatorCalculationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Calcular indicadores financieros",
+    description=(
+        "Calcula y persiste indicadores técnicos usando "
+        "los precios históricos de una fuente específica."
+    ),
+)
+async def calculate_asset_indicators(
+    asset_id: UUID,
+    request: IndicatorCalculationRequest,
+    _: IndicatorCalculateContext,
+    service: FinancialIndicatorServiceDependency,
+) -> IndicatorCalculationResponse:
+    try:
+        return await service.calculate_indicators(
+            asset_id=asset_id,
+            request=request,
+        )
+    except AssetNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except FinancialSourceNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except InsufficientPriceHistoryError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
+    except IndicatorCalculationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error),
+        ) from error
+
+
+@router.get(
+    "/assets/{asset_id}/indicators",
+    response_model=FinancialIndicatorListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Consultar indicadores financieros",
+)
+async def list_asset_indicators(
+    asset_id: UUID,
+    _: IndicatorReadContext,
+    service: FinancialIndicatorServiceDependency,
+    indicator_type: FinancialIndicatorType | None = Query(
+        default=None,
+    ),
+    period: str | None = Query(
+        default=None,
+        min_length=2,
+        max_length=30,
+        pattern=(
+            r"^(?:[1-9][0-9]*D|"
+            r"[1-9][0-9]*-[1-9][0-9]*-"
+            r"[1-9][0-9]*)$"
+        ),
+    ),
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=500,
+    ),
+    offset: int = Query(
+        default=0,
+        ge=0,
+    ),
+) -> FinancialIndicatorListResponse:
+    try:
+        return await service.list_indicators(
+            asset_id=asset_id,
+            indicator_type=indicator_type,
+            period=period,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            offset=offset,
+        )
+    except AssetNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except InvalidPriceDateRangeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(error),
         ) from error
 

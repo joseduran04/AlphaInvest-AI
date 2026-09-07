@@ -22,7 +22,7 @@
  - 10_audit_operation_tables.sql
 
  Esquemas:
- - auth
+ - app_auth
  - profile
  - market
  - portfolio
@@ -44,7 +44,7 @@ BEGIN;
 
 /*
 ============================================================
- 1. ÍNDICES DEL ESQUEMA auth
+ 1. ÍNDICES DEL ESQUEMA app_auth
 ============================================================
 */
 
@@ -55,12 +55,12 @@ BEGIN;
 */
 
 CREATE INDEX IF NOT EXISTS idx_usuarios_estado
-ON auth.usuarios
+ON app_auth.usuarios
 (
     estado
 );
 
-COMMENT ON INDEX auth.idx_usuarios_estado IS
+COMMENT ON INDEX app_auth.idx_usuarios_estado IS
 'Optimiza consultas y filtros de usuarios por estado operativo.';
 
 
@@ -71,12 +71,12 @@ COMMENT ON INDEX auth.idx_usuarios_estado IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_usuarios_fecha_creacion
-ON auth.usuarios
+ON app_auth.usuarios
 (
     fecha_creacion DESC
 );
 
-COMMENT ON INDEX auth.idx_usuarios_fecha_creacion IS
+COMMENT ON INDEX app_auth.idx_usuarios_fecha_creacion IS
 'Optimiza listados administrativos ordenados por fecha de registro.';
 
 
@@ -87,13 +87,13 @@ COMMENT ON INDEX auth.idx_usuarios_fecha_creacion IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_usuarios_bloqueados_hasta
-ON auth.usuarios
+ON app_auth.usuarios
 (
     bloqueado_hasta
 )
 WHERE bloqueado_hasta IS NOT NULL;
 
-COMMENT ON INDEX auth.idx_usuarios_bloqueados_hasta IS
+COMMENT ON INDEX app_auth.idx_usuarios_bloqueados_hasta IS
 'Permite localizar usuarios con bloqueos temporales y revisar bloqueos vencidos.';
 
 
@@ -104,12 +104,12 @@ COMMENT ON INDEX auth.idx_usuarios_bloqueados_hasta IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_usuario_roles_usuario
-ON auth.usuario_roles
+ON app_auth.usuario_roles
 (
     usuario_id
 );
 
-COMMENT ON INDEX auth.idx_usuario_roles_usuario IS
+COMMENT ON INDEX app_auth.idx_usuario_roles_usuario IS
 'Optimiza la consulta de roles asignados a un usuario.';
 
 
@@ -120,12 +120,12 @@ COMMENT ON INDEX auth.idx_usuario_roles_usuario IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_usuario_roles_rol
-ON auth.usuario_roles
+ON app_auth.usuario_roles
 (
     rol_id
 );
 
-COMMENT ON INDEX auth.idx_usuario_roles_rol IS
+COMMENT ON INDEX app_auth.idx_usuario_roles_rol IS
 'Optimiza la consulta de usuarios asignados a un rol.';
 
 
@@ -136,13 +136,13 @@ COMMENT ON INDEX auth.idx_usuario_roles_rol IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_usuario_roles_asignado_por
-ON auth.usuario_roles
+ON app_auth.usuario_roles
 (
     asignado_por
 )
 WHERE asignado_por IS NOT NULL;
 
-COMMENT ON INDEX auth.idx_usuario_roles_asignado_por IS
+COMMENT ON INDEX app_auth.idx_usuario_roles_asignado_por IS
 'Facilita la auditoría de asignaciones de roles realizadas por administradores.';
 
 
@@ -153,12 +153,12 @@ COMMENT ON INDEX auth.idx_usuario_roles_asignado_por IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_rol_permisos_rol
-ON auth.rol_permisos
+ON app_auth.rol_permisos
 (
     rol_id
 );
 
-COMMENT ON INDEX auth.idx_rol_permisos_rol IS
+COMMENT ON INDEX app_auth.idx_rol_permisos_rol IS
 'Optimiza la carga de permisos asociados a un rol.';
 
 
@@ -169,12 +169,12 @@ COMMENT ON INDEX auth.idx_rol_permisos_rol IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_rol_permisos_permiso
-ON auth.rol_permisos
+ON app_auth.rol_permisos
 (
     permiso_id
 );
 
-COMMENT ON INDEX auth.idx_rol_permisos_permiso IS
+COMMENT ON INDEX app_auth.idx_rol_permisos_permiso IS
 'Optimiza la consulta inversa de roles que contienen un permiso.';
 
 
@@ -185,14 +185,14 @@ COMMENT ON INDEX auth.idx_rol_permisos_permiso IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_sesiones_usuario_activas
-ON auth.sesiones
+ON app_auth.sesiones
 (
     usuario_id,
     fecha_expiracion
 )
 WHERE activa = TRUE;
 
-COMMENT ON INDEX auth.idx_sesiones_usuario_activas IS
+COMMENT ON INDEX app_auth.idx_sesiones_usuario_activas IS
 'Optimiza la validación y administración de sesiones activas por usuario.';
 
 
@@ -203,13 +203,13 @@ COMMENT ON INDEX auth.idx_sesiones_usuario_activas IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_sesiones_activas_expiracion
-ON auth.sesiones
+ON app_auth.sesiones
 (
     fecha_expiracion
 )
 WHERE activa = TRUE;
 
-COMMENT ON INDEX auth.idx_sesiones_activas_expiracion IS
+COMMENT ON INDEX app_auth.idx_sesiones_activas_expiracion IS
 'Permite localizar eficientemente sesiones activas que ya vencieron o están próximas a vencer.';
 
 
@@ -220,13 +220,13 @@ COMMENT ON INDEX auth.idx_sesiones_activas_expiracion IS
 */
 
 CREATE INDEX IF NOT EXISTS idx_aceptaciones_terminos_usuario_fecha
-ON auth.aceptaciones_terminos
+ON app_auth.aceptaciones_terminos
 (
     usuario_id,
     fecha_aceptacion DESC
 );
 
-COMMENT ON INDEX auth.idx_aceptaciones_terminos_usuario_fecha IS
+COMMENT ON INDEX app_auth.idx_aceptaciones_terminos_usuario_fecha IS
 'Optimiza la consulta del historial de términos y privacidad aceptados por cada usuario.';
 
 
@@ -1760,6 +1760,30 @@ WHERE referencia_tipo IS NOT NULL
 
 COMMENT ON INDEX operation.idx_notificaciones_referencia IS
 'Optimiza la consulta de notificaciones relacionadas con una entidad del sistema.';
+
+
+/*
+------------------------------------------------------------
+ Idempotencia de notificaciones por referencia
+------------------------------------------------------------
+*/
+
+CREATE UNIQUE INDEX IF NOT EXISTS
+uq_notificaciones_referencia_canal
+ON operation.notificaciones
+(
+    usuario_id,
+    tipo,
+    canal,
+    referencia_tipo,
+    referencia_id
+)
+WHERE referencia_tipo IS NOT NULL
+  AND referencia_id IS NOT NULL;
+
+COMMENT ON INDEX
+operation.uq_notificaciones_referencia_canal IS
+'Evita generar más de una notificación del mismo tipo y canal para una misma referencia y usuario.';
 
 
 /*

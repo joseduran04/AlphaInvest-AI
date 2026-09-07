@@ -14,6 +14,9 @@ from alphainvest.modules.auth.presentation.dependencies import (
 from alphainvest.modules.market.application.execution_service import (
     MarketExecutionService,
 )
+from alphainvest.modules.market.application.indicator_service import (
+    FinancialIndicatorService,
+)
 from alphainvest.modules.market.application.service import (
     MarketService,
 )
@@ -37,6 +40,14 @@ def get_market_service(
     repository = MarketRepository(session)
 
     return MarketService(repository)
+
+
+def get_financial_indicator_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> FinancialIndicatorService:
+    repository = MarketRepository(session)
+
+    return FinancialIndicatorService(repository)
 
 
 def get_price_synchronization_service(
@@ -98,4 +109,19 @@ JobReadContext = Annotated[
 MarketExecutionServiceDependency = Annotated[
     MarketExecutionService,
     Depends(get_market_execution_service),
+]
+
+FinancialIndicatorServiceDependency = Annotated[
+    FinancialIndicatorService,
+    Depends(get_financial_indicator_service),
+]
+
+IndicatorReadContext = Annotated[
+    AuthContext,
+    Depends(require_permission("indicadores.leer")),
+]
+
+IndicatorCalculateContext = Annotated[
+    AuthContext,
+    Depends(require_permission("indicadores.calcular")),
 ]

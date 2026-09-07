@@ -6,32 +6,61 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from alphainvest.api.v1.router import api_router
 from alphainvest.core.config import get_settings
-from alphainvest.core.error_handlers import register_exception_handlers
+from alphainvest.core.error_handlers import (
+    register_exception_handlers,
+)
 from alphainvest.core.logging import configure_logging
 from alphainvest.core.middleware import RequestContextMiddleware
-from alphainvest.infrastructure.database.session import dispose_engine
+from alphainvest.infrastructure.database.session import (
+    dispose_engine,
+)
+from alphainvest.infrastructure.mongodb.client import (
+    close_mongo_client,
+    initialize_mongo_client,
+)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    yield
-    await dispose_engine()
+    settings = get_settings()
+
+    initialize_mongo_client(
+        settings
+    )
+
+    try:
+        yield
+    finally:
+        await close_mongo_client()
+        await dispose_engine()
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
 
+    is_production = (
+        settings.env.strip().lower()
+        in {
+            "production",
+            "prod",
+        }
+    )
+
     app = FastAPI(
         title=settings.name,
         version=settings.version,
         debug=settings.debug,
         lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
+        openapi_url=None if is_production else "/openapi.json",
     )
-    app.add_middleware(RequestContextMiddleware)
+
+    app.add_middleware(
+        RequestContextMiddleware
+    )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -39,8 +68,15 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
     register_exception_handlers(app)
-    app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    app.include_router(
+        api_router,
+        prefix=settings.api_v1_prefix,
+    )
+
     return app
+
 
 app = create_app()

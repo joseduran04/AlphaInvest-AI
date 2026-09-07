@@ -15,6 +15,9 @@ from alphainvest.modules.market.infrastructure.repository import (
 from alphainvest.modules.market.presentation.schemas import (
     PriceSynchronizationResponse,
 )
+from alphainvest.modules.operation.domain.enums import (
+    JobTrigger,
+)
 from alphainvest.modules.operation.infrastructure.repository import (
     OperationRepository,
 )
@@ -44,6 +47,7 @@ class PriceSynchronizationService:
         *,
         asset_id: UUID,
         requested_by: UUID | None,
+        trigger: JobTrigger = JobTrigger.MANUAL,
     ) -> PriceSynchronizationResponse:
         asset = await self._market_repository.get_asset(
             asset_id
@@ -124,6 +128,7 @@ class PriceSynchronizationService:
                     job_id=job.id,
                     requested_by=requested_by,
                     process_id=process_id,
+                    trigger=trigger,
                 )
             )
 

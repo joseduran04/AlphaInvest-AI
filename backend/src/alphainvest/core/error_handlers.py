@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -43,12 +44,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         request_id = getattr(request.state, "request_id", None)
+
         return JSONResponse(
             status_code=422,
             content=_error_payload(
                 code="validation_error",
                 message="Los datos enviados no son válidos",
-                details=exc.errors(),
+                details=jsonable_encoder(exc.errors()),
                 request_id=request_id,
             ),
         )
