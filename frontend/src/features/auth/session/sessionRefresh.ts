@@ -2,6 +2,7 @@ import axios from 'axios'
 
 import { normalizeApiError } from '@/api/errors'
 import type { RefreshRequest, TokenResponse } from '@/api/types'
+import { notifySessionInvalidated } from '@/features/auth/session/sessionEvents'
 import { env } from '@/lib/env'
 
 import { clearSessionTokens, getRefreshToken, setSessionTokens } from './sessionStore'
@@ -28,6 +29,8 @@ export async function refreshSession(): Promise<string> {
 
   if (!refreshToken) {
     clearSessionTokens()
+    notifySessionInvalidated()
+
     throw new Error('Refresh token no disponible')
   }
 
@@ -47,6 +50,7 @@ export async function refreshSession(): Promise<string> {
 
       if (apiError.kind === 'http' && apiError.status === 401) {
         clearSessionTokens()
+        notifySessionInvalidated()
       }
 
       throw apiError
