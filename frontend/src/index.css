@@ -1,3 +1,7 @@
+@import './styles/tokens.css';
+@import './styles/application-shell.css';
+@import './styles/components.css';
+
 :root {
   font-family:
     Inter,
@@ -8,8 +12,8 @@
     'Segoe UI',
     sans-serif;
 
-  color: #111827;
-  background: #f8fafc;
+  color: var(--color-text-primary);
+  background: var(--color-background);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -41,10 +45,18 @@ select {
   font: inherit;
 }
 
+button {
+  color: inherit;
+}
+
 img,
 svg {
   display: block;
   max-width: 100%;
+}
+
+a {
+  color: inherit;
 }
 
 #root {
@@ -64,6 +76,8 @@ svg {
 
 .app__eyebrow {
   margin: 0 0 0.75rem;
+
+  color: var(--color-primary);
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -72,14 +86,16 @@ svg {
 
 .app h1 {
   margin: 0;
+
   font-size: clamp(2rem, 6vw, 4rem);
   line-height: 1.05;
 }
 
 .app__description {
-  margin: 1.5rem 0 0;
   max-width: 42rem;
+  margin: 1.5rem 0 0;
+
+  color: var(--color-text-secondary);
   font-size: 1.125rem;
   line-height: 1.7;
-  color: #475569;
 }

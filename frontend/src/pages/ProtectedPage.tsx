@@ -1,21 +1,18 @@
 import { useAuth } from '@/features/auth/hooks/useAuth'
 
 export function ProtectedPage() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
 
   return (
-    <main>
-      <h1>Sesión autenticada</h1>
+    <section>
+      <p className="app__eyebrow">Panel principal</p>
 
-      <p>
-        {user?.nombres} {user?.apellidos}
+      <h1>Bienvenido, {user?.nombres}</h1>
+
+      <p className="app__description">
+        Desde este espacio podrás acceder progresivamente a las herramientas de análisis, mercado,
+        portafolios, simulación e inteligencia artificial de AlphaInvest AI.
       </p>
-
-      <p>{user?.correo}</p>
-
-      <button type="button" onClick={() => void logout()}>
-        Cerrar sesión
-      </button>
-    </main>
+    </section>
   )
 }
