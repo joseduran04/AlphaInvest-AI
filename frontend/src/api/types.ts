@@ -14,3 +14,21 @@ export type CreateRiskEvaluationRequest = components['schemas']['CreateRiskEvalu
 export type CurrentRiskProfileResponse = components['schemas']['CurrentRiskProfileResponse']
 export type RiskEvaluationResponse = components['schemas']['RiskEvaluationResponse']
 export type RiskProfileHistoryResponse = components['schemas']['RiskProfileHistoryResponse']
+
+export type PortfolioListResponse = components['schemas']['PortfolioListResponse']
+export type PortfolioOverviewResponse = components['schemas']['PortfolioOverviewResponse']
+export type PortfolioStatus = components['schemas']['PortfolioStatus']
+
+export type SimulationExecutionListResponse =
+  components['schemas']['SimulationExecutionListResponse']
+export type SimulationExecutionStatus = components['schemas']['SimulationExecutionStatus']
+
+export type NotificationListResponse = components['schemas']['NotificationListResponse']
+export type UnreadNotificationCountResponse =
+  components['schemas']['UnreadNotificationCountResponse']
+export type NotificationPriority = components['schemas']['NotificationPriority']
+
+export type RecommendationReportListResponse =
+  components['schemas']['RecommendationReportListResponse']
+
+export type AssetListResponse = components['schemas']['AssetListResponse']
