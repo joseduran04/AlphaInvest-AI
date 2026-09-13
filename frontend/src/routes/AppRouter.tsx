@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router'
 
 import { ProtectedRoute } from '@/features/auth/guards/ProtectedRoute'
+import { RiskProfilePage } from '@/features/profile/pages/RiskProfilePage'
 import { ApplicationLayout } from '@/layouts/ApplicationLayout'
 import { ForbiddenPage } from '@/pages/ForbiddenPage'
 import { HomePage } from '@/pages/HomePage'
@@ -18,6 +19,7 @@ export function AppRouter() {
       <Route element={<ProtectedRoute />}>
         <Route element={<ApplicationLayout />}>
           <Route path="/app" element={<ProtectedPage />} />
+          <Route path="/app/profile" element={<RiskProfilePage />} />
           <Route path="/forbidden" element={<ForbiddenPage />} />
         </Route>
       </Route>

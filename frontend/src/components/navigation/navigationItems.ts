@@ -11,4 +11,8 @@ export const navigationItems: NavigationItem[] = [
     to: '/app',
     end: true,
   },
+  {
+    label: 'Perfil de riesgo',
+    to: '/app/profile',
+  },
 ]
