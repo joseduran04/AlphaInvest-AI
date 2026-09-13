@@ -24,7 +24,9 @@ class YahooFinanceProvider:
         *,
         symbol: str,
         currency: str,
+        asset_type: str,
     ) -> list[DailyPricePoint]:
+        _ = asset_type
         normalized_symbol = symbol.strip().upper()
 
         if not normalized_symbol:

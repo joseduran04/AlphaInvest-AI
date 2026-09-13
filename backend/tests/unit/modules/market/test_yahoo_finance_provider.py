@@ -46,6 +46,7 @@ async def test_provider_normalizes_history() -> None:
         prices = await provider.fetch_daily_prices(
             symbol="aapl",
             currency="usd",
+            asset_type="ACCION",
         )
 
     assert len(prices) == 2
@@ -80,6 +81,7 @@ async def test_provider_rejects_empty_history() -> None:
             await provider.fetch_daily_prices(
                 symbol="AAPL",
                 currency="USD",
+                asset_type="ACCION",
             )
 
 

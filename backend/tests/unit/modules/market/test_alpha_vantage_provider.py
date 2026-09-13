@@ -69,6 +69,7 @@ async def test_provider_normalizes_daily_prices() -> None:
     prices = await provider.fetch_daily_prices(
         symbol="aapl",
         currency="usd",
+        asset_type="ACCION",
     )
 
     assert len(prices) == 2
@@ -95,6 +96,7 @@ async def test_provider_requires_api_key() -> None:
         await provider.fetch_daily_prices(
             symbol="AAPL",
             currency="USD",
+            asset_type="ACCION",
         )
 
 
@@ -113,6 +115,7 @@ async def test_provider_detects_rate_limit() -> None:
         await provider.fetch_daily_prices(
             symbol="AAPL",
             currency="USD",
+            asset_type="ACCION",
         )
 
     assert provider._client is not None
@@ -136,7 +139,127 @@ async def test_provider_rejects_missing_series() -> None:
         await provider.fetch_daily_prices(
             symbol="AAPL",
             currency="USD",
+            asset_type="ACCION",
         )
 
     assert provider._client is not None
     await provider._client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_provider_normalizes_forex_daily_prices() -> None:
+    captured_request: httpx.Request | None = None
+
+    def handler(
+        request: httpx.Request,
+    ) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = request
+
+        return httpx.Response(
+            status_code=200,
+            json={
+                "Meta Data": {},
+                "Time Series FX (Daily)": {
+                    "2026-09-11": {
+                        "1. open": "17.6500",
+                        "2. high": "17.7200",
+                        "3. low": "17.6000",
+                        "4. close": "17.6800",
+                    }
+                },
+            },
+            request=request,
+        )
+
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    )
+
+    provider = AlphaVantageProvider(
+        api_key="test-key",
+        base_url="https://example.test",
+        timeout_seconds=5,
+        output_size="compact",
+        client=client,
+    )
+
+    prices = await provider.fetch_daily_prices(
+        symbol="USD/MXN",
+        currency="MXN",
+        asset_type="DIVISA",
+    )
+
+    assert len(prices) == 1
+    assert prices[0].close == Decimal("17.6800")
+    assert prices[0].volume is None
+    assert prices[0].currency == "MXN"
+
+    assert captured_request is not None
+    params = captured_request.url.params
+
+    assert params["function"] == "FX_DAILY"
+    assert params["from_symbol"] == "USD"
+    assert params["to_symbol"] == "MXN"
+
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_provider_normalizes_crypto_daily_prices() -> None:
+    captured_request: httpx.Request | None = None
+
+    def handler(
+        request: httpx.Request,
+    ) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = request
+
+        return httpx.Response(
+            status_code=200,
+            json={
+                "Meta Data": {},
+                "Time Series (Digital Currency Daily)": {
+                    "2026-09-11": {
+                        "1a. open (USD)": "115000.00",
+                        "2a. high (USD)": "117000.00",
+                        "3a. low (USD)": "114000.00",
+                        "4a. close (USD)": "116500.00",
+                        "5. volume": "12345.6789",
+                    }
+                },
+            },
+            request=request,
+        )
+
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    )
+
+    provider = AlphaVantageProvider(
+        api_key="test-key",
+        base_url="https://example.test",
+        timeout_seconds=5,
+        output_size="compact",
+        client=client,
+    )
+
+    prices = await provider.fetch_daily_prices(
+        symbol="BTC-USD",
+        currency="USD",
+        asset_type="CRIPTO",
+    )
+
+    assert len(prices) == 1
+    assert prices[0].close == Decimal("116500.00")
+    assert prices[0].volume == Decimal("12345.6789")
+    assert prices[0].currency == "USD"
+
+    assert captured_request is not None
+    params = captured_request.url.params
+
+    assert params["function"] == "DIGITAL_CURRENCY_DAILY"
+    assert params["symbol"] == "BTC"
+    assert params["market"] == "USD"
+
+    await client.aclose()

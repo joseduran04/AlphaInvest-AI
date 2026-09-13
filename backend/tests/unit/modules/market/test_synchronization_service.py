@@ -71,6 +71,9 @@ async def test_sync_raises_when_source_missing() -> None:
                 id=asset_id,
                 simbolo="AAPL",
                 moneda="USD",
+                tipo_activo=SimpleNamespace(
+                    codigo="ACCION",
+                ),
             )
         ),
         get_financial_source_by_name=AsyncMock(
@@ -104,6 +107,9 @@ async def test_sync_raises_when_job_missing() -> None:
         id=asset_id,
         simbolo="AAPL",
         moneda="USD",
+        tipo_activo=SimpleNamespace(
+            codigo="ACCION",
+        ),
     )
     source = SimpleNamespace(
         id=source_id,
@@ -146,6 +152,9 @@ async def test_sync_rejects_concurrent_process() -> None:
         id=asset_id,
         simbolo="AAPL",
         moneda="USD",
+        tipo_activo=SimpleNamespace(
+            codigo="ACCION",
+        ),
     )
     source = SimpleNamespace(
         id=source_id,
@@ -214,6 +223,9 @@ async def test_sync_creates_and_updates_prices() -> None:
         id=asset_id,
         simbolo="AAPL",
         moneda="USD",
+        tipo_activo=SimpleNamespace(
+            codigo="ACCION",
+        ),
     )
     source = SimpleNamespace(
         id=source_id,
@@ -300,6 +312,7 @@ async def test_sync_creates_and_updates_prices() -> None:
     provider.fetch_daily_prices.assert_awaited_once_with(
         symbol="AAPL",
         currency="USD",
+        asset_type="ACCION",
     )
 
     market_repository.upsert_daily_prices.assert_awaited_once()
@@ -332,6 +345,9 @@ async def test_sync_releases_lock_and_records_failure() -> None:
         id=asset_id,
         simbolo="AAPL",
         moneda="USD",
+        tipo_activo=SimpleNamespace(
+            codigo="ACCION",
+        ),
     )
     source = SimpleNamespace(
         id=source_id,

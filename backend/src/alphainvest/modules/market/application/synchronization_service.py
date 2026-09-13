@@ -144,6 +144,7 @@ class PriceSynchronizationService:
             prices = await self._provider.fetch_daily_prices(
                 symbol=asset.simbolo,
                 currency=asset.moneda,
+                asset_type=asset.tipo_activo.codigo,
             )
 
             price_dates = [

@@ -17,5 +17,6 @@ class MarketDataProvider(Protocol):
         *,
         symbol: str,
         currency: str,
+        asset_type: str,
     ) -> list[DailyPricePoint]:
         """Obtiene y normaliza precios diarios."""

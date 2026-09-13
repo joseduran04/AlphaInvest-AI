@@ -13,7 +13,7 @@ class DailyPricePoint:
     low: Decimal
     close: Decimal
     adjusted_close: Decimal | None
-    volume: Decimal
+    volume: Decimal | None
     currency: str
 
     def __post_init__(self) -> None:
@@ -24,16 +24,17 @@ class DailyPricePoint:
                 "La moneda debe contener tres caracteres"
             )
 
-        if any(
-            value < 0
-            for value in (
-                self.open,
-                self.high,
-                self.low,
-                self.close,
-                self.volume,
-            )
-        ):
+        values = [
+            self.open,
+            self.high,
+            self.low,
+            self.close,
+        ]
+
+        if self.volume is not None:
+            values.append(self.volume)
+
+        if any(value < 0 for value in values):
             raise ValueError(
                 "Los precios y el volumen no pueden ser negativos"
             )
@@ -58,3 +59,4 @@ class DailyPricePoint:
             "currency",
             normalized_currency,
         )
+        
