@@ -1,0 +1,335 @@
+.market-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.market-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.market-page__header h1 {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+.market-filters,
+.market-results {
+  min-width: 0;
+  padding: 1.25rem;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.market-filters {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.market-filters__header,
+.market-results__header,
+.market-pagination {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.market-filters__header h2,
+.market-results__header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.2rem;
+}
+
+.market-filters__header p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.market-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.market-field {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.market-field--wide {
+  grid-column: span 2;
+}
+
+.market-field > span {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.market-field input,
+.market-field select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+
+  color: var(--color-text-primary);
+  font: inherit;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.market-field input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.market-field input:focus,
+.market-field select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.market-field input:disabled,
+.market-field select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.market-filters__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.market-results {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.market-results__header {
+  align-items: center;
+}
+
+.market-results__eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.market-results__count {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.market-assets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.market-asset {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+  padding: 1rem;
+
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.market-asset__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.market-asset__header > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.market-asset__header strong {
+  color: var(--color-text-primary);
+  font-size: 1.15rem;
+}
+
+.market-asset__header > div > span {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-status {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.55rem;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  border-radius: 999px;
+}
+
+.market-status--activo {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.market-status--inactivo {
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.market-status--suspendido {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.market-asset__details {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.market-asset__details div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.market-asset__details dt {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
+.market-asset__details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.market-asset__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.market-asset__actions .button {
+  text-decoration: none;
+}
+
+.market-pagination {
+  align-items: center;
+  padding-top: 0.25rem;
+}
+
+.market-pagination > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.market-pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.market-pagination__controls > span {
+  min-width: 7rem;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.market-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 75rem) {
+  .market-assets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .market-filters__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 50rem) {
+  .market-field--wide {
+    grid-column: auto;
+  }
+
+  .market-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .market-pagination__controls {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 36rem) {
+  .market-page__header,
+  .market-filters__header,
+  .market-results__header,
+  .market-asset__header {
+    flex-direction: column;
+  }
+
+  .market-filters__grid,
+  .market-assets {
+    grid-template-columns: 1fr;
+  }
+
+  .market-filters__actions {
+    justify-content: stretch;
+  }
+
+  .market-filters__actions .button {
+    width: 100%;
+  }
+
+  .market-pagination__controls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .market-pagination__controls > span {
+    order: -1;
+  }
+}

@@ -12,6 +12,16 @@ export const navigationItems: NavigationItem[] = [
     end: true,
   },
   {
+    label: 'Mercado',
+    to: '/app/market',
+    requiredPermissions: ['activos.leer'],
+  },
+  {
+    label: 'Sincronizaciones',
+    to: '/app/market/synchronizations',
+    requiredPermissions: ['trabajos.leer'],
+  },
+  {
     label: 'Perfil de riesgo',
     to: '/app/profile',
   },
