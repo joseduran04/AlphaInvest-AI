@@ -598,9 +598,10 @@ LANGUAGE plpgsql
 AS
 $$
 DECLARE
-    v_portafolio       portfolio.portafolios%ROWTYPE;
-    v_valor_posiciones NUMERIC(24,8);
-    v_valor_total      NUMERIC(24,8);
+    v_portafolio        portfolio.portafolios%ROWTYPE;
+    v_valor_posiciones  NUMERIC(24,8);
+    v_capital_invertido NUMERIC(24,8);
+    v_valor_total       NUMERIC(24,8);
     v_ganancia         NUMERIC(24,8);
     v_rendimiento      NUMERIC(16,8);
     v_valoracion_id    BIGINT;
@@ -649,8 +650,15 @@ BEGIN
         (
             SUM(valor_actual),
             0
+        ),
+        COALESCE
+        (
+            SUM(costo_total),
+            0
         )
-    INTO v_valor_posiciones
+    INTO
+        v_valor_posiciones,
+        v_capital_invertido
     FROM portfolio.posiciones
     WHERE portafolio_id = p_portafolio_id
       AND estado = 'ABIERTA'
@@ -731,7 +739,7 @@ BEGIN
         v_portafolio.saldo_efectivo,
         v_valor_posiciones,
         v_valor_total,
-        v_portafolio.capital_inicial,
+        v_capital_invertido,
         v_ganancia,
         v_rendimiento,
         v_portafolio.moneda_base,
