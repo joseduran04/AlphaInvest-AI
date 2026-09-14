@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+
 export function formatDashboardLabel(value: string | null | undefined): string {
   if (!value) {
     return 'No disponible'
@@ -28,24 +30,7 @@ export function formatDashboardDate(value: string | null | undefined): string {
 }
 
 export function formatDashboardMoney(value: string | null | undefined, currency: string): string {
-  if (value === null || value === undefined) {
-    return 'No disponible'
-  }
-
-  const parsedValue = Number(value)
-
-  if (!Number.isFinite(parsedValue)) {
-    return `${value} ${currency}`
-  }
-
-  try {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency,
-    }).format(parsedValue)
-  } catch {
-    return `${parsedValue.toFixed(2)} ${currency}`
-  }
+  return formatCurrency(value, currency)
 }
 
 export function formatDashboardPercentage(value: string | null | undefined): string {

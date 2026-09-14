@@ -15,9 +15,28 @@ export type CurrentRiskProfileResponse = components['schemas']['CurrentRiskProfi
 export type RiskEvaluationResponse = components['schemas']['RiskEvaluationResponse']
 export type RiskProfileHistoryResponse = components['schemas']['RiskProfileHistoryResponse']
 
+export type PortfolioCreateRequest = components['schemas']['PortfolioCreateRequest']
+export type PortfolioUpdateRequest = components['schemas']['PortfolioUpdateRequest']
+export type PortfolioResponse = components['schemas']['PortfolioResponse']
 export type PortfolioListResponse = components['schemas']['PortfolioListResponse']
 export type PortfolioOverviewResponse = components['schemas']['PortfolioOverviewResponse']
+export type PortfolioCloseResponse = components['schemas']['PortfolioCloseResponse']
 export type PortfolioStatus = components['schemas']['PortfolioStatus']
+export type PortfolioType = components['schemas']['PortfolioType']
+
+export type PositionCreateRequest = components['schemas']['PositionCreateRequest']
+export type PositionUpdateRequest = components['schemas']['PositionUpdateRequest']
+export type PositionResponse = components['schemas']['PositionResponse']
+export type PositionListResponse = components['schemas']['PositionListResponse']
+export type PositionStatus = components['schemas']['PositionStatus']
+
+export type AssetAllocationResponse = components['schemas']['AssetAllocationResponse']
+export type SectorAllocationResponse = components['schemas']['SectorAllocationResponse']
+
+export type PortfolioValuationCreateRequest =
+  components['schemas']['PortfolioValuationCreateRequest']
+export type PortfolioValuationResponse = components['schemas']['PortfolioValuationResponse']
+export type PortfolioValuationListResponse = components['schemas']['PortfolioValuationListResponse']
 
 export type SimulationExecutionListResponse =
   components['schemas']['SimulationExecutionListResponse']
@@ -50,6 +69,18 @@ export type IndicatorCalculationResponse = components['schemas']['IndicatorCalcu
 export type JobExecutionListResponse = components['schemas']['JobExecutionListResponse']
 export type JobExecutionResponse = components['schemas']['JobExecutionResponse']
 export type JobExecutionStatus = components['schemas']['JobExecutionStatus']
+
+export type PortfolioListQuery = NonNullable<
+  paths['/api/v1/portfolios']['get']['parameters']['query']
+>
+
+export type PortfolioPositionListQuery = NonNullable<
+  paths['/api/v1/portfolios/{portfolio_id}/positions']['get']['parameters']['query']
+>
+
+export type PortfolioValuationListQuery = NonNullable<
+  paths['/api/v1/portfolios/{portfolio_id}/valuations']['get']['parameters']['query']
+>
 
 export type MarketListQuery = NonNullable<
   paths['/api/v1/market/markets']['get']['parameters']['query']

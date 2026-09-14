@@ -7,6 +7,8 @@ import { AssetDetailPage } from '@/features/market/pages/AssetDetailPage'
 import { MarketPage } from '@/features/market/pages/MarketPage'
 import { MarketSynchronizationDetailPage } from '@/features/market/pages/MarketSynchronizationDetailPage'
 import { MarketSynchronizationsPage } from '@/features/market/pages/MarketSynchronizationsPage'
+import { PortfolioDetailPage } from '@/features/portfolio/pages/PortfolioDetailPage'
+import { PortfoliosPage } from '@/features/portfolio/pages/PortfoliosPage'
 import { RiskProfilePage } from '@/features/profile/pages/RiskProfilePage'
 import { ApplicationLayout } from '@/layouts/ApplicationLayout'
 import { ForbiddenPage } from '@/pages/ForbiddenPage'
@@ -37,6 +39,11 @@ export function AppRouter() {
               path="/app/market/synchronizations/:executionId"
               element={<MarketSynchronizationDetailPage />}
             />
+          </Route>
+
+          <Route element={<PermissionRoute requiredPermissions={['portafolios.leer']} />}>
+            <Route path="/app/portfolios" element={<PortfoliosPage />} />
+            <Route path="/app/portfolios/:portfolioId" element={<PortfolioDetailPage />} />
           </Route>
 
           <Route path="/forbidden" element={<ForbiddenPage />} />

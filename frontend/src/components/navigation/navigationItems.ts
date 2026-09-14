@@ -17,6 +17,11 @@ export const navigationItems: NavigationItem[] = [
     requiredPermissions: ['activos.leer'],
   },
   {
+    label: 'Portafolios',
+    to: '/app/portfolios',
+    requiredPermissions: ['portafolios.leer'],
+  },
+  {
     label: 'Sincronizaciones',
     to: '/app/market/synchronizations',
     requiredPermissions: ['trabajos.leer'],
