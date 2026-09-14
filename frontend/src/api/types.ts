@@ -38,9 +38,45 @@ export type PortfolioValuationCreateRequest =
 export type PortfolioValuationResponse = components['schemas']['PortfolioValuationResponse']
 export type PortfolioValuationListResponse = components['schemas']['PortfolioValuationListResponse']
 
+export type ContributionFrequency = components['schemas']['ContributionFrequency']
+export type SimulationType = components['schemas']['SimulationType']
+export type SimulationConfigurationStatus = components['schemas']['SimulationConfigurationStatus']
+
+export type SimulationConfigurationCreateRequest =
+  components['schemas']['SimulationConfigurationCreateRequest']
+export type SimulationConfigurationUpdateRequest =
+  components['schemas']['SimulationConfigurationUpdateRequest']
+export type SimulationConfigurationResponse =
+  components['schemas']['SimulationConfigurationResponse']
+export type SimulationConfigurationListResponse =
+  components['schemas']['SimulationConfigurationListResponse']
+export type SimulationConfigurationArchiveResponse =
+  components['schemas']['SimulationConfigurationArchiveResponse']
+
+export type SimulationConfigurationAssetCreateRequest =
+  components['schemas']['SimulationConfigurationAssetCreateRequest']
+export type SimulationConfigurationAssetUpdateRequest =
+  components['schemas']['SimulationConfigurationAssetUpdateRequest']
+export type SimulationConfigurationAssetResponse =
+  components['schemas']['SimulationConfigurationAssetResponse']
+export type SimulationConfigurationAssetListResponse =
+  components['schemas']['SimulationConfigurationAssetListResponse']
+
+export type SimulationDistributionStatusResponse =
+  components['schemas']['SimulationDistributionStatusResponse']
+export type SimulationConfigurationReadyResponse =
+  components['schemas']['SimulationConfigurationReadyResponse']
+
+export type SimulationExecutionCreateRequest =
+  components['schemas']['SimulationExecutionCreateRequest']
+export type SimulationExecutionResponse = components['schemas']['SimulationExecutionResponse']
 export type SimulationExecutionListResponse =
   components['schemas']['SimulationExecutionListResponse']
+export type SimulationExecutionCancelResponse =
+  components['schemas']['SimulationExecutionCancelResponse']
 export type SimulationExecutionStatus = components['schemas']['SimulationExecutionStatus']
+
+export type SimulationResultResponse = components['schemas']['SimulationResultResponse']
 
 export type NotificationListResponse = components['schemas']['NotificationListResponse']
 export type UnreadNotificationCountResponse =
@@ -80,6 +116,14 @@ export type PortfolioPositionListQuery = NonNullable<
 
 export type PortfolioValuationListQuery = NonNullable<
   paths['/api/v1/portfolios/{portfolio_id}/valuations']['get']['parameters']['query']
+>
+
+export type SimulationConfigurationListQuery = NonNullable<
+  paths['/api/v1/simulations/configurations']['get']['parameters']['query']
+>
+
+export type SimulationExecutionListQuery = NonNullable<
+  paths['/api/v1/simulations/executions']['get']['parameters']['query']
 >
 
 export type MarketListQuery = NonNullable<
