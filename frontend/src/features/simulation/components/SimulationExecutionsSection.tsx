@@ -6,6 +6,7 @@ import type {
   SimulationExecutionResponse,
   SimulationExecutionStatus,
 } from '@/api/types'
+import { CancelSimulationExecutionSection } from '@/features/simulation/components/CancelSimulationExecutionSection'
 import { useCreateSimulationExecution } from '@/features/simulation/hooks/useCreateSimulationExecution'
 import { useSimulationExecutions } from '@/features/simulation/hooks/useSimulationExecutions'
 
@@ -80,7 +81,13 @@ function getCreateExecutionErrorMessage(error: Error): string {
   return error.message
 }
 
-function SimulationExecutionItem({ execution }: { execution: SimulationExecutionResponse }) {
+function SimulationExecutionItem({
+  execution,
+  canExecute,
+}: {
+  execution: SimulationExecutionResponse
+  canExecute: boolean
+}) {
   return (
     <article className="simulation-execution-card">
       <div className="simulation-execution-card__header">
@@ -124,6 +131,8 @@ function SimulationExecutionItem({ execution }: { execution: SimulationExecution
           <span>{execution.mensaje_error}</span>
         </div>
       ) : null}
+
+      <CancelSimulationExecutionSection execution={execution} canExecute={canExecute} />
     </article>
   )
 }
@@ -198,6 +207,16 @@ export function SimulationExecutionsSection({
         ) : null}
       </header>
 
+      {hasActiveExecution ? (
+        <div className="simulation-execution-tracking" role="status">
+          <span className="simulation-execution-tracking__indicator" />
+          <span>
+            La ejecución está siendo seguida automáticamente. Su estado se actualizará sin recargar
+            la página.
+          </span>
+        </div>
+      ) : null}
+
       {confirmExecution ? (
         <div className="simulation-execution-confirmation">
           <div>
@@ -266,7 +285,11 @@ export function SimulationExecutionsSection({
       {executionsQuery.isSuccess && executions.length > 0 ? (
         <div className="simulation-executions-list">
           {executions.map((execution) => (
-            <SimulationExecutionItem key={execution.id} execution={execution} />
+            <SimulationExecutionItem
+              key={execution.id}
+              execution={execution}
+              canExecute={canExecute}
+            />
           ))}
         </div>
       ) : null}
