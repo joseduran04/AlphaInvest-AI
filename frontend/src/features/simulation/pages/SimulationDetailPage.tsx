@@ -13,6 +13,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ArchiveSimulationConfigurationSection } from '@/features/simulation/components/ArchiveSimulationConfigurationSection'
 import { EditSimulationConfigurationForm } from '@/features/simulation/components/EditSimulationConfigurationForm'
 import { SimulationAssetsSection } from '@/features/simulation/components/SimulationAssetsSection'
+import { SimulationExecutionsSection } from '@/features/simulation/components/SimulationExecutionsSection'
 import { useSimulationConfiguration } from '@/features/simulation/hooks/useSimulationConfiguration'
 import { formatCurrency } from '@/lib/formatters'
 
@@ -117,6 +118,8 @@ export function SimulationDetailPage() {
 
   const canUpdate = hasPermission('simulaciones.actualizar')
   const canArchive = hasPermission('simulaciones.archivar')
+  const canReadExecutions = hasPermission('simulaciones.leer')
+  const canExecute = hasPermission('simulaciones.ejecutar')
 
   const configurationQuery = useSimulationConfiguration(normalizedConfigurationId)
 
@@ -314,6 +317,13 @@ export function SimulationDetailPage() {
         status={configuration.estado}
         currency={configuration.moneda_base}
         canUpdate={canUpdate}
+      />
+
+      <SimulationExecutionsSection
+        configurationId={configuration.id}
+        configurationStatus={configuration.estado}
+        canRead={canReadExecutions}
+        canExecute={canExecute}
       />
 
       {!isDraft ? (

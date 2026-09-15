@@ -770,3 +770,126 @@
     width: 100%;
   }
 }
+
+.simulation-executions-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.simulation-execution-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.simulation-execution-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.simulation-execution-card__header > div {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.simulation-execution-card__header strong {
+  overflow-wrap: anywhere;
+}
+
+.simulation-execution-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.simulation-execution-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.simulation-execution-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.simulation-execution-grid > div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.simulation-execution-grid dt {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.simulation-execution-grid dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.simulation-execution-card__error {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.simulation-execution-confirmation {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.simulation-execution-confirmation > div:first-child {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.simulation-execution-confirmation span,
+.simulation-execution-state {
+  color: var(--color-text-muted);
+}
+
+.simulation-execution-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 48rem) {
+  .simulation-execution-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 36rem) {
+  .simulation-execution-card__header,
+  .simulation-execution-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .simulation-execution-grid {
+    grid-template-columns: 1fr;
+  }
+}
