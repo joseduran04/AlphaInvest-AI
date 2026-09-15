@@ -12,6 +12,7 @@ import { PageLoadingState } from '@/components/PageLoadingState'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ArchiveSimulationConfigurationSection } from '@/features/simulation/components/ArchiveSimulationConfigurationSection'
 import { EditSimulationConfigurationForm } from '@/features/simulation/components/EditSimulationConfigurationForm'
+import { SimulationAssetsSection } from '@/features/simulation/components/SimulationAssetsSection'
 import { useSimulationConfiguration } from '@/features/simulation/hooks/useSimulationConfiguration'
 import { formatCurrency } from '@/lib/formatters'
 
@@ -307,6 +308,13 @@ export function SimulationDetailPage() {
           </div>
         </dl>
       </section>
+
+      <SimulationAssetsSection
+        configurationId={configuration.id}
+        status={configuration.estado}
+        currency={configuration.moneda_base}
+        canUpdate={canUpdate}
+      />
 
       {!isDraft ? (
         <section className="simulation-detail-section">
