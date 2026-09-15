@@ -9,6 +9,7 @@ import { SimulationAssetItem } from '@/features/simulation/components/Simulation
 import { useSimulationConfigurationAssets } from '@/features/simulation/hooks/useSimulationConfigurationAssets'
 import { useSimulationDistribution } from '@/features/simulation/hooks/useSimulationDistribution'
 import { formatCurrency } from '@/lib/formatters'
+import { MarkSimulationReadySection } from '@/features/simulation/components/MarkSimulationReadySection'
 
 interface SimulationAssetsSectionProps {
   configurationId: string
@@ -187,6 +188,12 @@ export function SimulationAssetsSection({
           ))}
         </div>
       )}
+      <MarkSimulationReadySection
+        configurationId={configurationId}
+        status={status}
+        distribution={distribution}
+        canUpdate={canUpdate}
+      />
     </section>
   )
 }
