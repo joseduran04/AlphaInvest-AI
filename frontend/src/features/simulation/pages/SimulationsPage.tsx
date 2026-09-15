@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 
 import type { SimulationConfigurationListQuery, SimulationConfigurationStatus } from '@/api/types'
 import { PageEmptyState } from '@/components/PageEmptyState'
@@ -234,6 +235,13 @@ export function SimulationsPage() {
                     La configuración de activos, distribución y ejecución estará disponible en el
                     detalle de la simulación.
                   </p>
+
+                  <Link
+                    className="simulation-card__detail-link"
+                    to={`/app/simulations/${configuration.id}`}
+                  >
+                    Ver configuración
+                  </Link>
                 </article>
               ))}
             </div>
