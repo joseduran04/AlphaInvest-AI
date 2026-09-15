@@ -10,6 +10,7 @@ import { MarketSynchronizationsPage } from '@/features/market/pages/MarketSynchr
 import { PortfolioDetailPage } from '@/features/portfolio/pages/PortfolioDetailPage'
 import { PortfoliosPage } from '@/features/portfolio/pages/PortfoliosPage'
 import { RiskProfilePage } from '@/features/profile/pages/RiskProfilePage'
+import { SimulationsPage } from '@/features/simulation/pages/SimulationsPage'
 import { ApplicationLayout } from '@/layouts/ApplicationLayout'
 import { ForbiddenPage } from '@/pages/ForbiddenPage'
 import { HomePage } from '@/pages/HomePage'
@@ -44,6 +45,10 @@ export function AppRouter() {
           <Route element={<PermissionRoute requiredPermissions={['portafolios.leer']} />}>
             <Route path="/app/portfolios" element={<PortfoliosPage />} />
             <Route path="/app/portfolios/:portfolioId" element={<PortfolioDetailPage />} />
+          </Route>
+
+          <Route element={<PermissionRoute requiredPermissions={['simulaciones.leer']} />}>
+            <Route path="/app/simulations" element={<SimulationsPage />} />
           </Route>
 
           <Route path="/forbidden" element={<ForbiddenPage />} />

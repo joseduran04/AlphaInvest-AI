@@ -22,6 +22,11 @@ export const navigationItems: NavigationItem[] = [
     requiredPermissions: ['portafolios.leer'],
   },
   {
+    label: 'Simulaciones',
+    to: '/app/simulations',
+    requiredPermissions: ['simulaciones.leer'],
+  },
+  {
     label: 'Sincronizaciones',
     to: '/app/market/synchronizations',
     requiredPermissions: ['trabajos.leer'],
