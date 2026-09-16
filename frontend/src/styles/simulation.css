@@ -935,3 +935,123 @@
 .simulation-execution-cancel__confirmation span {
   color: var(--color-text-muted);
 }
+
+.simulation-execution-result {
+  display: grid;
+  gap: 1rem;
+}
+
+.simulation-result-panel {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.simulation-result-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.simulation-result-panel__header h3,
+.simulation-result-subsection h4 {
+  margin: 0;
+}
+
+.simulation-result-summary,
+.simulation-result-metrics,
+.simulation-result-asset__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.simulation-result-summary > div,
+.simulation-result-metrics > div,
+.simulation-result-asset__grid > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.simulation-result-summary dt,
+.simulation-result-metrics dt,
+.simulation-result-asset__grid dt {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.simulation-result-summary dd,
+.simulation-result-metrics dd,
+.simulation-result-asset__grid dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.simulation-result-subsection {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.simulation-result-assets {
+  display: grid;
+  gap: 1rem;
+}
+
+.simulation-result-asset {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.simulation-result-asset__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.simulation-result-asset__header > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.simulation-result-asset__header span {
+  color: var(--color-text-muted);
+}
+
+.simulation-result-market-warning {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .simulation-result-summary,
+  .simulation-result-metrics,
+  .simulation-result-asset__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .simulation-result-panel__header,
+  .simulation-result-asset__header {
+    flex-direction: column;
+  }
+
+  .simulation-result-summary,
+  .simulation-result-metrics,
+  .simulation-result-asset__grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -77,6 +77,7 @@ export type SimulationExecutionCancelResponse =
 export type SimulationExecutionStatus = components['schemas']['SimulationExecutionStatus']
 
 export type SimulationResultResponse = components['schemas']['SimulationResultResponse']
+export type SimulationAssetResultResponse = components['schemas']['SimulationAssetResultResponse']
 
 export type NotificationListResponse = components['schemas']['NotificationListResponse']
 export type UnreadNotificationCountResponse =

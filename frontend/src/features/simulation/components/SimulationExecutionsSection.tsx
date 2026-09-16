@@ -9,6 +9,7 @@ import type {
 import { CancelSimulationExecutionSection } from '@/features/simulation/components/CancelSimulationExecutionSection'
 import { useCreateSimulationExecution } from '@/features/simulation/hooks/useCreateSimulationExecution'
 import { useSimulationExecutions } from '@/features/simulation/hooks/useSimulationExecutions'
+import { SimulationResultSection } from '@/features/simulation/components/SimulationResultSection'
 
 interface SimulationExecutionsSectionProps {
   configurationId: string
@@ -88,6 +89,8 @@ function SimulationExecutionItem({
   execution: SimulationExecutionResponse
   canExecute: boolean
 }) {
+  const [showResult, setShowResult] = useState(false)
+
   return (
     <article className="simulation-execution-card">
       <div className="simulation-execution-card__header">
@@ -129,6 +132,25 @@ function SimulationExecutionItem({
         <div className="simulation-execution-card__error">
           <strong>Error de ejecución</strong>
           <span>{execution.mensaje_error}</span>
+        </div>
+      ) : null}
+
+      {execution.estado === 'COMPLETADA' ? (
+        <div className="simulation-execution-result">
+          {!showResult ? (
+            <button
+              className="button button--secondary"
+              type="button"
+              onClick={() => setShowResult(true)}
+            >
+              Ver resultados
+            </button>
+          ) : (
+            <SimulationResultSection
+              executionId={execution.id}
+              onClose={() => setShowResult(false)}
+            />
+          )}
         </div>
       ) : null}
 
