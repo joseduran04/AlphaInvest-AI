@@ -27,6 +27,11 @@ export const navigationItems: NavigationItem[] = [
     requiredPermissions: ['simulaciones.leer'],
   },
   {
+    label: 'Inteligencia artificial',
+    to: '/app/ai',
+    requiredPermissions: ['analisis.leer', 'activos.leer'],
+  },
+  {
     label: 'Sincronizaciones',
     to: '/app/market/synchronizations',
     requiredPermissions: ['trabajos.leer'],

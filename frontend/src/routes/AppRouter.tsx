@@ -12,6 +12,7 @@ import { PortfoliosPage } from '@/features/portfolio/pages/PortfoliosPage'
 import { RiskProfilePage } from '@/features/profile/pages/RiskProfilePage'
 import { SimulationDetailPage } from '@/features/simulation/pages/SimulationDetailPage'
 import { SimulationsPage } from '@/features/simulation/pages/SimulationsPage'
+import { AiAnalysisPage } from '@/features/ai/pages/AiAnalysisPage'
 import { ApplicationLayout } from '@/layouts/ApplicationLayout'
 import { ForbiddenPage } from '@/pages/ForbiddenPage'
 import { HomePage } from '@/pages/HomePage'
@@ -51,6 +52,11 @@ export function AppRouter() {
           <Route element={<PermissionRoute requiredPermissions={['simulaciones.leer']} />}>
             <Route path="/app/simulations" element={<SimulationsPage />} />
             <Route path="/app/simulations/:configurationId" element={<SimulationDetailPage />} />
+          </Route>
+          <Route
+            element={<PermissionRoute requiredPermissions={['analisis.leer', 'activos.leer']} />}
+          >
+            <Route path="/app/ai" element={<AiAnalysisPage />} />
           </Route>
 
           <Route path="/forbidden" element={<ForbiddenPage />} />

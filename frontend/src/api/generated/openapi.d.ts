@@ -1043,6 +1043,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/sentiment-analysis-requests/{request_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultar resultado de análisis de sentimiento
+         * @description Consulta el resultado persistido de una solicitud SENTIMIENTO completada perteneciente al usuario autenticado.
+         */
+        get: operations["get_sentiment_analysis_result_api_v1_ai_sentiment_analysis_requests__request_id__result_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/recommendation-requests": {
         parameters: {
             query?: never;
@@ -3719,6 +3739,61 @@ export interface components {
              * Format: date
              */
             reference_date: string;
+        };
+        /** SentimentAnalysisResultResponse */
+        SentimentAnalysisResultResponse: {
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /**
+             * Sentiment Analysis Id
+             * Format: uuid
+             */
+            sentiment_analysis_id: string;
+            /** Asset Id */
+            asset_id?: string | null;
+            /** News Reference Id */
+            news_reference_id?: string | null;
+            /**
+             * Model Version Id
+             * Format: uuid
+             */
+            model_version_id: string;
+            /** Source Type */
+            source_type: string;
+            /** Source Identifier */
+            source_identifier?: string | null;
+            /** Sentiment */
+            sentiment: string;
+            /** Score */
+            score: string;
+            /** Confidence */
+            confidence: string;
+            /** Positive Probability */
+            positive_probability?: string | null;
+            /** Neutral Probability */
+            neutral_probability?: string | null;
+            /** Negative Probability */
+            negative_probability?: string | null;
+            /** Relevance */
+            relevance?: string | null;
+            /** Language */
+            language?: string | null;
+            /** Detected Entities */
+            detected_entities?: {
+                [key: string]: unknown;
+            } | unknown[] | null;
+            /** Summary */
+            summary?: string | null;
+            /** Content Date */
+            content_date?: string | null;
+            /**
+             * Analyzed At
+             * Format: date-time
+             */
+            analyzed_at: string;
         };
         /** SimulationAssetResultResponse */
         SimulationAssetResultResponse: {
@@ -6548,6 +6623,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalysisRequestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sentiment_analysis_result_api_v1_ai_sentiment_analysis_requests__request_id__result_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SentimentAnalysisResultResponse"];
                 };
             };
             /** @description Validation Error */

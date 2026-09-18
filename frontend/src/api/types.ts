@@ -86,7 +86,33 @@ export type NotificationPriority = components['schemas']['NotificationPriority']
 
 export type RecommendationReportListResponse =
   components['schemas']['RecommendationReportListResponse']
+export type AnalysisHorizon = components['schemas']['AnalysisHorizon']
+export type AnalysisType = components['schemas']['AnalysisType']
+export type AnalysisRequestStatus = components['schemas']['AnalysisRequestStatus']
 
+export type AssetAnalysisRequestCreate = components['schemas']['AssetAnalysisRequestCreate']
+export type AnalysisRequestResponse = components['schemas']['AnalysisRequestResponse']
+export type AssetAnalysisResultResponse = components['schemas']['AssetAnalysisResultResponse']
+export type AssetPredictionProbabilitiesResponse =
+  components['schemas']['AssetPredictionProbabilitiesResponse']
+
+export type SentimentAnalysisRequestCreate = components['schemas']['SentimentAnalysisRequestCreate']
+export type SentimentAnalysisResultResponse =
+  components['schemas']['SentimentAnalysisResultResponse']
+
+export type NewsResponse = components['schemas']['NewsResponse']
+export type NewsListResponse = components['schemas']['NewsListResponse']
+
+export type AssetNewsListQuery = NonNullable<
+  paths['/api/v1/news/assets/{asset_id}']['get']['parameters']['query']
+>
+
+export type RecommendationRequestCreate = components['schemas']['RecommendationRequestCreate']
+export type RecommendationResultResponse = components['schemas']['RecommendationResultResponse']
+export type RecommendationAssetResponse = components['schemas']['RecommendationAssetResponse']
+export type RecommendationEvidenceResponse = components['schemas']['RecommendationEvidenceResponse']
+
+export type IntegralAnalysisRequestCreate = components['schemas']['IntegralAnalysisRequestCreate']
 export type AssetListResponse = components['schemas']['AssetListResponse']
 export type AssetResponse = components['schemas']['AssetResponse']
 export type AssetStatus = components['schemas']['AssetStatus']
