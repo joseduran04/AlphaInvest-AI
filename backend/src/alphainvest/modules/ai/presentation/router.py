@@ -49,6 +49,7 @@ from alphainvest.modules.ai.presentation.schemas import (
     RecommendationRequestCreate,
     RecommendationResultResponse,
     SentimentAnalysisRequestCreate,
+    SentimentAnalysisResultResponse,
 )
 
 router = APIRouter(
@@ -493,6 +494,47 @@ async def create_sentiment_analysis_request(
     except AnalysisRequestPersistenceError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        ) from error
+
+
+@router.get(
+    "/sentiment-analysis-requests/{request_id}/result",
+    response_model=SentimentAnalysisResultResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Consultar resultado de análisis de sentimiento",
+    description=(
+        "Consulta el resultado persistido de una solicitud "
+        "SENTIMIENTO completada perteneciente al usuario "
+        "autenticado."
+    ),
+)
+async def get_sentiment_analysis_result(
+    request_id: UUID,
+    context: AnalysisRequestReadContext,
+    service: AnalysisRequestServiceDependency,
+) -> SentimentAnalysisResultResponse:
+    try:
+        return await service.get_user_sentiment_result(
+            request_id=request_id,
+            user_id=context.user.id,
+        )
+
+    except AnalysisRequestNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+    except AnalysisResultNotReadyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        ) from error
+
+    except AnalysisResultNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
 

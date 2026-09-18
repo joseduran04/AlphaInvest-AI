@@ -53,6 +53,7 @@ async def bootstrap() -> None:
         prices = await provider.fetch_daily_prices(
             symbol=asset.simbolo,
             currency=asset.moneda,
+            asset_type=asset.tipo_activo.codigo,
         )
 
         print(f"Recibidos: {len(prices)}")

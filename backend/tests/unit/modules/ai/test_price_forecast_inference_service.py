@@ -36,17 +36,19 @@ async def test_predicts_price_from_median_return() -> None:
         )
     )
 
-    latest = SimpleNamespace(
-        price=SimpleNamespace(
-            date=date(2026, 8, 14),
-            close=Decimal("300"),
-            adjusted_close=Decimal("305"),
-        )
+    price = SimpleNamespace(
+        date=date(2026, 8, 14),
+        close=Decimal("300"),
+        adjusted_close=Decimal("305"),
+    )
+
+    history = SimpleNamespace(
+        items=[price],
     )
 
     market_service = SimpleNamespace(
-        get_latest_asset_price=AsyncMock(
-            return_value=latest
+        get_asset_price_history=AsyncMock(
+            return_value=history
         )
     )
 
@@ -55,10 +57,22 @@ async def test_predicts_price_from_median_return() -> None:
         market_service=market_service,
     )
 
+    reference_date = date(2026, 8, 14)
+
     result = await service.predict_latest(
         version_id=version_id,
         asset_id=asset_id,
         source_id=source_id,
+        reference_date=reference_date,
+    )
+
+    market_service.get_asset_price_history.assert_awaited_once_with(
+        asset_id=asset_id,
+        start_date=None,
+        end_date=reference_date,
+        source_id=source_id,
+        limit=1,
+        offset=0,
     )
 
     expected = (

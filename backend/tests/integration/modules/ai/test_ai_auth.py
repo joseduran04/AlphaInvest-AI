@@ -86,6 +86,17 @@ def test_ai_model_version_deactivation_requires_authentication(
     assert response.status_code == 401
 
 
+def test_sentiment_result_requires_authentication(
+    client: TestClient,
+) -> None:
+    response = client.get(
+        "/api/v1/ai/sentiment-analysis-requests/"
+        f"{uuid4()}/result"
+    )
+
+    assert response.status_code == 401
+
+
 def test_recommendation_creation_requires_authentication(
     client: TestClient,
 ) -> None:

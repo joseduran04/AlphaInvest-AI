@@ -404,6 +404,211 @@ async def test_creates_sentiment_request() -> None:
     repository.commit.assert_awaited_once()
 
 @pytest.mark.asyncio
+async def test_gets_sentiment_result() -> None:
+    request_id = uuid4()
+    user_id = uuid4()
+    asset_id = uuid4()
+    news_reference_id = uuid4()
+    model_version_id = uuid4()
+    sentiment_analysis_id = uuid4()
+
+    request = SimpleNamespace(
+        id=request_id,
+        usuario_id=user_id,
+        tipo_analisis="SENTIMIENTO",
+        estado="COMPLETADA",
+    )
+
+    analyzed_at = datetime(
+        2026,
+        9,
+        16,
+        tzinfo=UTC,
+    )
+
+    content_date = datetime(
+        2026,
+        9,
+        15,
+        tzinfo=UTC,
+    )
+
+    sentiment_analysis = SimpleNamespace(
+        id=sentiment_analysis_id,
+        solicitud_id=request_id,
+        activo_id=asset_id,
+        noticia_referencia_id=news_reference_id,
+        version_modelo_id=model_version_id,
+        tipo_fuente="NOTICIA",
+        identificador_fuente="mongo-document",
+        sentimiento="POSITIVO",
+        puntuacion=Decimal("0.65000000"),
+        confianza=Decimal("0.80000000"),
+        probabilidad_positiva=Decimal(
+            "0.80000000"
+        ),
+        probabilidad_neutral=Decimal(
+            "0.15000000"
+        ),
+        probabilidad_negativa=Decimal(
+            "0.05000000"
+        ),
+        relevancia=Decimal("0.90000000"),
+        idioma="en",
+        entidades_detectadas={
+            "symbols": ["AAPL"]
+        },
+        resumen="Resumen de prueba",
+        fecha_contenido=content_date,
+        fecha_analisis=analyzed_at,
+    )
+
+    repository = SimpleNamespace(
+        get_analysis_request_for_user=AsyncMock(
+            return_value=request
+        ),
+        get_sentiment_analysis_by_request=AsyncMock(
+            return_value=sentiment_analysis
+        ),
+    )
+
+    service = AnalysisRequestService(repository)
+
+    result = await service.get_user_sentiment_result(
+        request_id=request_id,
+        user_id=user_id,
+    )
+
+    assert result.request_id == request_id
+    assert (
+        result.sentiment_analysis_id
+        == sentiment_analysis_id
+    )
+    assert result.asset_id == asset_id
+    assert result.news_reference_id == news_reference_id
+    assert result.model_version_id == model_version_id
+    assert result.sentiment == "POSITIVO"
+    assert result.score == Decimal("0.65000000")
+    assert result.confidence == Decimal("0.80000000")
+    assert (
+        result.positive_probability
+        == Decimal("0.80000000")
+    )
+    assert result.analyzed_at == analyzed_at
+
+    (
+        repository
+        .get_analysis_request_for_user
+        .assert_awaited_once_with(
+            request_id=request_id,
+            user_id=user_id,
+        )
+    )
+
+    (
+        repository
+        .get_sentiment_analysis_by_request
+        .assert_awaited_once_with(
+            request_id=request_id
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_rejects_sentiment_result_for_foreign_request() -> None:
+    repository = SimpleNamespace(
+        get_analysis_request_for_user=AsyncMock(
+            return_value=None
+        )
+    )
+
+    service = AnalysisRequestService(repository)
+
+    with pytest.raises(
+        AnalysisRequestNotFoundError
+    ):
+        await service.get_user_sentiment_result(
+            request_id=uuid4(),
+            user_id=uuid4(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_rejects_sentiment_result_for_wrong_request_type() -> None:
+    request = SimpleNamespace(
+        tipo_analisis="ACTIVO",
+        estado="COMPLETADA",
+    )
+
+    repository = SimpleNamespace(
+        get_analysis_request_for_user=AsyncMock(
+            return_value=request
+        )
+    )
+
+    service = AnalysisRequestService(repository)
+
+    with pytest.raises(
+        AnalysisRequestNotFoundError
+    ):
+        await service.get_user_sentiment_result(
+            request_id=uuid4(),
+            user_id=uuid4(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_rejects_sentiment_result_when_not_completed() -> None:
+    request = SimpleNamespace(
+        tipo_analisis="SENTIMIENTO",
+        estado="EJECUTANDO",
+    )
+
+    repository = SimpleNamespace(
+        get_analysis_request_for_user=AsyncMock(
+            return_value=request
+        )
+    )
+
+    service = AnalysisRequestService(repository)
+
+    with pytest.raises(
+        AnalysisResultNotReadyError
+    ):
+        await service.get_user_sentiment_result(
+            request_id=uuid4(),
+            user_id=uuid4(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_rejects_missing_persisted_sentiment_result() -> None:
+    request = SimpleNamespace(
+        tipo_analisis="SENTIMIENTO",
+        estado="COMPLETADA",
+    )
+
+    repository = SimpleNamespace(
+        get_analysis_request_for_user=AsyncMock(
+            return_value=request
+        ),
+        get_sentiment_analysis_by_request=AsyncMock(
+            return_value=None
+        ),
+    )
+
+    service = AnalysisRequestService(repository)
+
+    with pytest.raises(
+        AnalysisResultNotFoundError
+    ):
+        await service.get_user_sentiment_result(
+            request_id=uuid4(),
+            user_id=uuid4(),
+        )
+
+
+@pytest.mark.asyncio
 async def test_creates_recommendation_request() -> None:
     user_id = uuid4()
     asset_id = uuid4()

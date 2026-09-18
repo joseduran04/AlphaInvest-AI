@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -32,20 +33,31 @@ class PriceForecastInferenceService:
         version_id: UUID,
         asset_id: UUID,
         source_id: UUID,
+        reference_date: date,
     ) -> PriceForecastPredictionResult:
         loaded = await self._runtime_service.load_version(
             version_id=version_id
         )
 
-        latest = (
+        history = (
             await self._market_service
-            .get_latest_asset_price(
+            .get_asset_price_history(
                 asset_id=asset_id,
+                start_date=None,
+                end_date=reference_date,
                 source_id=source_id,
+                limit=1,
+                offset=0,
             )
         )
 
-        price = latest.price
+        if not history.items:
+            raise ValueError(
+                "No existe un precio histórico disponible "
+                "hasta la fecha de referencia"
+            )
+
+        price = history.items[0]
 
         base_price = (
             price.adjusted_close

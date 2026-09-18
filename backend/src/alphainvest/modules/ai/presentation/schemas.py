@@ -305,6 +305,38 @@ class AssetAnalysisResultResponse(BaseModel):
     generated_at: datetime
 
 
+class SentimentAnalysisResultResponse(BaseModel):
+    request_id: UUID
+    sentiment_analysis_id: UUID
+
+    asset_id: UUID | None = None
+    news_reference_id: UUID | None = None
+
+    model_version_id: UUID
+
+    source_type: str
+    source_identifier: str | None = None
+
+    sentiment: str
+    score: Decimal
+    confidence: Decimal
+
+    positive_probability: Decimal | None = None
+    neutral_probability: Decimal | None = None
+    negative_probability: Decimal | None = None
+
+    relevance: Decimal | None = None
+    language: str | None = None
+
+    detected_entities: (
+        dict[str, Any] | list[Any] | None
+    ) = None
+
+    summary: str | None = None
+    content_date: datetime | None = None
+    analyzed_at: datetime
+
+
 class RecommendationAssetResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True

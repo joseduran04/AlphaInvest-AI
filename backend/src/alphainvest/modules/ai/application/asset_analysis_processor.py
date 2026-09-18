@@ -197,6 +197,9 @@ class AssetAnalysisProcessor:
                         ),
                         asset_id=asset_id,
                         source_id=price_source_id,
+                        reference_date=(
+                            analysis_request.fecha_referencia
+                        ),
                     )
                 )
 

@@ -381,6 +381,7 @@ async def test_processes_trend_and_price_forecast() -> None:
             request.parametros["asset_id"]
         ),
         source_id=source_id,
+        reference_date=request.fecha_referencia,
     )
 
     market_repository.get_asset.assert_awaited_once_with(
@@ -487,6 +488,7 @@ async def test_resolves_runtime_automatically() -> None:
             request.parametros["asset_id"]
         ),
         source_id=source_id,
+        reference_date=request.fecha_referencia,
     )
 
     assert result.prediction is trend_prediction

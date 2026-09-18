@@ -29,6 +29,7 @@ from alphainvest.modules.ai.presentation.schemas import (
     RecommendationRequestCreate,
     RecommendationResultResponse,
     SentimentAnalysisRequestCreate,
+    SentimentAnalysisResultResponse,
 )
 
 
@@ -562,6 +563,96 @@ class AnalysisRequestService:
             ),
             generated_at=(
                 prediction.fecha_generacion
+            ),
+        )
+
+    async def get_user_sentiment_result(
+        self,
+        *,
+        request_id: UUID,
+        user_id: UUID,
+    ) -> SentimentAnalysisResultResponse:
+        analysis_request = (
+            await self._repository
+            .get_analysis_request_for_user(
+                request_id=request_id,
+                user_id=user_id,
+            )
+        )
+
+        if (
+            analysis_request is None
+            or analysis_request.tipo_analisis
+            != AnalysisType.SENTIMENT.value
+        ):
+            raise AnalysisRequestNotFoundError(
+                "La solicitud de análisis de sentimiento "
+                "no existe"
+            )
+
+        if (
+            analysis_request.estado
+            != AnalysisRequestStatus.COMPLETED.value
+        ):
+            raise AnalysisResultNotReadyError(
+                "La solicitud todavía no tiene "
+                "un análisis de sentimiento disponible"
+            )
+
+        sentiment_analysis = (
+            await self._repository
+            .get_sentiment_analysis_by_request(
+                request_id=request_id
+            )
+        )
+
+        if sentiment_analysis is None:
+            raise AnalysisResultNotFoundError(
+                "La solicitud fue completada pero "
+                "no existe un análisis de sentimiento "
+                "persistido"
+            )
+
+        return SentimentAnalysisResultResponse(
+            request_id=sentiment_analysis.solicitud_id,
+            sentiment_analysis_id=sentiment_analysis.id,
+            asset_id=sentiment_analysis.activo_id,
+            news_reference_id=(
+                sentiment_analysis.noticia_referencia_id
+            ),
+            model_version_id=(
+                sentiment_analysis.version_modelo_id
+            ),
+            source_type=sentiment_analysis.tipo_fuente,
+            source_identifier=(
+                sentiment_analysis.identificador_fuente
+            ),
+            sentiment=sentiment_analysis.sentimiento,
+            score=sentiment_analysis.puntuacion,
+            confidence=sentiment_analysis.confianza,
+            positive_probability=(
+                sentiment_analysis
+                .probabilidad_positiva
+            ),
+            neutral_probability=(
+                sentiment_analysis
+                .probabilidad_neutral
+            ),
+            negative_probability=(
+                sentiment_analysis
+                .probabilidad_negativa
+            ),
+            relevance=sentiment_analysis.relevancia,
+            language=sentiment_analysis.idioma,
+            detected_entities=(
+                sentiment_analysis.entidades_detectadas
+            ),
+            summary=sentiment_analysis.resumen,
+            content_date=(
+                sentiment_analysis.fecha_contenido
+            ),
+            analyzed_at=(
+                sentiment_analysis.fecha_analisis
             ),
         )
 
