@@ -7,6 +7,7 @@ import type {
 } from '@/api/types'
 import { PageErrorState } from '@/components/PageErrorState'
 import { PageLoadingState } from '@/components/PageLoadingState'
+import { AiRequestProgress } from '@/features/ai/components/AiRequestProgress'
 import { AssetAnalysisForm } from '@/features/ai/components/AssetAnalysisForm'
 import { AssetAnalysisResult } from '@/features/ai/components/AssetAnalysisResult'
 import {
@@ -35,6 +36,7 @@ import { useSentimentAnalysisResult } from '@/features/ai/hooks/useSentimentAnal
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAssets } from '@/features/market/hooks/useAssets'
 import { useAssetNews } from '@/features/news/hooks/useAssetNews'
+import { usePortfolios } from '@/features/portfolio/hooks/usePortfolios'
 
 import '@/styles/ai.css'
 
@@ -62,6 +64,7 @@ export function AiAnalysisPage() {
   const canReadAssets = hasPermission('activos.leer')
   const canRequestAnalysis = hasPermission('analisis.solicitar')
   const canReadNews = hasPermission('noticias.leer')
+  const canReadPortfolios = hasPermission('portafolios.leer')
 
   const [analysisMode, setAnalysisMode] = useState<AiAnalysisMode>('prediction')
 
@@ -102,6 +105,11 @@ export function AiAnalysisPage() {
       offset: 0,
     },
     canReadAnalysis && canReadAssets,
+  )
+
+  const portfoliosQuery = usePortfolios(
+    {},
+    canReadAnalysis && canReadPortfolios && analysisMode === 'recommendation',
   )
 
   const predictionRequestQuery = useAssetAnalysisRequest(
@@ -192,6 +200,12 @@ export function AiAnalysisPage() {
   )
 
   const assets = useMemo(() => assetsQuery.data?.items ?? [], [assetsQuery.data?.items])
+
+  const portfolios = useMemo(
+    () => (portfoliosQuery.data?.items ?? []).filter((portfolio) => portfolio.estado === 'ACTIVO'),
+    [portfoliosQuery.data?.items],
+  )
+
   const news = useMemo(() => newsQuery.data?.items ?? [], [newsQuery.data?.items])
 
   const selectedPredictionAsset = useMemo(() => {
@@ -262,6 +276,7 @@ export function AiAnalysisPage() {
       .mutateAsync({
         asset_id: recommendationInput.asset_id,
         prediction_request_id: recommendationPredictionRequestId,
+        portfolio_id: recommendationInput.portfolio_id,
         horizon: recommendationInput.horizon,
         reference_date: recommendationInput.reference_date,
       })
@@ -668,12 +683,12 @@ export function AiAnalysisPage() {
               </span>
             </header>
 
-            <div className="ai-request__processing">
-              <strong>Analizando el activo</strong>
-              <p>Generando la predicción base necesaria para el análisis integral.</p>
-              <progress max={100} value={integralPredictionQuery.data.progress_percentage} />
-              <span>{integralPredictionQuery.data.progress_percentage} %</span>
-            </div>
+            <AiRequestProgress
+              status={integralPredictionQuery.data.status}
+              progressPercentage={integralPredictionQuery.data.progress_percentage}
+              executingTitle="Analizando el activo"
+              executingDescription="Generando la predicción base necesaria para el análisis integral."
+            />
           </section>
         ) : integralInput?.news_reference_id && !integralSentimentRequestId ? (
           createIntegralSentiment.isError ? (
@@ -724,17 +739,16 @@ export function AiAnalysisPage() {
               ) : null}
             </header>
 
-            <div className="ai-request__processing">
-              <strong>Evaluando la noticia</strong>
-              <p>
-                El modelo está incorporando el sentimiento como evidencia del análisis integral.
-              </p>
-              <progress
-                max={100}
-                value={integralSentimentQuery.data?.progress_percentage ?? '0.0000'}
+            {integralSentimentQuery.data ? (
+              <AiRequestProgress
+                status={integralSentimentQuery.data.status}
+                progressPercentage={integralSentimentQuery.data.progress_percentage}
+                executingTitle="Evaluando la noticia"
+                executingDescription="El modelo está incorporando el sentimiento como evidencia del análisis integral."
               />
-              <span>{integralSentimentQuery.data?.progress_percentage ?? '0.0000'} %</span>
-            </div>
+            ) : (
+              <PageLoadingState message="Consultando el análisis de sentimiento..." />
+            )}
           </section>
         ) : !integralRequestId ? (
           createIntegral.isError ? (
@@ -772,15 +786,14 @@ export function AiAnalysisPage() {
               </span>
             </header>
 
-            <div className="ai-request__processing">
-              <strong>Construyendo recomendación integral</strong>
-              <p>
-                AlphaInvest AI está integrando la predicción, el contexto disponible
-                {integralInput?.news_reference_id ? ' y el análisis de sentimiento' : ''}.
-              </p>
-              <progress max={100} value={integralRequestQuery.data.progress_percentage} />
-              <span>{integralRequestQuery.data.progress_percentage} %</span>
-            </div>
+            <AiRequestProgress
+              status={integralRequestQuery.data.status}
+              progressPercentage={integralRequestQuery.data.progress_percentage}
+              executingTitle="Construyendo recomendación integral"
+              executingDescription={`AlphaInvest AI está integrando la predicción, el contexto disponible${
+                integralInput?.news_reference_id ? ' y el análisis de sentimiento' : ''
+              }.`}
+            />
           </section>
         ) : integralRequestQuery.data.status === 'FALLIDA' ? (
           <PageErrorState
@@ -811,7 +824,20 @@ export function AiAnalysisPage() {
       ) : analysisMode === 'recommendation' ? (
         !recommendationStarted ? (
           canRequestAnalysis ? (
-            <RecommendationForm assets={assets} onSubmit={handleRecommendationSubmit} />
+            <RecommendationForm
+              assets={assets}
+              portfolios={portfolios}
+              portfoliosLoading={canReadPortfolios && portfoliosQuery.isPending}
+              portfoliosError={
+                canReadPortfolios && portfoliosQuery.isError
+                  ? portfoliosQuery.error.message
+                  : undefined
+              }
+              onRetryPortfolios={() => {
+                void portfoliosQuery.refetch()
+              }}
+              onSubmit={handleRecommendationSubmit}
+            />
           ) : (
             <PageErrorState
               title="Solicitud de análisis restringida"
@@ -859,15 +885,12 @@ export function AiAnalysisPage() {
               </span>
             </header>
 
-            <div className="ai-request__processing">
-              <strong>Analizando el activo</strong>
-              <p>
-                AlphaInvest AI está generando la predicción que servirá como base para la
-                recomendación.
-              </p>
-              <progress max={100} value={recommendationPredictionQuery.data.progress_percentage} />
-              <span>{recommendationPredictionQuery.data.progress_percentage} %</span>
-            </div>
+            <AiRequestProgress
+              status={recommendationPredictionQuery.data.status}
+              progressPercentage={recommendationPredictionQuery.data.progress_percentage}
+              executingTitle="Analizando el activo"
+              executingDescription="AlphaInvest AI está generando la predicción que servirá como base para la recomendación."
+            />
           </section>
         ) : !recommendationRequestId ? (
           createRecommendation.isError ? (
@@ -905,15 +928,12 @@ export function AiAnalysisPage() {
               </span>
             </header>
 
-            <div className="ai-request__processing">
-              <strong>Evaluando señales</strong>
-              <p>
-                El motor está evaluando la predicción y el contexto disponible para construir una
-                recomendación explicable.
-              </p>
-              <progress max={100} value={recommendationRequestQuery.data.progress_percentage} />
-              <span>{recommendationRequestQuery.data.progress_percentage} %</span>
-            </div>
+            <AiRequestProgress
+              status={recommendationRequestQuery.data.status}
+              progressPercentage={recommendationRequestQuery.data.progress_percentage}
+              executingTitle="Evaluando señales"
+              executingDescription="El motor está evaluando la predicción y el contexto disponible para construir una recomendación explicable."
+            />
           </section>
         ) : recommendationRequestQuery.data.status === 'FALLIDA' ? (
           <PageErrorState
@@ -1009,26 +1029,20 @@ export function AiAnalysisPage() {
                 void activeRequestQuery.refetch()
               }}
             />
-          ) : activeRequestQuery.data.status === 'PENDIENTE' ? (
-            <div className="ai-request__processing">
-              <strong>Análisis pendiente</strong>
-              <p>
-                La solicitud está esperando ser procesada por el motor de inteligencia artificial.
-              </p>
-              <progress max={100} value={activeRequestQuery.data.progress_percentage} />
-              <span>{activeRequestQuery.data.progress_percentage} %</span>
-            </div>
-          ) : activeRequestQuery.data.status === 'EJECUTANDO' ? (
-            <div className="ai-request__processing">
-              <strong>Analizando información</strong>
-              <p>
-                {analysisMode === 'prediction'
+          ) : activeRequestQuery.data.status === 'PENDIENTE' ||
+            activeRequestQuery.data.status === 'EJECUTANDO' ? (
+            <AiRequestProgress
+              status={activeRequestQuery.data.status}
+              progressPercentage={activeRequestQuery.data.progress_percentage}
+              pendingTitle="Análisis pendiente"
+              pendingDescription="La solicitud está esperando ser procesada por el motor de inteligencia artificial."
+              executingTitle="Analizando información"
+              executingDescription={
+                analysisMode === 'prediction'
                   ? 'Los modelos están procesando la información disponible para generar la predicción.'
-                  : 'El modelo está procesando el contenido de la noticia para determinar su sentimiento.'}
-              </p>
-              <progress max={100} value={activeRequestQuery.data.progress_percentage} />
-              <span>{activeRequestQuery.data.progress_percentage} %</span>
-            </div>
+                  : 'El modelo está procesando el contenido de la noticia para determinar su sentimiento.'
+              }
+            />
           ) : activeRequestQuery.data.status === 'FALLIDA' ? (
             <PageErrorState
               title="El análisis no pudo completarse"
