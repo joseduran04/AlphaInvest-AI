@@ -2,17 +2,18 @@ import { Navigate, Route, Routes } from 'react-router'
 
 import { PermissionRoute } from '@/features/auth/guards/PermissionRoute'
 import { ProtectedRoute } from '@/features/auth/guards/ProtectedRoute'
+import { AiAnalysisPage } from '@/features/ai/pages/AiAnalysisPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { AssetDetailPage } from '@/features/market/pages/AssetDetailPage'
 import { MarketPage } from '@/features/market/pages/MarketPage'
 import { MarketSynchronizationDetailPage } from '@/features/market/pages/MarketSynchronizationDetailPage'
 import { MarketSynchronizationsPage } from '@/features/market/pages/MarketSynchronizationsPage'
+import { NewsPage } from '@/features/news/pages/NewsPage'
 import { PortfolioDetailPage } from '@/features/portfolio/pages/PortfolioDetailPage'
 import { PortfoliosPage } from '@/features/portfolio/pages/PortfoliosPage'
 import { RiskProfilePage } from '@/features/profile/pages/RiskProfilePage'
 import { SimulationDetailPage } from '@/features/simulation/pages/SimulationDetailPage'
 import { SimulationsPage } from '@/features/simulation/pages/SimulationsPage'
-import { AiAnalysisPage } from '@/features/ai/pages/AiAnalysisPage'
 import { ApplicationLayout } from '@/layouts/ApplicationLayout'
 import { ForbiddenPage } from '@/pages/ForbiddenPage'
 import { HomePage } from '@/pages/HomePage'
@@ -53,10 +54,17 @@ export function AppRouter() {
             <Route path="/app/simulations" element={<SimulationsPage />} />
             <Route path="/app/simulations/:configurationId" element={<SimulationDetailPage />} />
           </Route>
+
           <Route
             element={<PermissionRoute requiredPermissions={['analisis.leer', 'activos.leer']} />}
           >
             <Route path="/app/ai" element={<AiAnalysisPage />} />
+          </Route>
+
+          <Route
+            element={<PermissionRoute requiredPermissions={['noticias.leer', 'activos.leer']} />}
+          >
+            <Route path="/app/news" element={<NewsPage />} />
           </Route>
 
           <Route path="/forbidden" element={<ForbiddenPage />} />

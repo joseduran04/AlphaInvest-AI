@@ -11,6 +11,9 @@ from alphainvest.modules.news.application.synchronization_service import (
     NEWS_SYNC_JOB_CODE,
     NewsSynchronizationService,
 )
+from alphainvest.modules.news.domain.exceptions import (
+    NewsSynchronizationError,
+)
 from alphainvest.modules.news.domain.news_storage import (
     NewsStorageResult,
 )
@@ -245,3 +248,120 @@ async def test_counts_article_persistence_failure(
     assert result.created == 0
     assert result.reused == 0
     assert result.failed == 1
+
+
+@pytest.mark.asyncio
+async def test_marks_execution_failed_when_finalization_fails() -> None:
+    asset_id = uuid4()
+    execution_id = uuid4()
+
+    asset = SimpleNamespace(
+        id=asset_id,
+        simbolo="AAPL",
+    )
+
+    source = SimpleNamespace(
+        id=uuid4(),
+        nombre="Alpha Vantage",
+    )
+
+    job = SimpleNamespace(
+        id=uuid4(),
+        codigo=NEWS_SYNC_JOB_CODE,
+        tiempo_maximo_segundos=1200,
+    )
+
+    execution = SimpleNamespace(
+        id=execution_id
+    )
+
+    current_execution = SimpleNamespace(
+        id=execution_id
+    )
+
+    market_repository = SimpleNamespace(
+        get_asset=AsyncMock(
+            return_value=asset
+        ),
+        get_financial_source_by_name=AsyncMock(
+            return_value=source
+        ),
+    )
+
+    operation_repository = SimpleNamespace(
+        get_job_by_code=AsyncMock(
+            return_value=job
+        ),
+        acquire_process_lock=AsyncMock(
+            return_value=True
+        ),
+        create_execution=AsyncMock(
+            return_value=execution
+        ),
+        mark_completed=AsyncMock(),
+        update_job_last_execution=AsyncMock(
+            side_effect=RuntimeError(
+                "fallo al actualizar trabajo"
+            )
+        ),
+        release_process_lock=AsyncMock(
+            return_value=True
+        ),
+        get_execution=AsyncMock(
+            return_value=current_execution
+        ),
+        mark_failed=AsyncMock(),
+        commit=AsyncMock(),
+        rollback=AsyncMock(),
+    )
+
+    provider = SimpleNamespace(
+        source_name="Alpha Vantage",
+        fetch_news=AsyncMock(
+            return_value=[]
+        ),
+    )
+
+    storage = SimpleNamespace(
+        store_for_asset=AsyncMock()
+    )
+
+    service = NewsSynchronizationService(
+        market_repository=market_repository,
+        operation_repository=operation_repository,
+        provider=provider,
+        storage=storage,
+    )
+
+    with pytest.raises(
+        NewsSynchronizationError,
+        match=(
+            "No fue posible completar "
+            "la sincronización de noticias"
+        ),
+    ):
+        await service.synchronize_asset(
+            asset_id=asset_id,
+            requested_by=None,
+            start_at=None,
+            end_at=None,
+            limit=20,
+        )
+
+    operation_repository.rollback.assert_awaited_once()
+
+    operation_repository.get_execution.assert_awaited_once_with(
+        execution_id
+    )
+
+    operation_repository.mark_failed.assert_awaited_once_with(
+        current_execution,
+        message="fallo al actualizar trabajo",
+    )
+
+    operation_repository.release_process_lock.assert_awaited_once()
+
+    assert (
+        operation_repository.commit.await_count
+        == 2
+    )

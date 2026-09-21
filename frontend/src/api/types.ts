@@ -102,9 +102,14 @@ export type SentimentAnalysisResultResponse =
 
 export type NewsResponse = components['schemas']['NewsResponse']
 export type NewsListResponse = components['schemas']['NewsListResponse']
+export type NewsSynchronizationResponse = components['schemas']['NewsSynchronizationResponse']
 
 export type AssetNewsListQuery = NonNullable<
   paths['/api/v1/news/assets/{asset_id}']['get']['parameters']['query']
+>
+
+export type AssetNewsSynchronizationQuery = NonNullable<
+  paths['/api/v1/news/assets/{asset_id}/sync']['post']['parameters']['query']
 >
 
 export type RecommendationRequestCreate = components['schemas']['RecommendationRequestCreate']

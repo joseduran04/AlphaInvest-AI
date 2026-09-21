@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -237,4 +238,92 @@ def test_builds_news_interval_trigger(
     assert isinstance(
         trigger,
         IntervalTrigger,
+    )
+
+
+@pytest.mark.asyncio
+async def test_updates_next_execution_before_running_job() -> None:
+    settings = Settings()
+    scheduler = AlphaInvestScheduler(settings)
+
+    next_run_time = datetime(
+        2026,
+        9,
+        21,
+        5,
+        0,
+        tzinfo=UTC,
+    )
+
+    scheduled_job = SimpleNamespace(
+        next_run_time=next_run_time
+    )
+
+    scheduler._scheduler.get_job = (  # type: ignore[method-assign]
+        lambda job_code: scheduled_job
+    )
+
+    job = SimpleNamespace(
+        codigo="TEST_JOB"
+    )
+
+    repository = SimpleNamespace(
+        get_job_by_code=AsyncMock(
+            return_value=job
+        ),
+        update_job_next_execution=AsyncMock(),
+        commit=AsyncMock(),
+    )
+
+    session = AsyncMock()
+
+    context = AsyncMock()
+    context.__aenter__.return_value = session
+    context.__aexit__.return_value = None
+
+    worker_job = AsyncMock()
+
+    with (
+        patch(
+            "alphainvest.worker.scheduler."
+            "AsyncSessionFactory",
+            return_value=context,
+        ),
+        patch(
+            "alphainvest.worker.scheduler."
+            "OperationRepository",
+            return_value=repository,
+        ),
+    ):
+        await scheduler._execute_with_retries(
+            job_code="TEST_JOB",
+            worker_job=worker_job,
+            max_retries=0,
+        )
+
+    repository.update_job_next_execution.assert_awaited_once_with(
+        job,
+        next_run_time,
+    )
+    repository.commit.assert_awaited_once()
+    worker_job.assert_awaited_once_with(
+        settings
+    )
+
+
+@pytest.mark.asyncio
+async def test_skips_next_execution_update_without_scheduled_job() -> None:
+    settings = Settings()
+    scheduler = AlphaInvestScheduler(settings)
+
+    worker_job = AsyncMock()
+
+    await scheduler._execute_with_retries(
+        job_code="TEST_JOB",
+        worker_job=worker_job,
+        max_retries=0,
+    )
+
+    worker_job.assert_awaited_once_with(
+        settings
     )

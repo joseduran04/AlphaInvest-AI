@@ -153,6 +153,37 @@ class AlphaInvestScheduler:
             max_retries=job.maximo_reintentos,
         )
 
+    async def _update_next_execution(
+        self,
+        job_code: str,
+    ) -> None:
+        scheduled_job = self._scheduler.get_job(
+            job_code
+        )
+
+        if scheduled_job is None:
+            return
+
+        next_execution = (
+            scheduled_job.next_run_time
+        )
+
+        async with AsyncSessionFactory() as session:
+            repository = OperationRepository(session)
+
+            job = await repository.get_job_by_code(
+                job_code
+            )
+
+            if job is None:
+                return
+
+            await repository.update_job_next_execution(
+                job,
+                next_execution,
+            )
+            await repository.commit()
+
     async def _execute_with_retries(
         self,
         *,
@@ -164,6 +195,10 @@ class AlphaInvestScheduler:
         max_retries: int,
     ) -> None:
         """Ejecuta un trabajo y aplica reintentos técnicos."""
+
+        await self._update_next_execution(
+            job_code
+        )
 
         max_attempts = 1 + max_retries
 

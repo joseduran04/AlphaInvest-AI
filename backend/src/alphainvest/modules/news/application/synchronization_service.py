@@ -182,6 +182,8 @@ class NewsSynchronizationService:
                 )
             )
 
+            execution_id = execution.id
+
             await (
                 self._operation_repository
                 .commit()
@@ -299,7 +301,7 @@ class NewsSynchronizationService:
             current_execution = (
                 await self._operation_repository
                 .get_execution(
-                    execution.id
+                    execution_id
                 )
             )
 
@@ -343,7 +345,7 @@ class NewsSynchronizationService:
             ) from error
 
         return NewsSynchronizationResponse(
-            execution_id=execution.id,
+            execution_id=execution_id,
             asset_id=asset.id,
             symbol=asset.simbolo,
             source_id=source.id,
