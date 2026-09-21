@@ -91,6 +91,46 @@ export type NotificationListQuery = NonNullable<
 
 export type RecommendationReportListResponse =
   components['schemas']['RecommendationReportListResponse']
+export type AssetReportListQuery = NonNullable<
+  paths['/api/v1/reports/assets']['get']['parameters']['query']
+>
+
+export type PortfolioReportListQuery = NonNullable<
+  paths['/api/v1/reports/portfolios']['get']['parameters']['query']
+>
+
+export type SimulationReportListQuery = NonNullable<
+  paths['/api/v1/reports/simulations']['get']['parameters']['query']
+>
+
+export type RecommendationReportListQuery = NonNullable<
+  paths['/api/v1/reports/recommendations']['get']['parameters']['query']
+>
+export type AssetReportExportQuery = NonNullable<
+  paths['/api/v1/reports/export/assets']['get']['parameters']['query']
+>
+
+export type PortfolioReportExportQuery = NonNullable<
+  paths['/api/v1/reports/export/portfolios']['get']['parameters']['query']
+>
+
+export type SimulationReportExportQuery = NonNullable<
+  paths['/api/v1/reports/export/simulations']['get']['parameters']['query']
+>
+
+export type RecommendationReportExportQuery = NonNullable<
+  paths['/api/v1/reports/export/recommendations']['get']['parameters']['query']
+>
+export type AssetReportResponse = components['schemas']['AssetReportResponse']
+export type AssetReportListResponse = components['schemas']['AssetReportListResponse']
+
+export type PortfolioReportResponse = components['schemas']['PortfolioReportResponse']
+export type PortfolioReportListResponse = components['schemas']['PortfolioReportListResponse']
+
+export type SimulationReportResponse = components['schemas']['SimulationReportResponse']
+export type SimulationReportListResponse = components['schemas']['SimulationReportListResponse']
+
+export type RecommendationReportResponse = components['schemas']['RecommendationReportResponse']
 export type AnalysisHorizon = components['schemas']['AnalysisHorizon']
 export type AnalysisType = components['schemas']['AnalysisType']
 export type AnalysisRequestStatus = components['schemas']['AnalysisRequestStatus']

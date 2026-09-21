@@ -16,6 +16,11 @@ import { PortfoliosPage } from '@/features/portfolio/pages/PortfoliosPage'
 import { RiskProfilePage } from '@/features/profile/pages/RiskProfilePage'
 import { SimulationDetailPage } from '@/features/simulation/pages/SimulationDetailPage'
 import { SimulationsPage } from '@/features/simulation/pages/SimulationsPage'
+import { ReportingPage } from '@/features/reporting/pages/ReportingPage'
+import { AssetReportPage } from '@/features/reporting/pages/AssetReportPage'
+import { PortfolioReportPage } from '@/features/reporting/pages/PortfolioReportPage'
+import { SimulationReportPage } from '@/features/reporting/pages/SimulationReportPage'
+import { RecommendationReportPage } from '@/features/reporting/pages/RecommendationReportPage'
 import { ApplicationLayout } from '@/layouts/ApplicationLayout'
 import { ForbiddenPage } from '@/pages/ForbiddenPage'
 import { HomePage } from '@/pages/HomePage'
@@ -72,6 +77,14 @@ export function AppRouter() {
           <Route element={<PermissionRoute requiredPermissions={['notificaciones.leer']} />}>
             <Route path="/app/notifications" element={<NotificationsPage />} />
             <Route path="/app/notifications/:notificationId" element={<NotificationDetailPage />} />
+          </Route>
+
+          <Route element={<PermissionRoute requiredPermissions={['reportes.leer']} />}>
+            <Route path="/app/reports" element={<ReportingPage />} />
+            <Route path="/app/reports/assets" element={<AssetReportPage />} />
+            <Route path="/app/reports/portfolios" element={<PortfolioReportPage />} />
+            <Route path="/app/reports/simulations" element={<SimulationReportPage />} />
+            <Route path="/app/reports/recommendations" element={<RecommendationReportPage />} />
           </Route>
 
           <Route path="/forbidden" element={<ForbiddenPage />} />

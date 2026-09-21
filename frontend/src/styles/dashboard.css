@@ -97,6 +97,17 @@
   font-size: 1.2rem;
 }
 
+.dashboard-panel__link {
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-panel__link:hover {
+  text-decoration: underline;
+}
+
 .dashboard-panel__eyebrow {
   color: var(--color-text-secondary);
   font-size: 0.75rem;

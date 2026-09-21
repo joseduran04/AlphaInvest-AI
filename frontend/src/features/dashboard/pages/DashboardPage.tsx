@@ -70,6 +70,12 @@ export function DashboardPage() {
             usuario en AlphaInvest AI.
           </p>
         </div>
+
+        {canReadReports ? (
+          <Link className="button button--secondary" to="/app/reports">
+            Centro de reportes
+          </Link>
+        ) : null}
       </header>
 
       <section className="dashboard-kpis" aria-label="Resumen general">
@@ -350,6 +356,10 @@ export function DashboardPage() {
                 <span className="dashboard-panel__eyebrow">Inteligencia artificial</span>
                 <h2>Recomendaciones</h2>
               </div>
+
+              <Link className="dashboard-panel__link" to="/app/reports/recommendations">
+                Ver reporte
+              </Link>
             </header>
 
             {recommendationsQuery.isPending ? (
