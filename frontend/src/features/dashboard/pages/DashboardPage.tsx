@@ -2,18 +2,18 @@ import { Link } from 'react-router'
 
 import { DashboardPanelState } from '@/features/dashboard/components/DashboardPanelState'
 import { useDashboardAssets } from '@/features/dashboard/hooks/useDashboardAssets'
-import { useDashboardNotifications } from '@/features/dashboard/hooks/useDashboardNotifications'
 import { useDashboardPortfolioOverview } from '@/features/dashboard/hooks/useDashboardPortfolioOverview'
 import { useDashboardPortfolios } from '@/features/dashboard/hooks/useDashboardPortfolios'
 import { useDashboardRecommendations } from '@/features/dashboard/hooks/useDashboardRecommendations'
 import { useDashboardSimulationExecutions } from '@/features/dashboard/hooks/useDashboardSimulationExecutions'
-import { useDashboardUnreadNotificationCount } from '@/features/dashboard/hooks/useDashboardUnreadNotificationCount'
 import {
   formatDashboardDate,
   formatDashboardLabel,
   formatDashboardMoney,
   formatDashboardPercentage,
 } from '@/features/dashboard/utils/dashboardFormatters'
+import { useNotifications } from '@/features/notifications/hooks/useNotifications'
+import { useUnreadNotificationCount } from '@/features/notifications/hooks/useUnreadNotificationCount'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCurrentRiskProfile } from '@/features/profile/hooks/useCurrentRiskProfile'
 import {
@@ -36,8 +36,15 @@ export function DashboardPage() {
 
   const portfoliosQuery = useDashboardPortfolios(canReadPortfolios)
   const simulationsQuery = useDashboardSimulationExecutions(canReadSimulations)
-  const unreadNotificationsQuery = useDashboardUnreadNotificationCount(canReadNotifications)
-  const notificationsQuery = useDashboardNotifications(canReadNotifications)
+  const unreadNotificationsQuery = useUnreadNotificationCount(canReadNotifications)
+  const notificationsQuery = useNotifications(
+    {
+      unread_only: false,
+      limit: 5,
+      offset: 0,
+    },
+    canReadNotifications,
+  )
   const recommendationsQuery = useDashboardRecommendations(canReadReports)
   const assetsQuery = useDashboardAssets(canReadAssets)
 

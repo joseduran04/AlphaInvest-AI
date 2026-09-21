@@ -37,6 +37,11 @@ export const navigationItems: NavigationItem[] = [
     requiredPermissions: ['noticias.leer', 'activos.leer'],
   },
   {
+    label: 'Notificaciones',
+    to: '/app/notifications',
+    requiredPermissions: ['notificaciones.leer'],
+  },
+  {
     label: 'Sincronizaciones',
     to: '/app/market/synchronizations',
     requiredPermissions: ['trabajos.leer'],

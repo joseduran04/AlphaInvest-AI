@@ -79,10 +79,15 @@ export type SimulationExecutionStatus = components['schemas']['SimulationExecuti
 export type SimulationResultResponse = components['schemas']['SimulationResultResponse']
 export type SimulationAssetResultResponse = components['schemas']['SimulationAssetResultResponse']
 
+export type NotificationResponse = components['schemas']['NotificationResponse']
 export type NotificationListResponse = components['schemas']['NotificationListResponse']
 export type UnreadNotificationCountResponse =
   components['schemas']['UnreadNotificationCountResponse']
 export type NotificationPriority = components['schemas']['NotificationPriority']
+
+export type NotificationListQuery = NonNullable<
+  paths['/api/v1/notifications']['get']['parameters']['query']
+>
 
 export type RecommendationReportListResponse =
   components['schemas']['RecommendationReportListResponse']

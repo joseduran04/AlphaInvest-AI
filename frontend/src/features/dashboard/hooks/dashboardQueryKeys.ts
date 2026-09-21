@@ -7,8 +7,6 @@ export const dashboardQueryKeys = {
 
   simulationExecutions: () => [...dashboardQueryKeys.all, 'simulation-executions'] as const,
 
-  unreadNotificationCount: () =>
-    [...dashboardQueryKeys.all, 'notifications', 'unread-count'] as const,
   notifications: () => [...dashboardQueryKeys.all, 'notifications', 'list'] as const,
 
   recommendations: () => [...dashboardQueryKeys.all, 'recommendations'] as const,
