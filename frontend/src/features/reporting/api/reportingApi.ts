@@ -3,6 +3,12 @@ import type {
   AssetReportExportQuery,
   AssetReportListQuery,
   AssetReportListResponse,
+  AuditDailyReportListResponse,
+  AuditReportExportQuery,
+  AuditReportListQuery,
+  OperationJobReportExportQuery,
+  OperationJobReportListQuery,
+  OperationJobReportListResponse,
   PortfolioReportExportQuery,
   PortfolioReportListQuery,
   PortfolioReportListResponse,
@@ -12,6 +18,9 @@ import type {
   SimulationReportExportQuery,
   SimulationReportListQuery,
   SimulationReportListResponse,
+  UserReportExportQuery,
+  UserReportListQuery,
+  UserReportListResponse,
 } from '@/api/types'
 
 const REPORTS_PATH = '/api/v1/reports'
@@ -103,6 +112,42 @@ export async function recommendationReportsRequest(
   return response.data
 }
 
+export async function userReportsRequest(
+  params: UserReportListQuery = {},
+): Promise<UserReportListResponse> {
+  const response = await apiClient.get<UserReportListResponse>(`${REPORTS_PATH}/admin/users`, {
+    params,
+  })
+
+  return response.data
+}
+
+export async function auditReportsRequest(
+  params: AuditReportListQuery = {},
+): Promise<AuditDailyReportListResponse> {
+  const response = await apiClient.get<AuditDailyReportListResponse>(
+    `${REPORTS_PATH}/admin/audit`,
+    {
+      params,
+    },
+  )
+
+  return response.data
+}
+
+export async function operationJobReportsRequest(
+  params: OperationJobReportListQuery = {},
+): Promise<OperationJobReportListResponse> {
+  const response = await apiClient.get<OperationJobReportListResponse>(
+    `${REPORTS_PATH}/admin/jobs`,
+    {
+      params,
+    },
+  )
+
+  return response.data
+}
+
 export function exportAssetReportsRequest(
   params: AssetReportExportQuery = {},
 ): Promise<ReportDownload> {
@@ -133,6 +178,24 @@ export function exportRecommendationReportsRequest(
     params,
     'recommendations_report.csv',
   )
+}
+
+export function exportUserReportsRequest(
+  params: UserReportExportQuery = {},
+): Promise<ReportDownload> {
+  return downloadReportRequest(`${REPORTS_PATH}/admin/export/users`, params, 'users_report.csv')
+}
+
+export function exportAuditReportsRequest(
+  params: AuditReportExportQuery = {},
+): Promise<ReportDownload> {
+  return downloadReportRequest(`${REPORTS_PATH}/admin/export/audit`, params, 'audit_report.csv')
+}
+
+export function exportOperationJobReportsRequest(
+  params: OperationJobReportExportQuery = {},
+): Promise<ReportDownload> {
+  return downloadReportRequest(`${REPORTS_PATH}/admin/export/jobs`, params, 'jobs_report.csv')
 }
 
 export function saveReportDownload(download: ReportDownload): void {

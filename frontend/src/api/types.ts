@@ -88,7 +88,44 @@ export type NotificationPriority = components['schemas']['NotificationPriority']
 export type NotificationListQuery = NonNullable<
   paths['/api/v1/notifications']['get']['parameters']['query']
 >
+export type AdminNotificationListResponse = components['schemas']['AdminNotificationListResponse']
 
+export type AdminNotificationListQuery = NonNullable<
+  paths['/api/v1/notifications/admin']['get']['parameters']['query']
+>
+
+export type UserReportResponse = components['schemas']['UserReportResponse']
+export type UserReportListResponse = components['schemas']['UserReportListResponse']
+
+export type AuditDailyReportResponse = components['schemas']['AuditDailyReportResponse']
+export type AuditDailyReportListResponse = components['schemas']['AuditDailyReportListResponse']
+
+export type OperationJobReportResponse = components['schemas']['OperationJobReportResponse']
+export type OperationJobReportListResponse = components['schemas']['OperationJobReportListResponse']
+
+export type UserReportListQuery = NonNullable<
+  paths['/api/v1/reports/admin/users']['get']['parameters']['query']
+>
+
+export type AuditReportListQuery = NonNullable<
+  paths['/api/v1/reports/admin/audit']['get']['parameters']['query']
+>
+
+export type OperationJobReportListQuery = NonNullable<
+  paths['/api/v1/reports/admin/jobs']['get']['parameters']['query']
+>
+
+export type UserReportExportQuery = NonNullable<
+  paths['/api/v1/reports/admin/export/users']['get']['parameters']['query']
+>
+
+export type AuditReportExportQuery = NonNullable<
+  paths['/api/v1/reports/admin/export/audit']['get']['parameters']['query']
+>
+
+export type OperationJobReportExportQuery = NonNullable<
+  paths['/api/v1/reports/admin/export/jobs']['get']['parameters']['query']
+>
 export type RecommendationReportListResponse =
   components['schemas']['RecommendationReportListResponse']
 export type AssetReportListQuery = NonNullable<

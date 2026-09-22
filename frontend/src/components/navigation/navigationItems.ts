@@ -3,6 +3,7 @@ export interface NavigationItem {
   to: string
   end?: boolean
   requiredPermissions?: string[]
+  anyRequiredPermissions?: string[]
 }
 
 export const navigationItems: NavigationItem[] = [
@@ -45,6 +46,11 @@ export const navigationItems: NavigationItem[] = [
     label: 'Reportes',
     to: '/app/reports',
     requiredPermissions: ['reportes.leer'],
+  },
+  {
+    label: 'Administración',
+    to: '/app/admin',
+    anyRequiredPermissions: ['reportes.administrar', 'notificaciones.administrar'],
   },
   {
     label: 'Sincronizaciones',

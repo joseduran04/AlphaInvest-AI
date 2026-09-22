@@ -1,5 +1,7 @@
 import { apiClient } from '@/api/client'
 import type {
+  AdminNotificationListQuery,
+  AdminNotificationListResponse,
   NotificationListQuery,
   NotificationListResponse,
   NotificationResponse,
@@ -39,6 +41,39 @@ export async function markNotificationReadRequest(
 ): Promise<NotificationResponse> {
   const response = await apiClient.patch<NotificationResponse>(
     `${NOTIFICATIONS_PATH}/${notificationId}/read`,
+  )
+
+  return response.data
+}
+
+export async function adminNotificationsRequest(
+  params: AdminNotificationListQuery = {},
+): Promise<AdminNotificationListResponse> {
+  const response = await apiClient.get<AdminNotificationListResponse>(
+    `${NOTIFICATIONS_PATH}/admin`,
+    {
+      params,
+    },
+  )
+
+  return response.data
+}
+
+export async function adminNotificationRequest(
+  notificationId: string,
+): Promise<NotificationResponse> {
+  const response = await apiClient.get<NotificationResponse>(
+    `${NOTIFICATIONS_PATH}/admin/${notificationId}`,
+  )
+
+  return response.data
+}
+
+export async function cancelAdminNotificationRequest(
+  notificationId: string,
+): Promise<NotificationResponse> {
+  const response = await apiClient.patch<NotificationResponse>(
+    `${NOTIFICATIONS_PATH}/admin/${notificationId}/cancel`,
   )
 
   return response.data

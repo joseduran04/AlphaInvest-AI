@@ -1,7 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router'
-
+import { AnyPermissionRoute } from '@/features/auth/guards/AnyPermissionRoute'
 import { PermissionRoute } from '@/features/auth/guards/PermissionRoute'
 import { ProtectedRoute } from '@/features/auth/guards/ProtectedRoute'
+import { AdminAuditPage } from '@/features/admin/pages/AdminAuditPage'
+import { AdminJobsPage } from '@/features/admin/pages/AdminJobsPage'
+import { AdminNotificationsPage } from '@/features/admin/pages/AdminNotificationsPage'
+import { AdminPage } from '@/features/admin/pages/AdminPage'
+import { AdminUsersPage } from '@/features/admin/pages/AdminUsersPage'
 import { AiAnalysisPage } from '@/features/ai/pages/AiAnalysisPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { AssetDetailPage } from '@/features/market/pages/AssetDetailPage'
@@ -85,6 +90,26 @@ export function AppRouter() {
             <Route path="/app/reports/portfolios" element={<PortfolioReportPage />} />
             <Route path="/app/reports/simulations" element={<SimulationReportPage />} />
             <Route path="/app/reports/recommendations" element={<RecommendationReportPage />} />
+          </Route>
+
+          <Route
+            element={
+              <AnyPermissionRoute
+                requiredPermissions={['reportes.administrar', 'notificaciones.administrar']}
+              />
+            }
+          >
+            <Route path="/app/admin" element={<AdminPage />} />
+          </Route>
+
+          <Route element={<PermissionRoute requiredPermissions={['reportes.administrar']} />}>
+            <Route path="/app/admin/users" element={<AdminUsersPage />} />
+            <Route path="/app/admin/audit" element={<AdminAuditPage />} />
+            <Route path="/app/admin/jobs" element={<AdminJobsPage />} />
+          </Route>
+
+          <Route element={<PermissionRoute requiredPermissions={['notificaciones.administrar']} />}>
+            <Route path="/app/admin/notifications" element={<AdminNotificationsPage />} />
           </Route>
 
           <Route path="/forbidden" element={<ForbiddenPage />} />

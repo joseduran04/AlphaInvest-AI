@@ -12,9 +12,16 @@ interface AppSidebarProps {
 export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const { hasPermission } = useAuth()
 
-  const visibleItems = navigationItems.filter(
-    (item) => item.requiredPermissions?.every((permission) => hasPermission(permission)) ?? true,
-  )
+  const visibleItems = navigationItems.filter((item) => {
+    const hasAllRequiredPermissions =
+      item.requiredPermissions?.every((permission) => hasPermission(permission)) ?? true
+
+    const hasAnyRequiredPermission =
+      !item.anyRequiredPermissions ||
+      item.anyRequiredPermissions.some((permission) => hasPermission(permission))
+
+    return hasAllRequiredPermissions && hasAnyRequiredPermission
+  })
 
   return (
     <>

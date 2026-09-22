@@ -6,6 +6,7 @@
 .env
 .env.*
 !.env.example
+!frontend/.env.e2e.example
 
 # Llaves, certificados y credenciales privadas
 *.pem

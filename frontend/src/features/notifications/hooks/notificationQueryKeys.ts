@@ -1,4 +1,4 @@
-import type { NotificationListQuery } from '@/api/types'
+import type { AdminNotificationListQuery, NotificationListQuery } from '@/api/types'
 
 export const notificationQueryKeys = {
   all: ['notifications'] as const,
@@ -13,4 +13,16 @@ export const notificationQueryKeys = {
     [...notificationQueryKeys.detailsRoot(), notificationId] as const,
 
   unreadCount: () => [...notificationQueryKeys.all, 'unread-count'] as const,
+
+  adminRoot: () => [...notificationQueryKeys.all, 'admin'] as const,
+
+  adminListsRoot: () => [...notificationQueryKeys.adminRoot(), 'list'] as const,
+
+  adminList: (params: AdminNotificationListQuery = {}) =>
+    [...notificationQueryKeys.adminListsRoot(), params] as const,
+
+  adminDetailsRoot: () => [...notificationQueryKeys.adminRoot(), 'detail'] as const,
+
+  adminDetail: (notificationId: string) =>
+    [...notificationQueryKeys.adminDetailsRoot(), notificationId] as const,
 }
