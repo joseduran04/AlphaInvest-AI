@@ -1,10 +1,18 @@
+import type { RefObject } from 'react'
+
 import { useAuth } from '@/features/auth/hooks/useAuth'
 
 interface AppHeaderProps {
+  navigationTriggerRef: RefObject<HTMLButtonElement | null>
+  isNavigationOpen: boolean
   onOpenNavigation: () => void
 }
 
-export function AppHeader({ onOpenNavigation }: AppHeaderProps) {
+export function AppHeader({
+  navigationTriggerRef,
+  isNavigationOpen,
+  onOpenNavigation,
+}: AppHeaderProps) {
   const { user, logout } = useAuth()
 
   const displayName = [user?.nombres, user?.apellidos].filter(Boolean).join(' ')
@@ -13,9 +21,12 @@ export function AppHeader({ onOpenNavigation }: AppHeaderProps) {
     <header className="app-header">
       <div className="app-header__left">
         <button
+          ref={navigationTriggerRef}
           className="app-header__menu"
           type="button"
           aria-label="Abrir navegación"
+          aria-controls="app-sidebar"
+          aria-expanded={isNavigationOpen}
           onClick={onOpenNavigation}
         >
           ☰

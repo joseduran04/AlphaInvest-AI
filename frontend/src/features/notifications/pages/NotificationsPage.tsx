@@ -87,7 +87,7 @@ export function NotificationsPage() {
           ) : null}
         </header>
 
-        <div className="notifications-filters" aria-label="Filtrar notificaciones">
+        <div className="notifications-filters" role="group" aria-label="Filtrar notificaciones">
           <button
             className={`button ${!unreadOnly ? 'button--primary' : 'button--secondary'}`}
             type="button"

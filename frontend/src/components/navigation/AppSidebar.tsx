@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router'
 
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -9,8 +10,37 @@ interface AppSidebarProps {
   onClose: () => void
 }
 
+const MOBILE_NAVIGATION_QUERY = '(max-width: 900px)'
+
 export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const { hasPermission } = useAuth()
+  const navigationRef = useRef<HTMLElement>(null)
+  const [isMobileNavigation, setIsMobileNavigation] = useState(
+    () => window.matchMedia(MOBILE_NAVIGATION_QUERY).matches,
+  )
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(MOBILE_NAVIGATION_QUERY)
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobileNavigation(event.matches)
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isMobileNavigation || !isOpen) {
+      return
+    }
+
+    const firstNavigationLink = navigationRef.current?.querySelector<HTMLAnchorElement>('a[href]')
+    firstNavigationLink?.focus()
+  }, [isMobileNavigation, isOpen])
 
   const visibleItems = navigationItems.filter((item) => {
     const hasAllRequiredPermissions =
@@ -23,16 +53,25 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     return hasAllRequiredPermissions && hasAnyRequiredPermission
   })
 
+  const isMobileNavigationClosed = isMobileNavigation && !isOpen
+
   return (
     <>
       <button
         className={`app-sidebar-backdrop ${isOpen ? 'app-sidebar-backdrop--visible' : ''}`}
         type="button"
         aria-label="Cerrar navegación"
+        aria-hidden={!isOpen}
+        tabIndex={isOpen ? 0 : -1}
         onClick={onClose}
       />
 
-      <aside className={`app-sidebar ${isOpen ? 'app-sidebar--open' : ''}`}>
+      <aside
+        id="app-sidebar"
+        className={`app-sidebar ${isOpen ? 'app-sidebar--open' : ''}`}
+        aria-label="Navegación de la aplicación"
+        inert={isMobileNavigationClosed}
+      >
         <div className="app-sidebar__brand">
           <span className="app-sidebar__brand-mark" aria-hidden="true">
             A
@@ -44,7 +83,11 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
           </div>
         </div>
 
-        <nav className="app-sidebar__navigation" aria-label="Navegación principal">
+        <nav
+          ref={navigationRef}
+          className="app-sidebar__navigation"
+          aria-label="Navegación principal"
+        >
           {visibleItems.map((item) => (
             <NavLink
               key={item.to}

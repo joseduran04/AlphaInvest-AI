@@ -124,7 +124,7 @@
   display: block;
   margin-top: 0.25rem;
 
-  color: #64748b;
+  color: #94a3b8;
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -294,5 +294,20 @@
   .app-sidebar-backdrop--visible {
     pointer-events: auto;
     opacity: 1;
+  }
+}
+
+.app-header__menu:focus-visible,
+.app-header__logout:focus-visible,
+.app-sidebar__link:focus-visible,
+.app-sidebar-backdrop:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .app-sidebar-backdrop {
+    transition: none;
   }
 }
