@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+blob-report
+playwright/.cache
+
+.git
+.gitignore
+
+.env
+.env.*
+!.env.example
+
+*.log

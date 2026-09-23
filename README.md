@@ -136,6 +136,15 @@ AlphaInvest-AI/
 ├── database/
 │   └── postgresql/
 │
+├── frontend/
+│   ├── e2e/
+│   ├── public/
+│   ├── src/
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── package.json
+│   └── README.md
+│
 ├── docker-compose.yml
 └── README.md
 ```
@@ -248,11 +257,39 @@ noticias
 
 ## Docker
 
-Para levantar MongoDB y la API:
+AlphaInvest AI dispone de contenedores para:
+
+- MongoDB.
+- API FastAPI.
+- Frontend React servido mediante Nginx.
+- Worker opcional mediante profile.
+
+Antes de iniciar los servicios, configura:
+
+```text
+backend/.env
+```
+
+tomando como referencia:
+
+```text
+backend/.env.example
+```
+
+Para levantar el stack principal:
 
 ```bash
-docker compose up --build -d mongo api
+docker compose up --build -d mongo api frontend
 ```
+
+Servicios expuestos al host:
+
+```text
+Frontend: http://127.0.0.1:8080
+API:      http://127.0.0.1:8000
+```
+
+MongoDB permanece disponible para los servicios mediante la red interna de Docker Compose.
 
 Estado:
 
@@ -260,16 +297,50 @@ Estado:
 docker compose ps
 ```
 
-Readiness:
+Healthcheck del frontend:
 
 ```bash
-curl http://localhost:8000/api/v1/health/ready
+curl http://127.0.0.1:8080/health
 ```
 
-El worker utiliza un perfil separado:
+Readiness del backend:
 
 ```bash
-docker compose --profile worker up -d worker
+curl http://127.0.0.1:8000/api/v1/health/ready
+```
+
+El frontend se construye mediante Node.js y Vite y se sirve en producción mediante Nginx.
+
+Durante el build se configura la URL pública de la API mediante:
+
+```text
+VITE_API_BASE_URL
+```
+
+Para el despliegue Docker local validado:
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+El backend debe permitir mediante `APP_CORS_ORIGINS` el origen desde el que se sirve el frontend.
+
+El worker utiliza un profile separado:
+
+```bash
+docker compose --profile worker up --build -d
+```
+
+Para detener los servicios:
+
+```bash
+docker compose down
+```
+
+La configuración específica del frontend se documenta en:
+
+```text
+frontend/README.md
 ```
 
 ## Health checks
