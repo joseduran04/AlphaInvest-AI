@@ -19,4 +19,29 @@ test.describe('Autenticación', () => {
       navigation.getByRole('link', { name: 'Administración', exact: true }),
     ).toBeVisible()
   })
+
+  test('ADMINISTRADOR puede cerrar sesión y no volver a una ruta protegida', async ({ page }) => {
+    const credentials = getE2ECredentials('E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD')
+
+    await loginThroughUI(page, credentials)
+
+    const logoutResponsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+
+      return response.request().method() === 'POST' && url.pathname === '/api/v1/auth/logout'
+    })
+
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click()
+
+    const logoutResponse = await logoutResponsePromise
+    expect(logoutResponse.ok()).toBe(true)
+
+    await expect(page).toHaveURL(/\/login$/)
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible()
+
+    await page.goto('/app')
+
+    await expect(page).toHaveURL(/\/login$/)
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible()
+  })
 })
