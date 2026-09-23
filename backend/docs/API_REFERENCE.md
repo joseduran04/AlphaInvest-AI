@@ -10,8 +10,8 @@ Documento generado automáticamente a partir de OpenAPI.
 - **Swagger UI:** `/docs`
 - **ReDoc:** `/redoc`
 - **OpenAPI:** `/openapi.json`
-- **Paths OpenAPI:** 87
-- **Schemas:** 141
+- **Paths OpenAPI:** 88
+- **Schemas:** 142
 
 ## Autenticación
 
@@ -113,6 +113,7 @@ Esquemas OpenAPI registrados:
 | POST | `/api/v1/ai/versions/{version_id}/deactivate` | Inteligencia artificial | Desactivar versión de modelo de IA | versiones_modelo.activar | - | ModelVersionResponse | version_id (path, req) | 200, 422 |
 | GET | `/api/v1/ai/analysis-requests/{request_id}/result` | Inteligencia artificial | Consultar resultado de análisis | analisis.leer | - | AssetAnalysisResultResponse | request_id (path, req) | 200, 422 |
 | POST | `/api/v1/ai/sentiment-analysis-requests` | Inteligencia artificial | Solicitar análisis de sentimiento | analisis.solicitar | SentimentAnalysisRequestCreate | AnalysisRequestResponse | - | 201, 422 |
+| GET | `/api/v1/ai/sentiment-analysis-requests/{request_id}/result` | Inteligencia artificial | Consultar resultado de análisis de sentimiento | analisis.leer | - | SentimentAnalysisResultResponse | request_id (path, req) | 200, 422 |
 | POST | `/api/v1/ai/recommendation-requests` | Inteligencia artificial | Solicitar recomendación inteligente | analisis.solicitar | RecommendationRequestCreate | AnalysisRequestResponse | - | 201, 422 |
 | GET | `/api/v1/ai/recommendation-requests/{request_id}` | Inteligencia artificial | Consultar solicitud de recomendación | analisis.leer | - | AnalysisRequestResponse | request_id (path, req) | 200, 422 |
 | GET | `/api/v1/ai/recommendation-requests/{request_id}/result` | Inteligencia artificial | Consultar resultado de recomendación | analisis.leer | - | RecommendationResultResponse | request_id (path, req) | 200, 422 |
@@ -258,6 +259,7 @@ Esquemas OpenAPI registrados:
 - `SectorAllocationItemResponse`
 - `SectorAllocationResponse`
 - `SentimentAnalysisRequestCreate`
+- `SentimentAnalysisResultResponse`
 - `SimulationAssetResultResponse`
 - `SimulationConfigurationArchiveResponse`
 - `SimulationConfigurationAssetCreateRequest`

@@ -32,19 +32,19 @@ Documento generado a partir del OpenAPI real del backend y de las asignaciones R
 
 ## Resumen de operaciones
 
-- **Operaciones HTTP totales:** 98
+- **Operaciones HTTP totales:** 99
 - **Operaciones públicas:** 8
 - **Solo autenticación:** 4
-- **Protegidas por permiso RBAC:** 86
+- **Protegidas por permiso RBAC:** 87
 
 ### Operaciones accesibles por rol
 
 | Rol | Operaciones accesibles |
 |---|---:|
-| ADMINISTRADOR | 98 |
-| ANALISTA | 63 |
+| ADMINISTRADOR | 99 |
+| ANALISTA | 64 |
 | AUDITOR | 40 |
-| INVERSIONISTA | 75 |
+| INVERSIONISTA | 76 |
 | OPERADOR | 47 |
 
 ## Matriz endpoint / permiso / rol
@@ -120,6 +120,7 @@ Documento generado a partir del OpenAPI real del backend y de las asignaciones R
 | POST | `/api/v1/ai/versions/{version_id}/deactivate` | Inteligencia artificial | `versiones_modelo.activar` | ✅ | — | — | — | — |
 | GET | `/api/v1/ai/analysis-requests/{request_id}/result` | Inteligencia artificial | `analisis.leer` | ✅ | ✅ | — | ✅ | — |
 | POST | `/api/v1/ai/sentiment-analysis-requests` | Inteligencia artificial | `analisis.solicitar` | ✅ | ✅ | — | ✅ | — |
+| GET | `/api/v1/ai/sentiment-analysis-requests/{request_id}/result` | Inteligencia artificial | `analisis.leer` | ✅ | ✅ | — | ✅ | — |
 | POST | `/api/v1/ai/recommendation-requests` | Inteligencia artificial | `analisis.solicitar` | ✅ | ✅ | — | ✅ | — |
 | GET | `/api/v1/ai/recommendation-requests/{request_id}` | Inteligencia artificial | `analisis.leer` | ✅ | ✅ | — | ✅ | — |
 | GET | `/api/v1/ai/recommendation-requests/{request_id}/result` | Inteligencia artificial | `analisis.leer` | ✅ | ✅ | — | ✅ | — |

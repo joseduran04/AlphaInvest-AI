@@ -4,7 +4,9 @@ Frontend web de AlphaInvest AI, plataforma educativa orientada al análisis fina
 
 ## Estado actual
 
-El frontend se encuentra funcionalmente implementado e integrado con la API de AlphaInvest AI.
+El frontend se encuentra funcionalmente implementado, integrado con la API de AlphaInvest AI y validado mediante pruebas unitarias, de integración, E2E y controles de calidad.
+
+Versión estable del frontend: `1.0.0`
 
 Backend estable de referencia:
 

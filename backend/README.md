@@ -577,9 +577,9 @@ openapi_alphainvest.json
 Contrato validado:
 
 ```text
-87 paths
-98 operaciones HTTP
-141 schemas
+88 paths
+99 operaciones HTTP
+142 schemas
 ```
 
 Referencia:
@@ -594,7 +594,7 @@ Matriz RBAC:
 docs/ENDPOINT_PERMISSION_MATRIX.md
 ```
 
-La matriz contiene las 98 operaciones y sus requisitos de acceso.
+La matriz contiene las 99 operaciones y sus requisitos de acceso.
 
 ## 15. Autenticación y autorización
 

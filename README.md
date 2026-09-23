@@ -6,7 +6,7 @@ El proyecto utiliza una arquitectura backend modular basada en FastAPI, PostgreS
 
 ## Estado del proyecto
 
-El backend planificado se encuentra funcionalmente implementado.
+La plataforma AlphaInvest AI se encuentra funcionalmente implementada e integrada, incluyendo backend, frontend, persistencia, inteligencia artificial, pruebas automatizadas y despliegue mediante Docker.
 
 Módulos principales:
 
@@ -185,9 +185,9 @@ http://localhost:8000/openapi.json
 
 El contrato OpenAPI validado contiene:
 
-- 87 paths.
-- 98 operaciones HTTP.
-- 141 schemas.
+- 88 paths.
+- 99 operaciones HTTP.
+- 142 schemas.
 
 La referencia detallada se encuentra en:
 
