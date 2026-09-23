@@ -111,7 +111,7 @@ class MarketModel(Base):
 
     activos: Mapped[list[AssetModel]] = relationship(
         back_populates="mercado",
-        lazy="selectin",
+        lazy="select",
     )
 
 
@@ -172,7 +172,7 @@ class AssetTypeModel(Base):
 
     activos: Mapped[list[AssetModel]] = relationship(
         back_populates="tipo_activo",
-        lazy="selectin",
+        lazy="select",
     )
 
 
@@ -332,14 +332,14 @@ class AssetModel(Base):
         list[HistoricalPriceModel]
           ] = relationship(
               back_populates="activo",
-              lazy="selectin",
+              lazy="select",
           )
 
     indicadores_financieros: Mapped[
         list[FinancialIndicatorModel]
           ] = relationship(
               back_populates="activo",
-              lazy="selectin",
+              lazy="select",
           )
 
 
