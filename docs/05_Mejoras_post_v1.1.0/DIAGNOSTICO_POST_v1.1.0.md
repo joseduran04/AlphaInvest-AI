@@ -100,3 +100,30 @@ Pendientes conocidos:
 - WALMEX y GFNORTEO no tienen ADR en EE. UU.; Alpha Vantage podría no tener noticias para ellos.
 - El símbolo interno de América Móvil sigue siendo AMXL. Se traduce a AMXB para Yahoo; renombrarlo en el catálogo sería un cambio de datos.
 - La matriz de permisos (`ENDPOINT_PERMISSION_MATRIX.md`) se regenera con `scripts/generate_endpoint_permission_matrix.py`, que requiere conexión a la base de datos.
+
+## Limitación: catálogo de activos
+
+AlphaInvest AI trabaja con un **catálogo cerrado de 17 activos**. Se cargan con `database/postgresql/15_initial_data.sql`:
+
+- 7 acciones del NASDAQ.
+- Un ETF (SPY).
+- 4 emisoras de la BMV.
+- 2 criptoactivos.
+- 2 pares de divisas.
+
+No hay pantalla ni endpoint para dar de alta activos; la API de mercado solo consulta.
+
+Agregar un activo requiere:
+
+1. Insertarlo en `market.activos` con mercado, tipo, moneda, sector, industria e ISIN (script SQL o migración).
+2. Comprobar que Yahoo Finance lo reconozca: sufijo `.MX` para la BMV, o una excepción en `provider_symbols.py`.
+3. Para noticias, que Alpha Vantage tenga cobertura del ticker (normalmente empresas con cotización en EE. UU.).
+4. Tener en cuenta la cuota de Alpha Vantage: cada activo nuevo suma una llamada diaria de noticias.
+
+Mejora futura posible: pantalla de administración para agregar activos, validando el símbolo contra Yahoo antes de guardarlo.
+
+## Incidencia 2026-09-24: valoración con precio viejo
+
+- **Síntoma:** después de sincronizar META (770.815), "Registrar valoración actual" seguía usando 744.10.
+- **Causa:** `precio_actual` de las posiciones solo se guardaba al crear o editar la posición; la sincronización de precios no lo tocaba.
+- **Corrección:** la sincronización actualiza el precio de las posiciones abiertas del activo, y registrar una valoración refresca primero las posiciones del portafolio. El trigger `trg_posiciones_calcular` recalcula valor, ganancia y rendimiento.
