@@ -182,6 +182,83 @@ class MarketRepository:
 
         return result.scalar_one_or_none()
 
+    async def list_latest_price_changes(
+        self,
+        *,
+        preferred_source_name: str,
+        lookback_days: int = 30,
+    ) -> list[dict[str, object]]:
+        """Últimos dos cierres de cada activo ACTIVO.
+
+        Por activo se usa la fuente con el dato más reciente; en empate,
+        la fuente preferida. Se usa el cierre ajustado cuando existe.
+        """
+
+        statement = text(
+            """
+            WITH ranked AS (
+                SELECT
+                    p.activo_id,
+                    p.fuente_id,
+                    p.fecha,
+                    COALESCE(p.cierre_ajustado, p.cierre) AS precio,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY p.activo_id, p.fuente_id
+                        ORDER BY p.fecha DESC
+                    ) AS rn
+                FROM market.precios_historicos p
+                JOIN market.activos a
+                  ON a.id = p.activo_id
+                 AND a.estado = 'ACTIVO'
+                WHERE p.fecha >= CURRENT_DATE - CAST(:lookback_days AS INTEGER)
+            ),
+            pairs AS (
+                SELECT
+                    activo_id,
+                    fuente_id,
+                    MAX(fecha) FILTER (WHERE rn = 1) AS last_date,
+                    MAX(precio) FILTER (WHERE rn = 1) AS last_close,
+                    MAX(fecha) FILTER (WHERE rn = 2) AS previous_date,
+                    MAX(precio) FILTER (WHERE rn = 2) AS previous_close
+                FROM ranked
+                WHERE rn <= 2
+                GROUP BY activo_id, fuente_id
+            )
+            SELECT DISTINCT ON (pr.activo_id)
+                a.id AS asset_id,
+                a.simbolo AS symbol,
+                a.nombre AS name,
+                a.moneda AS currency,
+                f.nombre AS source_name,
+                pr.last_date,
+                pr.last_close,
+                pr.previous_date,
+                pr.previous_close
+            FROM pairs pr
+            JOIN market.activos a ON a.id = pr.activo_id
+            JOIN market.fuentes_financieras f ON f.id = pr.fuente_id
+            WHERE pr.previous_close IS NOT NULL
+              AND pr.previous_close > 0
+            ORDER BY
+                pr.activo_id,
+                pr.last_date DESC,
+                (f.nombre = :preferred_source_name) DESC
+            """
+        )
+
+        result = await self._session.execute(
+            statement,
+            {
+                "lookback_days": lookback_days,
+                "preferred_source_name": preferred_source_name,
+            },
+        )
+
+        return [
+            dict(row)
+            for row in result.mappings().all()
+        ]
+
     async def list_active_symbols(self) -> list[str]:
         """Símbolos de todos los activos en estado ACTIVO."""
 

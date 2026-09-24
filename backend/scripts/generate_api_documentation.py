@@ -73,6 +73,10 @@ PERMISSION_BY_OPERATION: dict[
         "/api/v1/market/assets/{asset_id}/latest-price",
     ): "precios.leer",
     (
+        "GET",
+        "/api/v1/market/movers",
+    ): "precios.leer",
+    (
         "POST",
         "/api/v1/market/assets/{asset_id}/prices/sync",
     ): "precios.cargar",

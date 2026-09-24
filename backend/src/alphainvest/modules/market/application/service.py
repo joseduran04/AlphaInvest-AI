@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
 from alphainvest.modules.market.domain.enums import (
@@ -24,6 +25,8 @@ from alphainvest.modules.market.presentation.schemas import (
     HistoricalPriceResponse,
     LatestPriceResponse,
     MarketListResponse,
+    MarketMoverResponse,
+    MarketMoversResponse,
     MarketResponse,
 )
 
@@ -36,6 +39,66 @@ class MarketService:
         repository: MarketRepository,
     ) -> None:
         self._repository = repository
+
+    async def get_market_movers(
+        self,
+        *,
+        limit: int,
+        preferred_source_name: str,
+    ) -> MarketMoversResponse:
+        """Mayores alzas y bajas porcentuales del catálogo.
+
+        Compara los dos últimos cierres disponibles de cada activo. Los
+        activos en monedas distintas se comparan por porcentaje.
+        """
+
+        rows = (
+            await self._repository
+            .list_latest_price_changes(
+                preferred_source_name=preferred_source_name,
+            )
+        )
+
+        movers: list[MarketMoverResponse] = []
+
+        for row in rows:
+            last_close = Decimal(str(row["last_close"]))
+            previous_close = Decimal(str(row["previous_close"]))
+            change = last_close - previous_close
+            change_percentage = (
+                change / previous_close * Decimal("100")
+            ).quantize(
+                Decimal("0.0001"),
+                rounding=ROUND_HALF_UP,
+            )
+
+            movers.append(
+                MarketMoverResponse.model_validate(
+                    {
+                        **row,
+                        "last_close": last_close,
+                        "previous_close": previous_close,
+                        "change": change,
+                        "change_percentage": change_percentage,
+                    }
+                )
+            )
+
+        gainers = sorted(
+            (item for item in movers if item.change_percentage > 0),
+            key=lambda item: item.change_percentage,
+            reverse=True,
+        )[:limit]
+
+        losers = sorted(
+            (item for item in movers if item.change_percentage < 0),
+            key=lambda item: item.change_percentage,
+        )[:limit]
+
+        return MarketMoversResponse(
+            gainers=gainers,
+            losers=losers,
+        )
 
     async def list_markets(
         self,

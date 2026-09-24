@@ -399,3 +399,26 @@ class FinancialIndicatorListResponse(BaseModel):
     period: str | None
     start_date: DateType | None
     end_date: DateType | None
+
+
+class MarketMoverResponse(BaseModel):
+    """Variación entre los dos últimos cierres disponibles de un activo."""
+
+    asset_id: UUID
+    symbol: str
+    name: str
+    currency: str
+    source_name: str
+    last_date: DateType
+    last_close: Decimal
+    previous_date: DateType
+    previous_close: Decimal
+    change: Decimal
+    change_percentage: Decimal
+
+
+class MarketMoversResponse(BaseModel):
+    """Mayores alzas y bajas del catálogo en su última sesión."""
+
+    gainers: list[MarketMoverResponse]
+    losers: list[MarketMoverResponse]

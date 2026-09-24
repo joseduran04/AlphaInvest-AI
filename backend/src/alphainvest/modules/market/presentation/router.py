@@ -1,8 +1,9 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from alphainvest.core.config import Settings, get_settings
 from alphainvest.modules.market.domain.enums import (
     AssetStatus,
 )
@@ -49,6 +50,7 @@ from alphainvest.modules.market.presentation.schemas import (
     IndicatorCalculationResponse,
     LatestPriceResponse,
     MarketListResponse,
+    MarketMoversResponse,
     PriceSynchronizationResponse,
 )
 from alphainvest.modules.operation.domain.enums import (
@@ -243,6 +245,34 @@ async def get_asset_price_history(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(error),
         ) from error
+
+
+@router.get(
+    "/movers",
+    response_model=MarketMoversResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Consultar mayores alzas y bajas del catálogo",
+    description=(
+        "Compara los dos últimos cierres disponibles de cada activo "
+        "ACTIVO y devuelve las mayores alzas y bajas porcentuales."
+    ),
+)
+async def get_market_movers(
+    _: PriceReadContext,
+    service: MarketServiceDependency,
+    settings: Settings = Depends(get_settings),
+    limit: int = Query(
+        default=5,
+        ge=1,
+        le=20,
+    ),
+) -> MarketMoversResponse:
+    return await service.get_market_movers(
+        limit=limit,
+        preferred_source_name=(
+            settings.market_price_source_names[0]
+        ),
+    )
 
 
 @router.get(
