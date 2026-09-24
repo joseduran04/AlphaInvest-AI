@@ -1,5 +1,8 @@
 from uuid import UUID
 
+from alphainvest.modules.simulation.application.evolution_summary import (
+    build_evolution_summary,
+)
 from alphainvest.modules.simulation.application.historical_data_service import (
     HistoricalDataService,
 )
@@ -239,6 +242,9 @@ class HistoricalExecutionProcessor:
                         "comisiones_totales": str(
                             historical_result
                             .total_commissions
+                        ),
+                        "evolucion": build_evolution_summary(
+                            historical_result.evolution
                         ),
                     },
                 )
