@@ -32,7 +32,7 @@ El tag `v1.1.0` no se modificó.
 | AI-SIM-001 | META cortada al 11/09 | **Confirmado:** META solo tenía precios de Alpha Vantage hasta el 11/09 (carga manual del 13/09). El motor usa como fin efectivo la última fecha común con precios. | Limitación de Market Data + UX | **Corregido:** aviso en la interfaz, sincronización automática de activos en uso con Yahoo como fuente principal, y la simulación elige por activo la fuente con datos más recientes. |
 | AI-SIM-002 | "Monto inicial" 559.02 vs capital asignado 10,000 | `monto_inicial` y `precio_inicial` son informativos: el motor no los usa y asigna capital × %. | UX/UI | Corregido: etiquetas "de referencia", ayuda y capital asignado calculado. |
 | AI-SIM-003 | Anualizado 6181%, Sharpe 146 | Fórmulas correctas: CAGR con días naturales, volatilidad √252, Sharpe = (CAGR − rf)/vol. Sobre 10 días la extrapolación explota. | Comportamiento esperado + UX | Corregido: rendimiento del periodo como dato principal. En periodos < 1 año las métricas anualizadas pasan a un detalle plegable con explicación (criterio GIPS). |
-| AI-PORT-001 | Ganancia total 339.75 con posición de P/L 2.73 | `create_position` no descontaba `saldo_efectivo`, aunque el esquema define el saldo como "no asignado a posiciones". | Bug confirmado | **Corregido:** agregar, editar y eliminar posiciones mueve el efectivo (409 si no alcanza o si la moneda es distinta). Script `scripts/portfolio/reconcile_cash_balances.py` para datos existentes (1 portafolio afectado). |
+| AI-PORT-001 | Ganancia total 339.75 con posición de P/L 2.73 | La ganancia se calculaba como efectivo + posiciones − capital inicial, y agregar posiciones no descontaba efectivo. | Bug confirmado | **Corregido (decisión final 2026-09-24):** el portafolio registra inversiones. Ganancia = valor actual − capital invertido; rendimiento sobre lo invertido. El capital inicial y el efectivo se retiraron de métricas e interfaz (migración `8c3f1e6a2d47`, que también recalcula las valoraciones históricas). |
 | AI-PORT-002 | Colores P/L | Sin estilo por signo. | UX/UI | Corregido en posiciones, resumen, valoraciones y dashboard. |
 | AI-PORT-003 | Evolución del portafolio | Existe `valoraciones_portafolio` (snapshots). No hace falta nueva persistencia. | Mejora funcional | Pendiente, después de PORT-001. |
 | AI-NEWS-001 | AMZN sin noticias | El worker de noticias usaba la misma lista fija (solo AAPL) y corría cada 30 min, agotando la cuota de Alpha Vantage. | Limitación de configuración | **Corregido:** noticias para activos en uso, una vez al día (migración `5b7e2d9f4a10`). |
@@ -68,15 +68,14 @@ El tag `v1.1.0` no se modificó.
 ## Pasos de operación después de estos cambios
 
 1. Aplicar la migración: `PYTHONPATH=src alembic upgrade head` (desde `backend/`).
-2. Corregir el efectivo existente:
-   - Simulacro: `PYTHONPATH=src python scripts/portfolio/reconcile_cash_balances.py`.
-   - Aplicar: agregar `--apply`.
+2. Aplicar también la migración `8c3f1e6a2d47` (métricas sobre capital invertido); `alembic upgrade head` aplica todas las pendientes.
 3. Reiniciar el worker. Los activos en uso se sincronizan en la siguiente corrida de precios (23:00 hora de México). También se puede lanzar una sincronización manual.
 
 ## Registro de decisiones
 
 - 2026-09-23: los cambios de interfaz no modifican contratos API ni la base de datos.
 - 2026-09-23: el criterio de anualización se basa en GIPS: no anualizar periodos menores a un año.
-- 2026-09-23 (Jose): agregar una posición es una compra virtual que descuenta efectivo.
+- 2026-09-23 (Jose): agregar una posición es una compra virtual que descuenta efectivo. **Reemplazada el 2026-09-24.**
+- 2026-09-24 (Jose): el capital inicial de 10,000 genera ruido. El portafolio se mide solo con capital invertido, valor actual, ganancia/pérdida y rendimiento. Las simulaciones sí conservan su capital inicial, porque el motor lo necesita para repartir los porcentajes.
 - 2026-09-23 (Jose): el worker sincroniza los activos en uso; Yahoo Finance es la fuente principal de precios y Alpha Vantage el respaldo (y la fuente de noticias).
 - 2026-09-23: no hay conversión de divisas, así que se rechazan posiciones en una moneda distinta a la base del portafolio.
