@@ -33,7 +33,7 @@ const addSimulationAssetSchema = z.object({
 
     const parsedValue = Number(value)
     return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El monto inicial debe ser mayor o igual que cero.'),
+  }, 'El monto de referencia debe ser mayor o igual que cero.'),
   precio_inicial: z.string().refine((value) => {
     if (value.trim() === '') {
       return true
@@ -41,7 +41,7 @@ const addSimulationAssetSchema = z.object({
 
     const parsedValue = Number(value)
     return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El precio inicial debe ser mayor o igual que cero.'),
+  }, 'El precio de referencia debe ser mayor o igual que cero.'),
   orden: z
     .string()
     .min(1, 'Ingresa el orden.')
@@ -171,7 +171,7 @@ export function AddSimulationAssetForm({
           </label>
 
           <label className="form-field">
-            <span>Monto inicial</span>
+            <span>Monto de referencia (opcional)</span>
             <input
               {...register('monto_inicial')}
               type="number"
@@ -180,10 +180,14 @@ export function AddSimulationAssetForm({
               disabled={mutation.isPending}
             />
             {errors.monto_inicial ? <small>{errors.monto_inicial.message}</small> : null}
+            <span className="metric-hint">
+              Dato informativo: no cambia el cálculo. La simulación asigna capital inicial ×
+              porcentaje.
+            </span>
           </label>
 
           <label className="form-field">
-            <span>Precio inicial</span>
+            <span>Precio de referencia (opcional)</span>
             <input
               {...register('precio_inicial')}
               type="number"
@@ -192,6 +196,10 @@ export function AddSimulationAssetForm({
               disabled={mutation.isPending}
             />
             {errors.precio_inicial ? <small>{errors.precio_inicial.message}</small> : null}
+            <span className="metric-hint">
+              Dato informativo: la simulación usa el precio histórico de la fecha de inicio
+              efectiva.
+            </span>
           </label>
         </div>
 

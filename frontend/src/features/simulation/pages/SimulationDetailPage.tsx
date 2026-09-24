@@ -317,6 +317,7 @@ export function SimulationDetailPage() {
         status={configuration.estado}
         currency={configuration.moneda_base}
         canUpdate={canUpdate}
+        initialCapital={configuration.capital_inicial}
       />
 
       <SimulationExecutionsSection
@@ -324,6 +325,8 @@ export function SimulationDetailPage() {
         configurationStatus={configuration.estado}
         canRead={canReadExecutions}
         canExecute={canExecute}
+        requestedStartDate={configuration.fecha_inicio}
+        requestedEndDate={configuration.fecha_fin}
       />
 
       {!isDraft ? (

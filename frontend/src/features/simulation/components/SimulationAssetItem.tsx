@@ -19,6 +19,7 @@ interface SimulationAssetItemProps {
   marketAsset?: AssetResponse
   currency: string
   canManage: boolean
+  initialCapital?: string
 }
 
 const editAssetSchema = z.object({
@@ -33,7 +34,7 @@ const editAssetSchema = z.object({
 
     const parsedValue = Number(value)
     return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El monto inicial debe ser mayor o igual que cero.'),
+  }, 'El monto de referencia debe ser mayor o igual que cero.'),
   precio_inicial: z.string().refine((value) => {
     if (value.trim() === '') {
       return true
@@ -41,7 +42,7 @@ const editAssetSchema = z.object({
 
     const parsedValue = Number(value)
     return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El precio inicial debe ser mayor o igual que cero.'),
+  }, 'El precio de referencia debe ser mayor o igual que cero.'),
   orden: z.string().refine((value) => {
     const parsedValue = Number(value)
     return Number.isInteger(parsedValue) && parsedValue > 0
@@ -84,7 +85,13 @@ export function SimulationAssetItem({
   marketAsset,
   currency,
   canManage,
+  initialCapital,
 }: SimulationAssetItemProps) {
+  const allocatedCapital =
+    initialCapital === undefined
+      ? null
+      : (Number(initialCapital) * Number(configuredAsset.porcentaje_asignado)) / 100
+
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -191,7 +198,7 @@ export function SimulationAssetItem({
             </label>
 
             <label className="form-field">
-              <span>Monto inicial</span>
+              <span>Monto de referencia (opcional)</span>
               <input
                 {...register('monto_inicial')}
                 type="number"
@@ -200,10 +207,14 @@ export function SimulationAssetItem({
                 disabled={updateMutation.isPending}
               />
               {errors.monto_inicial ? <small>{errors.monto_inicial.message}</small> : null}
+              <span className="metric-hint">
+                Dato informativo: no cambia el cálculo. La simulación asigna capital inicial ×
+                porcentaje.
+              </span>
             </label>
 
             <label className="form-field">
-              <span>Precio inicial</span>
+              <span>Precio de referencia (opcional)</span>
               <input
                 {...register('precio_inicial')}
                 type="number"
@@ -212,6 +223,10 @@ export function SimulationAssetItem({
                 disabled={updateMutation.isPending}
               />
               {errors.precio_inicial ? <small>{errors.precio_inicial.message}</small> : null}
+              <span className="metric-hint">
+                Dato informativo: la simulación usa el precio histórico de la fecha de inicio
+                efectiva.
+              </span>
             </label>
           </div>
 
@@ -243,17 +258,26 @@ export function SimulationAssetItem({
       ) : (
         <>
           <dl className="simulation-asset-item__details">
+            {allocatedCapital !== null && Number.isFinite(allocatedCapital) ? (
+              <div>
+                <dt>Capital asignado en la simulación</dt>
+                <dd>{formatCurrency(allocatedCapital, currency)}</dd>
+                <span className="metric-hint">Capital inicial × porcentaje asignado.</span>
+              </div>
+            ) : null}
+
             <div>
-              <dt>Monto inicial</dt>
+              <dt>Monto de referencia</dt>
               <dd>
                 {configuredAsset.monto_inicial === null
                   ? 'No configurado'
                   : formatCurrency(configuredAsset.monto_inicial, currency)}
               </dd>
+              <span className="metric-hint">Informativo, no afecta el cálculo.</span>
             </div>
 
             <div>
-              <dt>Precio inicial</dt>
+              <dt>Precio de referencia</dt>
               <dd>
                 {configuredAsset.precio_inicial === null
                   ? 'No configurado'

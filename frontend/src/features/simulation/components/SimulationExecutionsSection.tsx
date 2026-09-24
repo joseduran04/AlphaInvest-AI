@@ -16,6 +16,8 @@ interface SimulationExecutionsSectionProps {
   configurationStatus: SimulationConfigurationStatus
   canRead: boolean
   canExecute: boolean
+  requestedStartDate?: string | null
+  requestedEndDate?: string | null
 }
 
 function formatExecutionStatus(status: SimulationExecutionStatus): string {
@@ -85,9 +87,13 @@ function getCreateExecutionErrorMessage(error: Error): string {
 function SimulationExecutionItem({
   execution,
   canExecute,
+  requestedStartDate,
+  requestedEndDate,
 }: {
   execution: SimulationExecutionResponse
   canExecute: boolean
+  requestedStartDate?: string | null
+  requestedEndDate?: string | null
 }) {
   const [showResult, setShowResult] = useState(false)
 
@@ -149,6 +155,8 @@ function SimulationExecutionItem({
             <SimulationResultSection
               executionId={execution.id}
               onClose={() => setShowResult(false)}
+              requestedStartDate={requestedStartDate}
+              requestedEndDate={requestedEndDate}
             />
           )}
         </div>
@@ -164,6 +172,8 @@ export function SimulationExecutionsSection({
   configurationStatus,
   canRead,
   canExecute,
+  requestedStartDate,
+  requestedEndDate,
 }: SimulationExecutionsSectionProps) {
   const [confirmExecution, setConfirmExecution] = useState(false)
 
@@ -311,6 +321,8 @@ export function SimulationExecutionsSection({
               key={execution.id}
               execution={execution}
               canExecute={canExecute}
+              requestedStartDate={requestedStartDate}
+              requestedEndDate={requestedEndDate}
             />
           ))}
         </div>

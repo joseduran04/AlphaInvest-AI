@@ -16,6 +16,8 @@ interface SimulationAssetsSectionProps {
   status: SimulationConfigurationStatus
   currency: string
   canUpdate: boolean
+  /** Capital inicial de la configuración, para mostrar el capital asignado por activo. */
+  initialCapital?: string
 }
 
 function formatPercentage(value: string): string {
@@ -33,6 +35,7 @@ export function SimulationAssetsSection({
   status,
   currency,
   canUpdate,
+  initialCapital,
 }: SimulationAssetsSectionProps) {
   const [showAddForm, setShowAddForm] = useState(false)
 
@@ -132,7 +135,7 @@ export function SimulationAssetsSection({
         </div>
 
         <div>
-          <dt>Monto total</dt>
+          <dt>Suma de montos de referencia</dt>
           <dd>{formatCurrency(distribution.monto_total, currency)}</dd>
         </div>
 
@@ -184,6 +187,7 @@ export function SimulationAssetsSection({
               marketAsset={marketAssetsById.get(configuredAsset.activo_id)}
               currency={currency}
               canManage={canManage}
+              initialCapital={initialCapital}
             />
           ))}
         </div>

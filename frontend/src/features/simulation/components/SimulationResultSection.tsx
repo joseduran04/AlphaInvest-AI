@@ -6,12 +6,24 @@ import { PageErrorState } from '@/components/PageErrorState'
 import { PageLoadingState } from '@/components/PageLoadingState'
 import { useAssets } from '@/features/market/hooks/useAssets'
 import { useSimulationResult } from '@/features/simulation/hooks/useSimulationResult'
+import { getFinancialToneClass } from '@/lib/financialTone'
 import { formatCurrency } from '@/lib/formatters'
+import {
+  getCalendarDaysBetween,
+  getPeriodShortfall,
+  isAnnualizationRepresentative,
+} from '@/lib/periodMetrics'
 
 interface SimulationResultSectionProps {
   executionId: string
   onClose: () => void
+  /** Fechas solicitadas en la configuración (YYYY-MM-DD). */
+  requestedStartDate?: string | null
+  requestedEndDate?: string | null
 }
+
+/** Diferencia máxima tolerada (fines de semana y festivos) antes de avisar un recorte. */
+const PERIOD_SHORTFALL_TOLERANCE_DAYS = 4
 
 function formatPercentage(value: string | null): string {
   if (value === null) {
@@ -116,7 +128,9 @@ function SimulationAssetResult({
           </span>
         </div>
 
-        <span>{formatPercentage(result.rendimiento_porcentaje)}</span>
+        <span className={getFinancialToneClass(result.rendimiento_porcentaje)}>
+          {formatPercentage(result.rendimiento_porcentaje)}
+        </span>
       </header>
 
       <dl className="simulation-result-asset__grid">
@@ -147,7 +161,9 @@ function SimulationAssetResult({
 
         <div>
           <dt>Ganancia / pérdida</dt>
-          <dd>{formatCurrency(result.ganancia_perdida, currency)}</dd>
+          <dd className={getFinancialToneClass(result.ganancia_perdida)}>
+            {formatCurrency(result.ganancia_perdida, currency)}
+          </dd>
         </div>
 
         <div>
@@ -183,7 +199,12 @@ function SimulationAssetResult({
   )
 }
 
-export function SimulationResultSection({ executionId, onClose }: SimulationResultSectionProps) {
+export function SimulationResultSection({
+  executionId,
+  onClose,
+  requestedStartDate,
+  requestedEndDate,
+}: SimulationResultSectionProps) {
   const resultQuery = useSimulationResult(executionId)
 
   const marketAssetsQuery = useAssets({
@@ -231,6 +252,52 @@ export function SimulationResultSection({ executionId, onClose }: SimulationResu
 
   const totalCommissions = getSummaryString(result.resumen, 'comisiones_totales')
 
+  const effectiveDays = getCalendarDaysBetween(effectiveStartDate, effectiveEndDate)
+
+  const annualizationIsRepresentative = isAnnualizationRepresentative(
+    effectiveStartDate,
+    effectiveEndDate,
+  )
+
+  const periodShortfall = getPeriodShortfall({
+    requestedStart: requestedStartDate,
+    requestedEnd: requestedEndDate,
+    effectiveStart: effectiveStartDate,
+    effectiveEnd: effectiveEndDate,
+  })
+
+  const periodWasShortened =
+    periodShortfall.startDays > PERIOD_SHORTFALL_TOLERANCE_DAYS ||
+    periodShortfall.endDays > PERIOD_SHORTFALL_TOLERANCE_DAYS
+
+  const annualizedMetrics = (
+    <dl className="simulation-result-metrics">
+      <div>
+        <dt>Rendimiento anualizado</dt>
+        <dd>{formatPercentage(result.rendimiento_anualizado_porcentaje)}</dd>
+        <span className="metric-hint">
+          Extrapola el rendimiento del periodo a un año completo con interés compuesto.
+        </span>
+      </div>
+
+      <div>
+        <dt>Volatilidad anualizada</dt>
+        <dd>{formatPercentage(result.volatilidad_anualizada)}</dd>
+        <span className="metric-hint">
+          Cuánto variaron los rendimientos diarios, escalado a un año. Más alta = más riesgo.
+        </span>
+      </div>
+
+      <div>
+        <dt>Índice de Sharpe</dt>
+        <dd>{formatNumber(result.indice_sharpe)}</dd>
+        <span className="metric-hint">
+          Rendimiento anualizado por cada unidad de volatilidad. Depende del rendimiento anualizado.
+        </span>
+      </div>
+    </dl>
+  )
+
   return (
     <div className="simulation-result-panel">
       <header className="simulation-result-panel__header">
@@ -243,6 +310,19 @@ export function SimulationResultSection({ executionId, onClose }: SimulationResu
           Cerrar resultados
         </button>
       </header>
+
+      {periodWasShortened ? (
+        <div className="notice notice--warning" role="note">
+          <strong>El periodo simulado es más corto que el solicitado</strong>
+          <span>
+            Solicitaste del {formatDate(requestedStartDate)} al {formatDate(requestedEndDate)}, pero
+            solo hay precios históricos guardados en común del {formatDate(effectiveStartDate)} al{' '}
+            {formatDate(effectiveEndDate)}. El resultado corresponde únicamente a ese periodo. Si
+            esperabas datos más recientes, sincroniza los precios de los activos en Mercado y vuelve
+            a ejecutar la simulación.
+          </span>
+        </div>
+      ) : null}
 
       <dl className="simulation-result-summary">
         <div>
@@ -262,37 +342,64 @@ export function SimulationResultSection({ executionId, onClose }: SimulationResu
 
         <div>
           <dt>Ganancia / pérdida</dt>
-          <dd>{formatCurrency(result.ganancia_perdida, result.moneda)}</dd>
+          <dd className={getFinancialToneClass(result.ganancia_perdida)}>
+            {formatCurrency(result.ganancia_perdida, result.moneda)}
+          </dd>
         </div>
 
         <div>
-          <dt>Rendimiento total</dt>
-          <dd>{formatPercentage(result.rendimiento_total_porcentaje)}</dd>
+          <dt>Rendimiento del periodo</dt>
+          <dd className={getFinancialToneClass(result.rendimiento_total_porcentaje)}>
+            {formatPercentage(result.rendimiento_total_porcentaje)}
+          </dd>
+          <span className="metric-hint">
+            {effectiveDays === null
+              ? 'Lo que habría ganado o perdido el capital en el periodo simulado.'
+              : `Lo que habría ganado o perdido el capital en ${effectiveDays} días naturales.`}
+          </span>
         </div>
 
-        <div>
-          <dt>Rendimiento anualizado</dt>
-          <dd>{formatPercentage(result.rendimiento_anualizado_porcentaje)}</dd>
-        </div>
+        {annualizationIsRepresentative ? (
+          <div>
+            <dt>Rendimiento anualizado</dt>
+            <dd className={getFinancialToneClass(result.rendimiento_anualizado_porcentaje)}>
+              {formatPercentage(result.rendimiento_anualizado_porcentaje)}
+            </dd>
+            <span className="metric-hint">
+              Rendimiento promedio equivalente por año. No es una predicción.
+            </span>
+          </div>
+        ) : null}
       </dl>
 
       <div className="simulation-result-subsection">
         <h4>Riesgo y rendimiento</h4>
 
+        {annualizationIsRepresentative ? (
+          annualizedMetrics
+        ) : (
+          <details className="technical-details">
+            <summary>Métricas anualizadas (poco representativas en periodos cortos)</summary>
+
+            <p className="metric-hint">
+              El periodo simulado dura menos de un año
+              {effectiveDays === null ? '' : ` (${effectiveDays} días)`}. Anualizar extrapola ese
+              resultado como si se repitiera todo un año, por lo que las cifras pueden verse
+              exageradas. No son rendimientos obtenidos ni predicciones. Por eso los estándares GIPS
+              recomiendan no anualizar periodos menores a un año.
+            </p>
+
+            {annualizedMetrics}
+          </details>
+        )}
+
         <dl className="simulation-result-metrics">
-          <div>
-            <dt>Volatilidad anualizada</dt>
-            <dd>{formatPercentage(result.volatilidad_anualizada)}</dd>
-          </div>
-
-          <div>
-            <dt>Índice de Sharpe</dt>
-            <dd>{formatNumber(result.indice_sharpe)}</dd>
-          </div>
-
           <div>
             <dt>Drawdown máximo</dt>
             <dd>{formatPercentage(result.maximo_drawdown_porcentaje)}</dd>
+            <span className="metric-hint">
+              Mayor caída desde un máximo previo durante el periodo.
+            </span>
           </div>
 
           <div>
@@ -319,6 +426,15 @@ export function SimulationResultSection({ executionId, onClose }: SimulationResu
         <h4>Periodo efectivo</h4>
 
         <dl className="simulation-result-metrics">
+          {requestedStartDate || requestedEndDate ? (
+            <div>
+              <dt>Periodo solicitado</dt>
+              <dd>
+                {formatDate(requestedStartDate)} – {formatDate(requestedEndDate)}
+              </dd>
+            </div>
+          ) : null}
+
           <div>
             <dt>Inicio efectivo</dt>
             <dd>{formatDate(effectiveStartDate)}</dd>
