@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -165,6 +165,37 @@ class PortfolioRepository:
         await self._session.refresh(portfolio)
 
         return portfolio
+
+    async def adjust_cash_balance(
+        self,
+        *,
+        portfolio_id: UUID,
+        delta: Decimal,
+    ) -> Decimal | None:
+        """Suma ``delta`` al saldo en efectivo de forma atómica.
+
+        Devuelve el nuevo saldo, o ``None`` cuando el ajuste dejaría
+        el saldo en negativo (no se modifica nada en ese caso).
+        """
+
+        statement = (
+            update(PortfolioModel)
+            .where(
+                PortfolioModel.id == portfolio_id,
+                PortfolioModel.saldo_efectivo + delta >= 0,
+            )
+            .values(
+                saldo_efectivo=(
+                    PortfolioModel.saldo_efectivo + delta
+                )
+            )
+            .returning(PortfolioModel.saldo_efectivo)
+            .execution_options(synchronize_session=False)
+        )
+
+        result = await self._session.execute(statement)
+
+        return result.scalar_one_or_none()
 
     async def close(
         self,

@@ -42,7 +42,9 @@ type CreatePositionFormValues = z.infer<typeof createPositionSchema>
 function getCreatePositionErrorMessage(error: Error): string {
   if (error instanceof ApiError) {
     if (error.status === 409) {
-      return 'No fue posible agregar la posición porque existe un conflicto con el activo seleccionado.'
+      // El backend explica el conflicto: activo duplicado, efectivo insuficiente
+      // o moneda distinta a la del portafolio.
+      return error.message
     }
 
     if (error.status === 422) {
@@ -190,6 +192,12 @@ export function CreatePositionForm({ portfolioId, onCancel, onCreated }: CreateP
             <input type="datetime-local" {...register('fecha_apertura')} />
           </label>
         </div>
+
+        <p className="metric-hint">
+          Agregar una posición equivale a una compra virtual: su costo (cantidad × precio promedio)
+          se descuenta del efectivo disponible del portafolio y se reintegra si eliminas la
+          posición.
+        </p>
 
         {assetsQuery.isError ? (
           <div className="portfolio-position-form__error" role="alert">

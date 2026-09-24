@@ -12,6 +12,8 @@ from alphainvest.modules.portfolio.application.service import (
 from alphainvest.modules.portfolio.domain.exceptions import (
     PortfolioAssetNotFoundError,
     PortfolioAssetUnavailableError,
+    PortfolioCurrencyMismatchError,
+    PortfolioInsufficientCashError,
     PortfolioNameAlreadyExistsError,
     PortfolioNotFoundError,
     PortfolioUnavailableError,
@@ -361,6 +363,9 @@ async def test_create_position_without_market_price(
         create_position=AsyncMock(
             return_value=position
         ),
+        adjust_cash_balance=AsyncMock(
+            return_value=Decimal("9000")
+        ),
         commit=AsyncMock(),
         rollback=AsyncMock(),
     )
@@ -405,6 +410,10 @@ async def test_create_position_without_market_price(
         currency="USD",
         current_price=None,
         opening_date=None,
+    )
+    repository.adjust_cash_balance.assert_awaited_once_with(
+        portfolio_id=portfolio.id,
+        delta=Decimal("-1000.00000000"),
     )
     repository.commit.assert_awaited_once()
 
@@ -457,6 +466,9 @@ async def test_delete_position() -> None:
             return_value=position
         ),
         delete_position=AsyncMock(),
+        adjust_cash_balance=AsyncMock(
+            return_value=Decimal("11000")
+        ),
         commit=AsyncMock(),
     )
 
@@ -473,6 +485,10 @@ async def test_delete_position() -> None:
 
     repository.delete_position.assert_awaited_once_with(
         position
+    )
+    repository.adjust_cash_balance.assert_awaited_once_with(
+        portfolio_id=portfolio.id,
+        delta=Decimal("1000.00000000"),
     )
     repository.commit.assert_awaited_once()
 
@@ -872,3 +888,270 @@ async def test_list_valuations_rejects_missing_portfolio(
             limit=50,
             offset=0,
         )
+
+def build_position_repository(
+    *,
+    portfolio,
+    position=None,
+    new_balance=Decimal("9000"),
+):
+    return SimpleNamespace(
+        get_by_id_for_user=AsyncMock(
+            return_value=portfolio
+        ),
+        get_position_by_asset=AsyncMock(
+            return_value=None
+        ),
+        get_position_by_id=AsyncMock(
+            return_value=position
+        ),
+        create_position=AsyncMock(
+            return_value=position
+        ),
+        update_position=AsyncMock(
+            return_value=position
+        ),
+        delete_position=AsyncMock(),
+        adjust_cash_balance=AsyncMock(
+            return_value=new_balance
+        ),
+        commit=AsyncMock(),
+        rollback=AsyncMock(),
+    )
+
+
+def build_market_repository(asset):
+    return SimpleNamespace(
+        get_asset=AsyncMock(
+            return_value=asset
+        ),
+        get_latest_asset_price=AsyncMock(
+            return_value=None
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_position_rejects_insufficient_cash(
+) -> None:
+    """AI-PORT-001: agregar una posición es una compra con efectivo."""
+
+    portfolio = build_portfolio()
+    portfolio.saldo_efectivo = Decimal("500")
+    asset = build_asset()
+    repository = build_position_repository(
+        portfolio=portfolio,
+        new_balance=None,
+    )
+
+    service = PortfolioService(
+        repository,
+        build_market_repository(asset),
+    )
+
+    with pytest.raises(
+        PortfolioInsufficientCashError
+    ):
+        await service.create_position(
+            portfolio_id=portfolio.id,
+            user_id=portfolio.usuario_id,
+            request=PositionCreateRequest(
+                activo_id=asset.id,
+                cantidad=Decimal("10"),
+                precio_promedio_compra=Decimal("100"),
+            ),
+        )
+
+    repository.create_position.assert_not_awaited()
+    repository.commit.assert_not_awaited()
+    repository.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_insufficient_cash_maps_to_conflict() -> None:
+    assert issubclass(
+        PortfolioInsufficientCashError,
+        PortfolioUnavailableError,
+    )
+    assert issubclass(
+        PortfolioCurrencyMismatchError,
+        PortfolioUnavailableError,
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_position_rejects_currency_mismatch(
+) -> None:
+    portfolio = build_portfolio()
+    portfolio.moneda_base = "MXN"
+    asset = build_asset()
+    repository = build_position_repository(
+        portfolio=portfolio,
+    )
+
+    service = PortfolioService(
+        repository,
+        build_market_repository(asset),
+    )
+
+    with pytest.raises(
+        PortfolioCurrencyMismatchError
+    ):
+        await service.create_position(
+            portfolio_id=portfolio.id,
+            user_id=portfolio.usuario_id,
+            request=PositionCreateRequest(
+                activo_id=asset.id,
+                cantidad=Decimal("1"),
+                precio_promedio_compra=Decimal("100"),
+            ),
+        )
+
+    repository.adjust_cash_balance.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_create_position_debits_exact_cost_aapl_case(
+) -> None:
+    """Caso observado: 1 AAPL a 337.02 debe descontar 337.02."""
+
+    portfolio = build_portfolio()
+    asset = build_asset()
+    position = build_position(
+        portfolio_id=portfolio.id,
+        asset_id=asset.id,
+    )
+    repository = build_position_repository(
+        portfolio=portfolio,
+        position=position,
+        new_balance=Decimal("9662.98"),
+    )
+
+    service = PortfolioService(
+        repository,
+        build_market_repository(asset),
+    )
+
+    await service.create_position(
+        portfolio_id=portfolio.id,
+        user_id=portfolio.usuario_id,
+        request=PositionCreateRequest(
+            activo_id=asset.id,
+            cantidad=Decimal("1"),
+            precio_promedio_compra=Decimal("337.02"),
+        ),
+    )
+
+    repository.adjust_cash_balance.assert_awaited_once_with(
+        portfolio_id=portfolio.id,
+        delta=Decimal("-337.02000000"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_position_charges_only_cost_difference(
+) -> None:
+    portfolio = build_portfolio()
+    position = build_position(
+        portfolio_id=portfolio.id
+    )
+    repository = build_position_repository(
+        portfolio=portfolio,
+        position=position,
+    )
+    market_repository = SimpleNamespace(
+        get_latest_asset_price=AsyncMock(
+            return_value=None
+        ),
+    )
+
+    service = PortfolioService(
+        repository,
+        market_repository,
+    )
+
+    await service.update_position(
+        portfolio_id=portfolio.id,
+        position_id=position.id,
+        user_id=portfolio.usuario_id,
+        request=PositionUpdateRequest(
+            cantidad=Decimal("15")
+        ),
+    )
+
+    # 10 → 15 unidades a 100: se compran 500 adicionales.
+    repository.adjust_cash_balance.assert_awaited_once_with(
+        portfolio_id=portfolio.id,
+        delta=Decimal("-500.00000000"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_position_refunds_when_reducing(
+) -> None:
+    portfolio = build_portfolio()
+    position = build_position(
+        portfolio_id=portfolio.id
+    )
+    repository = build_position_repository(
+        portfolio=portfolio,
+        position=position,
+    )
+    market_repository = SimpleNamespace(
+        get_latest_asset_price=AsyncMock(
+            return_value=None
+        ),
+    )
+
+    service = PortfolioService(
+        repository,
+        market_repository,
+    )
+
+    await service.update_position(
+        portfolio_id=portfolio.id,
+        position_id=position.id,
+        user_id=portfolio.usuario_id,
+        request=PositionUpdateRequest(
+            cantidad=Decimal("4")
+        ),
+    )
+
+    repository.adjust_cash_balance.assert_awaited_once_with(
+        portfolio_id=portfolio.id,
+        delta=Decimal("600.00000000"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_position_without_cost_change_skips_cash(
+) -> None:
+    portfolio = build_portfolio()
+    position = build_position(
+        portfolio_id=portfolio.id
+    )
+    repository = build_position_repository(
+        portfolio=portfolio,
+        position=position,
+    )
+    market_repository = SimpleNamespace(
+        get_latest_asset_price=AsyncMock(
+            return_value=None
+        ),
+    )
+
+    service = PortfolioService(
+        repository,
+        market_repository,
+    )
+
+    await service.update_position(
+        portfolio_id=portfolio.id,
+        position_id=position.id,
+        user_id=portfolio.usuario_id,
+        request=PositionUpdateRequest(
+            fecha_apertura=datetime(2026, 9, 1)
+        ),
+    )
+
+    repository.adjust_cash_balance.assert_not_awaited()

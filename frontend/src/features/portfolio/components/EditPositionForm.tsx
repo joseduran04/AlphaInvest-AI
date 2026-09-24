@@ -38,6 +38,11 @@ type EditPositionFormValues = z.infer<typeof editPositionSchema>
 
 function getUpdatePositionErrorMessage(error: Error): string {
   if (error instanceof ApiError) {
+    if (error.status === 409) {
+      // Por ejemplo, efectivo insuficiente para aumentar la posición.
+      return error.message
+    }
+
     if (error.status === 422) {
       return 'Los datos de la posición no son válidos. Revisa el formulario.'
     }

@@ -14,6 +14,14 @@ class PortfolioUnavailableError(PortfolioError):
     """El portafolio no admite la operación solicitada."""
 
 
+class PortfolioInsufficientCashError(PortfolioUnavailableError):
+    """El saldo en efectivo no alcanza para la operación."""
+
+
+class PortfolioCurrencyMismatchError(PortfolioUnavailableError):
+    """La moneda del activo no coincide con la moneda base."""
+
+
 class PositionNotFoundError(PortfolioError):
     """La posición solicitada no existe."""
 
