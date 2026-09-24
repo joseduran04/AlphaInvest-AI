@@ -37,9 +37,10 @@ El tag `v1.1.0` no se modificó.
 | AI-PORT-003 | Evolución del portafolio | Existe `valoraciones_portafolio` (snapshots). No hace falta nueva persistencia. | Mejora funcional | Pendiente, después de PORT-001. |
 | AI-NEWS-001 | AMZN sin noticias | El worker de noticias usaba la misma lista fija (solo AAPL) y corría cada 30 min, agotando la cuota de Alpha Vantage. | Limitación de configuración | **Corregido:** noticias para activos en uso, una vez al día (migración `5b7e2d9f4a10`). |
 | AI-NEWS-002 | Noticias poco relacionadas | Medido: las 231 noticias de AAPL tienen relevancia ≥ 0.5 (promedio 0.79). Un umbral por puntaje casi no filtraría nada; el origen es el etiquetado de tickers de Alpha Vantage. | Limitación del proveedor | Pendiente: evaluar reglas deterministas (ticker/empresa en el título o resumen). |
-| AI-NEWS-003 | Métricas técnicas de noticias | Las etiquetas vienen del proveedor (Bearish … Bullish), escala documentada por Alpha Vantage. | UX/UI | Pendiente: traducir etiquetas 1:1 sin inventar umbrales. |
+| AI-NEWS-003 | Métricas técnicas de noticias | Las etiquetas vienen del proveedor (Bearish … Bullish). | UX/UI | **Corregido:** traducción 1:1 ("Sesgo alcista moderado", etc.), relevancia "N de 100" y aviso de que el tono no garantiza el precio. No se inventaron umbrales. |
 | AI-PROFILE-001 | ¿El perfil se usa? | Sí, en recomendaciones (`recommendation_engine`: nivel de riesgo y perfil conservador). No se usa en simulación ni en portafolios. | Mejora funcional | Pendiente: contextualizar volatilidad/drawdown/concentración. |
-| AI-AI-001 | IA demasiado técnica | — | UX/UI | Pendiente. |
+| AI-AI-001 | IA demasiado técnica | — | UX/UI | **Corregido (análisis de activo y sentimiento):** frase interpretativa, barras de probabilidad, comparación con el azar (33 %), aviso para activos distintos de AAPL, detalle técnico plegable y fichas de modelo. Pendiente: recomendación y análisis integral. |
+| AI-AI-002 | Horizontes sin modelo | Los formularios ofrecían intradía, mediano y largo plazo, pero `PREDICCION_TENDENCIA 0.1.0` solo soporta `CORTO_PLAZO`: esas solicitudes fallaban en el worker. | Bug confirmado | **Corregido:** solo "Corto plazo (5 sesiones)" está habilitado; los demás horizontes se muestran como "sin modelo entrenado". |
 | AI-ML-001 | Ciclo de vida de modelos | Ver la sección siguiente. | Limitación documentada | Pendiente documentación. |
 
 ## Estado real de los modelos (artefactos en `backend/artifacts/ai`)
