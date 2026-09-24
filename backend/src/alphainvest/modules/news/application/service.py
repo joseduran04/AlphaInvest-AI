@@ -55,6 +55,7 @@ class NewsService:
         end_at: datetime | None,
         limit: int,
         offset: int,
+        order_by: str = "fecha",
     ) -> NewsListResponse:
         if (
             start_at is not None
@@ -84,6 +85,7 @@ class NewsService:
                 end_at=end_at,
                 limit=limit,
                 offset=offset,
+                order_by=order_by,
             )
         )
 

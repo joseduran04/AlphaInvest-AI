@@ -141,6 +141,10 @@ class Settings(BaseSettings):
     # abiertas, configuraciones de simulación no archivadas y listas de
     # seguimiento.
     worker_price_sync_assets_in_use: bool = True
+    # Sincroniza todos los activos ACTIVO del catálogo (precios, indicadores
+    # y noticias). Con el catálogo actual son ~17 llamadas diarias de
+    # noticias a Alpha Vantage, dentro de la cuota gratuita.
+    worker_sync_all_active_assets: bool = True
     worker_simulation_source_name: str = (
         "Yahoo Finance"
     )

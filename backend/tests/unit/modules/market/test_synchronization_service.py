@@ -313,6 +313,7 @@ async def test_sync_creates_and_updates_prices() -> None:
         symbol="AAPL",
         currency="USD",
         asset_type="ACCION",
+        market_code=None,
     )
 
     market_repository.upsert_daily_prices.assert_awaited_once()

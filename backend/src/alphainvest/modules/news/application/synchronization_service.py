@@ -10,6 +10,9 @@ from alphainvest.modules.market.domain.exceptions import (
 from alphainvest.modules.market.infrastructure.repository import (
     MarketRepository,
 )
+from alphainvest.modules.news.application.news_tickers import (
+    asset_news_ticker,
+)
 from alphainvest.modules.news.domain.exceptions import (
     NewsPersistenceError,
     NewsSynchronizationError,
@@ -200,7 +203,7 @@ class NewsSynchronizationService:
         try:
             documents = (
                 await self._provider.fetch_news(
-                    symbol=asset.simbolo,
+                    symbol=asset_news_ticker(asset),
                     start_at=start_at,
                     end_at=end_at,
                     limit=limit,

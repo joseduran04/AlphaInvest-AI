@@ -34,20 +34,33 @@ async def resolve_worker_symbols(
     """Símbolos que el worker debe sincronizar (precios y noticias)."""
 
     configured = settings.worker_price_symbols
+    sync_all = getattr(
+        settings,
+        "worker_sync_all_active_assets",
+        False,
+    ) is True
+    sync_in_use = getattr(
+        settings,
+        "worker_price_sync_assets_in_use",
+        False,
+    ) is True
 
-    if not settings.worker_price_sync_assets_in_use:
+    if not sync_all and not sync_in_use:
         return configured
 
     try:
         async with AsyncSessionFactory() as session:
-            in_use = await MarketRepository(
-                session
-            ).list_symbols_in_use()
+            repository = MarketRepository(session)
+            extra = (
+                await repository.list_active_symbols()
+                if sync_all
+                else await repository.list_symbols_in_use()
+            )
     except Exception:
         logger.exception(
-            "No fue posible consultar los activos en uso; "
+            "No fue posible consultar los activos a sincronizar; "
             "se usará solo la lista configurada"
         )
         return configured
 
-    return merge_symbols(configured, in_use)
+    return merge_symbols(configured, extra)

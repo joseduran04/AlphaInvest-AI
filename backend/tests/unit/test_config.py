@@ -321,6 +321,7 @@ def test_market_price_sources_default_to_yahoo_then_alpha_vantage() -> None:
         "Alpha Vantage",
     ]
     assert settings.worker_price_sync_assets_in_use is True
+    assert settings.worker_sync_all_active_assets is True
 
 
 @pytest.mark.unit

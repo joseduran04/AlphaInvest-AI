@@ -45,7 +45,9 @@ class AlphaVantageProvider:
         symbol: str,
         currency: str,
         asset_type: str,
+        market_code: str | None = None,
     ) -> list[DailyPricePoint]:
+        _ = market_code
         if not self._api_key:
             raise ProviderConfigurationError(
                 "No se configuró la API key de Alpha Vantage"

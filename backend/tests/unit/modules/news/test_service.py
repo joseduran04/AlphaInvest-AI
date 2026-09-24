@@ -168,6 +168,55 @@ async def test_lists_asset_news() -> None:
         == "AAPL"
     )
 
+    market_repository.list_news_references.assert_awaited_once_with(
+        asset_id=reference.activo_id,
+        start_at=None,
+        end_at=None,
+        limit=20,
+        offset=0,
+        order_by="fecha",
+    )
+
+
+@pytest.mark.asyncio
+async def test_lists_asset_news_by_relevance() -> None:
+    reference = build_reference()
+
+    market_repository = SimpleNamespace(
+        get_asset=AsyncMock(
+            return_value=SimpleNamespace(
+                id=reference.activo_id
+            )
+        ),
+        list_news_references=AsyncMock(
+            return_value=([reference], 1)
+        ),
+    )
+    mongo_repository = SimpleNamespace(
+        get_by_document_id=AsyncMock(
+            return_value=build_mongo_document()
+        )
+    )
+
+    await NewsService(
+        market_repository=market_repository,
+        mongo_repository=mongo_repository,
+    ).list_asset_news(
+        asset_id=reference.activo_id,
+        start_at=None,
+        end_at=None,
+        limit=20,
+        offset=0,
+        order_by="relevancia",
+    )
+
+    assert (
+        market_repository.list_news_references.await_args.kwargs[
+            "order_by"
+        ]
+        == "relevancia"
+    )
+
 
 @pytest.mark.asyncio
 async def test_rejects_missing_asset(

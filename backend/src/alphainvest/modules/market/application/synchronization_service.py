@@ -33,6 +33,15 @@ from alphainvest.modules.operation.infrastructure.repository import (
 
 logger = logging.getLogger(__name__)
 
+def _market_code(asset: object) -> str | None:
+    """Código del mercado del activo, si la relación está cargada."""
+
+    market = getattr(asset, "mercado", None)
+    code = getattr(market, "codigo", None)
+
+    return code if isinstance(code, str) else None
+
+
 PRICE_SYNC_JOB_CODE = "ACTUALIZAR_PRECIOS_DIARIOS"
 PRICE_SYNC_LOCK_PREFIX = "MARKET_PRICE_SYNC"
 PRICE_SYNC_LOCK_OWNER = "alphainvest-api"
@@ -61,6 +70,7 @@ class PriceSynchronizationService:
         symbol: str,
         currency: str,
         asset_type: str,
+        market_code: str | None,
         primary_error: MarketProviderError,
     ) -> tuple[FinancialSourceModel, list[DailyPricePoint]]:
         """Intenta los proveedores de respaldo en orden de prioridad."""
@@ -82,6 +92,7 @@ class PriceSynchronizationService:
                     symbol=symbol,
                     currency=currency,
                     asset_type=asset_type,
+                    market_code=market_code,
                 )
             except MarketProviderError:
                 logger.warning(
@@ -201,11 +212,14 @@ class PriceSynchronizationService:
             raise
 
         try:
+            market_code = _market_code(asset)
+
             try:
                 prices = await self._provider.fetch_daily_prices(
                     symbol=asset.simbolo,
                     currency=asset.moneda,
                     asset_type=asset.tipo_activo.codigo,
+                    market_code=market_code,
                 )
             except MarketProviderError as primary_error:
                 if not self._fallback_providers:
@@ -216,6 +230,7 @@ class PriceSynchronizationService:
                         symbol=asset.simbolo,
                         currency=asset.moneda,
                         asset_type=asset.tipo_activo.codigo,
+                        market_code=market_code,
                         primary_error=primary_error,
                     )
                 )

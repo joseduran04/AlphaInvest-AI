@@ -182,6 +182,22 @@ class MarketRepository:
 
         return result.scalar_one_or_none()
 
+    async def list_active_symbols(self) -> list[str]:
+        """Símbolos de todos los activos en estado ACTIVO."""
+
+        statement = (
+            select(AssetModel.simbolo)
+            .where(AssetModel.estado == "ACTIVO")
+            .order_by(AssetModel.simbolo)
+        )
+
+        result = await self._session.execute(statement)
+
+        return [
+            str(symbol)
+            for symbol in result.scalars().all()
+        ]
+
     async def list_symbols_in_use(self) -> list[str]:
         """Símbolos de activos activos que el usuario está utilizando.
 
@@ -351,6 +367,7 @@ class MarketRepository:
         end_at: datetime | None,
         limit: int,
         offset: int,
+        order_by: str = "fecha",
     ) -> tuple[
         list[NewsReferenceModel],
         int,
@@ -378,6 +395,16 @@ class MarketRepository:
             select(NewsReferenceModel)
             .where(*filters)
             .order_by(
+                *(
+                    (
+                        NewsReferenceModel
+                        .relevancia
+                        .desc()
+                        .nulls_last(),
+                    )
+                    if order_by == "relevancia"
+                    else ()
+                ),
                 NewsReferenceModel
                 .fecha_publicacion
                 .desc(),

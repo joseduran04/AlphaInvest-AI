@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from fastapi import (
@@ -70,6 +71,13 @@ async def list_asset_news(
         default=0,
         ge=0,
     ),
+    order_by: Literal["fecha", "relevancia"] = Query(
+        default="fecha",
+        description=(
+            "fecha: más recientes primero; relevancia: más "
+            "relevantes para el activo primero (luego por fecha)."
+        ),
+    ),
 ) -> NewsListResponse:
     try:
         return await service.list_asset_news(
@@ -78,6 +86,7 @@ async def list_asset_news(
             end_at=end_at,
             limit=limit,
             offset=offset,
+            order_by=order_by,
         )
 
     except AssetNotFoundError as error:

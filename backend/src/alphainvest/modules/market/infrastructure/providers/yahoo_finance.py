@@ -9,6 +9,9 @@ from alphainvest.modules.market.domain.exceptions import (
     ProviderRequestError,
     ProviderResponseError,
 )
+from alphainvest.modules.market.domain.provider_symbols import (
+    yahoo_symbol,
+)
 from alphainvest.modules.market.domain.value_objects import (
     DailyPricePoint,
 )
@@ -25,9 +28,13 @@ class YahooFinanceProvider:
         symbol: str,
         currency: str,
         asset_type: str,
+        market_code: str | None = None,
     ) -> list[DailyPricePoint]:
-        _ = asset_type
-        normalized_symbol = symbol.strip().upper()
+        normalized_symbol = yahoo_symbol(
+            symbol=symbol,
+            asset_type=asset_type,
+            market_code=market_code,
+        )
 
         if not normalized_symbol:
             raise ProviderRequestError(

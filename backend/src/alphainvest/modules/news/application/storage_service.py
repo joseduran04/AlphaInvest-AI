@@ -7,6 +7,9 @@ from alphainvest.modules.market.domain.exceptions import (
 from alphainvest.modules.market.infrastructure.repository import (
     MarketRepository,
 )
+from alphainvest.modules.news.application.news_tickers import (
+    asset_news_ticker,
+)
 from alphainvest.modules.news.domain.exceptions import (
     NewsPersistenceError,
 )
@@ -57,7 +60,7 @@ class NewsStorageService:
 
         relevance = self._resolve_relevance(
             document=document,
-            symbol=asset.simbolo,
+            symbol=asset_news_ticker(asset),
         )
 
         mongo_result = (
