@@ -17,6 +17,7 @@ import { EditPortfolioForm } from '@/features/portfolio/components/EditPortfolio
 import { usePortfolio } from '@/features/portfolio/hooks/usePortfolio'
 import { usePortfolioPositions } from '@/features/portfolio/hooks/usePortfolioPositions'
 import { usePortfolioSummary } from '@/features/portfolio/hooks/usePortfolioSummary'
+import { getFinancialToneClass } from '@/lib/financialTone'
 import { formatCurrency } from '@/lib/formatters'
 
 import '@/styles/portfolio.css'
@@ -287,12 +288,16 @@ export function PortfolioDetailPage() {
 
           <article className="portfolio-metric-card">
             <span>Ganancia / pérdida total</span>
-            <strong>{formatCurrency(summary.ganancia_perdida_total, summary.moneda_base)}</strong>
+            <strong className={getFinancialToneClass(summary.ganancia_perdida_total)}>
+              {formatCurrency(summary.ganancia_perdida_total, summary.moneda_base)}
+            </strong>
           </article>
 
           <article className="portfolio-metric-card">
             <span>Rendimiento estimado</span>
-            <strong>{formatPercentage(summary.rendimiento_estimado_porcentaje)}</strong>
+            <strong className={getFinancialToneClass(summary.rendimiento_estimado_porcentaje)}>
+              {formatPercentage(summary.rendimiento_estimado_porcentaje)}
+            </strong>
           </article>
 
           <article className="portfolio-metric-card">

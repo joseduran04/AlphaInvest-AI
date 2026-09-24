@@ -100,3 +100,71 @@
   background: var(--color-danger-soft);
   border-color: rgb(220 38 38 / 0.18);
 }
+
+/*
+ * Valores financieros con signo (ganancia/pérdida, rendimientos).
+ * positivo → verde, negativo → rojo, cero o sin dato → neutral.
+ */
+.financial-value.financial-value--positive {
+  color: var(--color-success);
+}
+
+.financial-value.financial-value--negative {
+  color: var(--color-danger);
+}
+
+.financial-value.financial-value--neutral {
+  color: var(--color-text-primary);
+}
+
+/* Texto breve que explica una métrica debajo de su valor. */
+.metric-hint {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+/* Aviso informativo que no es un error. */
+.notice {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.notice strong {
+  color: var(--color-text-primary);
+}
+
+.notice--warning {
+  border-color: rgb(180 83 9 / 0.25);
+  background: var(--color-warning-soft);
+}
+
+.notice--warning strong {
+  color: var(--color-warning);
+}
+
+/* Detalle técnico plegable: la interpretación va primero, el dato técnico después. */
+.technical-details {
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+}
+
+.technical-details > summary {
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.technical-details[open] > summary {
+  margin-bottom: 0.75rem;
+}

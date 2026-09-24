@@ -3,6 +3,7 @@ import { PageErrorState } from '@/components/PageErrorState'
 import { PageLoadingState } from '@/components/PageLoadingState'
 import { useCreatePortfolioValuation } from '@/features/portfolio/hooks/useCreatePortfolioValuation'
 import { usePortfolioValuations } from '@/features/portfolio/hooks/usePortfolioValuations'
+import { getFinancialToneClass } from '@/lib/financialTone'
 import { formatCurrency } from '@/lib/formatters'
 
 interface PortfolioValuationsSectionProps {
@@ -145,7 +146,9 @@ export function PortfolioValuationsSection({
                     <span>{formatDateTime(valuation.fecha_hora)}</span>
                   </div>
 
-                  <span className="portfolio-valuation-card__return">
+                  <span
+                    className={`portfolio-valuation-card__return ${getFinancialToneClass(valuation.rendimiento_porcentaje)}`}
+                  >
                     {formatPercentage(valuation.rendimiento_porcentaje)}
                   </span>
                 </header>
@@ -168,7 +171,9 @@ export function PortfolioValuationsSection({
 
                   <div>
                     <dt>Ganancia / pérdida</dt>
-                    <dd>{formatCurrency(valuation.ganancia_perdida, valuation.moneda)}</dd>
+                    <dd className={getFinancialToneClass(valuation.ganancia_perdida)}>
+                      {formatCurrency(valuation.ganancia_perdida, valuation.moneda)}
+                    </dd>
                   </div>
                 </dl>
 

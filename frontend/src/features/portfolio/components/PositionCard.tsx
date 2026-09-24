@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { AssetResponse, PositionResponse } from '@/api/types'
 import { EditPositionForm } from '@/features/portfolio/components/EditPositionForm'
 import { useDeletePosition } from '@/features/portfolio/hooks/useDeletePosition'
+import { getFinancialToneClass } from '@/lib/financialTone'
 import { formatCurrency } from '@/lib/formatters'
 
 interface PositionCardProps {
@@ -109,7 +110,7 @@ export function PositionCard({ portfolioId, position, asset, canUpdate }: Positi
 
             <div>
               <dt>Ganancia / pérdida</dt>
-              <dd>
+              <dd className={getFinancialToneClass(position.ganancia_perdida)}>
                 {position.ganancia_perdida === null
                   ? 'No disponible'
                   : formatCurrency(position.ganancia_perdida, position.moneda)}
@@ -118,7 +119,9 @@ export function PositionCard({ portfolioId, position, asset, canUpdate }: Positi
 
             <div>
               <dt>Rendimiento</dt>
-              <dd>{formatPercentage(position.rendimiento_porcentaje)}</dd>
+              <dd className={getFinancialToneClass(position.rendimiento_porcentaje)}>
+                {formatPercentage(position.rendimiento_porcentaje)}
+              </dd>
             </div>
 
             <div>

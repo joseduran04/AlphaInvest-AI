@@ -757,7 +757,7 @@
 .portfolio-valuation-card__return {
   flex: 0 0 auto;
 
-  color: var(--color-text-primary) !important;
+  /* El color lo define la clase financial-value según el signo. */
   font-size: 0.85rem !important;
   font-weight: 700;
 }

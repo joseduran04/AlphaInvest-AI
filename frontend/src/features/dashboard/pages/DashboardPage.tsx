@@ -12,6 +12,7 @@ import {
   formatDashboardMoney,
   formatDashboardPercentage,
 } from '@/features/dashboard/utils/dashboardFormatters'
+import { getFinancialToneClass } from '@/lib/financialTone'
 import { useNotifications } from '@/features/notifications/hooks/useNotifications'
 import { useUnreadNotificationCount } from '@/features/notifications/hooks/useUnreadNotificationCount'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -241,7 +242,7 @@ export function DashboardPage() {
                 <dl className="dashboard-details">
                   <div>
                     <dt>Ganancia / pérdida</dt>
-                    <dd>
+                    <dd className={getFinancialToneClass(portfolioSummary.ganancia_perdida_total)}>
                       {formatDashboardMoney(
                         portfolioSummary.ganancia_perdida_total,
                         portfolioSummary.moneda_base,
@@ -251,7 +252,11 @@ export function DashboardPage() {
 
                   <div>
                     <dt>Rendimiento</dt>
-                    <dd>
+                    <dd
+                      className={getFinancialToneClass(
+                        portfolioSummary.rendimiento_estimado_porcentaje,
+                      )}
+                    >
                       {formatDashboardPercentage(portfolioSummary.rendimiento_estimado_porcentaje)}
                     </dd>
                   </div>
