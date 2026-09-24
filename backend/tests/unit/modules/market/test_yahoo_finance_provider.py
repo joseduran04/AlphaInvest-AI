@@ -89,3 +89,87 @@ def test_provider_source_name() -> None:
     provider = YahooFinanceProvider()
 
     assert provider.source_name == "Yahoo Finance"
+
+def build_history(rows: dict[str, list[object]]) -> pd.DataFrame:
+    index = pd.DatetimeIndex(
+        [datetime(2026, 9, 22 + offset) for offset in range(len(rows["Open"]))]
+    )
+    return pd.DataFrame(rows, index=index)
+
+
+@pytest.mark.asyncio
+async def test_provider_widens_inconsistent_high_low() -> None:
+    """Yahoo con repair=True puede dar un cierre fuera de máximo/mínimo."""
+
+    history = build_history(
+        {
+            "Open": [744.35],
+            "High": [770.0],
+            "Low": [743.006],
+            "Close": [770.815],
+            "Adj Close": [770.815],
+            "Volume": [23861392],
+        }
+    )
+    provider = YahooFinanceProvider()
+
+    with patch.object(provider, "_download_history", return_value=history):
+        prices = await provider.fetch_daily_prices(
+            symbol="META",
+            currency="USD",
+            asset_type="ACCION",
+        )
+
+    assert prices[0].high == Decimal("770.815")
+    assert prices[0].low == Decimal("743.006")
+
+
+@pytest.mark.asyncio
+async def test_provider_accepts_missing_volume_and_skips_bad_rows() -> None:
+    history = build_history(
+        {
+            "Open": [1.17, float("nan")],
+            "High": [1.18, 1.18],
+            "Low": [1.16, 1.16],
+            "Close": [1.175, 1.17],
+            "Adj Close": [1.175, 1.17],
+            "Volume": [float("nan"), 0],
+        }
+    )
+    provider = YahooFinanceProvider()
+
+    with patch.object(provider, "_download_history", return_value=history):
+        prices = await provider.fetch_daily_prices(
+            symbol="EUR/USD",
+            currency="USD",
+            asset_type="DIVISA",
+            market_code="FOREX",
+        )
+
+    assert len(prices) == 1
+    assert prices[0].volume is None
+
+
+@pytest.mark.asyncio
+async def test_provider_fails_when_every_row_is_invalid() -> None:
+    history = build_history(
+        {
+            "Open": [float("nan")],
+            "High": [1.0],
+            "Low": [1.0],
+            "Close": [1.0],
+            "Adj Close": [1.0],
+            "Volume": [0],
+        }
+    )
+    provider = YahooFinanceProvider()
+
+    with (
+        patch.object(provider, "_download_history", return_value=history),
+        pytest.raises(ProviderResponseError),
+    ):
+        await provider.fetch_daily_prices(
+            symbol="AAPL",
+            currency="USD",
+            asset_type="ACCION",
+        )

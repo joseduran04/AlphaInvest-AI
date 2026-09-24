@@ -10,7 +10,10 @@ from alphainvest.core.error_handlers import (
     register_exception_handlers,
 )
 from alphainvest.core.logging import configure_logging
-from alphainvest.core.middleware import RequestContextMiddleware
+from alphainvest.core.middleware import (
+    RequestContextMiddleware,
+    UnhandledErrorMiddleware,
+)
 from alphainvest.infrastructure.database.session import (
     dispose_engine,
 )
@@ -55,6 +58,11 @@ def create_app() -> FastAPI:
         docs_url=None if is_production else "/docs",
         redoc_url=None if is_production else "/redoc",
         openapi_url=None if is_production else "/openapi.json",
+    )
+
+    # El más interno: los errores no controlados salen con encabezados CORS.
+    app.add_middleware(
+        UnhandledErrorMiddleware
     )
 
     app.add_middleware(

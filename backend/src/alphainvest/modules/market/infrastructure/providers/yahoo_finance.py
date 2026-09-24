@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -15,6 +16,8 @@ from alphainvest.modules.market.domain.provider_symbols import (
 from alphainvest.modules.market.domain.value_objects import (
     DailyPricePoint,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class YahooFinanceProvider:
@@ -60,14 +63,33 @@ class YahooFinanceProvider:
 
         prices: list[DailyPricePoint] = []
 
+        skipped = 0
+
         for index, row in history.iterrows():
-            price = self._parse_row(
-                raw_date=index,
-                row=row,
-                currency=currency,
-            )
+            try:
+                price = self._parse_row(
+                    raw_date=index,
+                    row=row,
+                    currency=currency,
+                )
+            except (ProviderResponseError, ValueError, InvalidOperation):
+                skipped += 1
+                continue
 
             prices.append(price)
+
+        if not prices:
+            raise ProviderResponseError(
+                "Yahoo Finance no devolvió filas válidas "
+                f"para {normalized_symbol}"
+            )
+
+        if skipped:
+            logger.warning(
+                "Yahoo Finance: %s filas inválidas omitidas para %s",
+                skipped,
+                normalized_symbol,
+            )
 
         return sorted(
             prices,
@@ -129,16 +151,12 @@ class YahooFinanceProvider:
                 None,
             )
 
-            if (
-                volume_value is None
+            # Divisas e índices pueden no traer volumen.
+            volume = (
+                None
+                if volume_value is None
                 or pd.isna(volume_value)
-            ):
-                raise ProviderResponseError(
-                    "Yahoo Finance devolvió volumen inválido"
-                )
-
-            volume = Decimal(
-                str(volume_value)
+                else Decimal(str(volume_value))
             )
 
         except (
@@ -150,6 +168,12 @@ class YahooFinanceProvider:
             raise ProviderResponseError(
                 "Yahoo Finance devolvió una fila OHLCV inválida"
             ) from error
+
+        # Yahoo (con repair=True) a veces entrega máximos/mínimos que no
+        # contienen a la apertura o al cierre por redondeos o ajustes. Se
+        # amplía el rango en vez de descartar la sesión completa.
+        high_price = max(high_price, open_price, close_price)
+        low_price = min(low_price, open_price, close_price)
 
         return DailyPricePoint(
             date=timestamp.date(),
