@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
 import type { AssetResponse, PositionResponse } from '@/api/types'
-import { DivergingBarChart } from '@/components/charts/DivergingBarChart'
+import { GroupedBarChart } from '@/components/charts/GroupedBarChart'
 import { TimeSeriesChart } from '@/components/charts/TimeSeriesChart'
 import { PageLoadingState } from '@/components/PageLoadingState'
 import { useDailyCloses } from '@/features/market/hooks/useDailyCloses'
@@ -73,17 +73,22 @@ export function PortfolioPerformanceSection({
   const benchmarkCloses = benchmarkAsset ? closesByAsset.get(benchmarkAsset.id) : undefined
 
   const barItems = openPositions
-    .filter((position) => position.ganancia_perdida !== null)
-    .map((position) => ({
-      key: position.id,
-      label: assetsById.get(position.activo_id)?.symbol ?? 'Activo',
-      value: Number(position.ganancia_perdida),
-      detail:
-        position.rendimiento_porcentaje === null
-          ? undefined
-          : formatPercentage(Number(position.rendimiento_porcentaje)),
-    }))
-    .sort((a, b) => b.value - a.value)
+    .filter((position) => position.valor_actual !== null)
+    .map((position) => {
+      const before = Number(position.costo_total)
+      const after = Number(position.valor_actual)
+      const change = after - before
+      const percentage = before > 0 ? (change / before) * 100 : 0
+
+      return {
+        key: position.id,
+        label: assetsById.get(position.activo_id)?.symbol ?? 'Activo',
+        before,
+        after,
+        changeLabel: `${change > 0 ? '+' : ''}${formatCurrency(change, currency)} · ${formatPercentage(percentage)}`,
+      }
+    })
+    .sort((a, b) => b.after - b.before - (a.after - a.before))
 
   if (openPositions.length === 0) {
     return null
@@ -126,7 +131,7 @@ export function PortfolioPerformanceSection({
                 {
                   key: 'invested',
                   label: 'Capital invertido',
-                  color: 'muted',
+                  color: 'series-2',
                   dashed: true,
                   values: series.invested,
                 },
@@ -161,9 +166,11 @@ export function PortfolioPerformanceSection({
         )}
 
         {barItems.length > 0 ? (
-          <DivergingBarChart
-            title="Ganancia o pérdida por posición"
-            description="Valor actual menos lo invertido en cada posición abierta."
+          <GroupedBarChart
+            title="Antes y después por activo"
+            description="Lo que invertiste en cada posición contra lo que vale hoy. Arriba, la ganancia o pérdida."
+            beforeLabel="Invertido (antes)"
+            afterLabel="Valor actual (después)"
             items={barItems}
             formatValue={(value) => formatCurrency(value, currency)}
           />

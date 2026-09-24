@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
 import type { AssetResponse, SimulationResultResponse } from '@/api/types'
-import { DivergingBarChart } from '@/components/charts/DivergingBarChart'
+import { GroupedBarChart } from '@/components/charts/GroupedBarChart'
 import { TimeSeriesChart } from '@/components/charts/TimeSeriesChart'
 import { useDailyCloses } from '@/features/market/hooks/useDailyCloses'
 import { formatCurrency } from '@/lib/formatters'
@@ -64,14 +64,19 @@ export function SimulationCharts({
   const benchmarkCloses = benchmarkAsset ? closesByAsset.get(benchmarkAsset.id) : undefined
 
   const assetBars = result.activos
-    .map((assetResult) => ({
-      key: assetResult.id,
-      label: marketAssetsById.get(assetResult.activo_id)?.symbol ?? 'Activo',
-      value: Number(assetResult.ganancia_perdida),
-      detail: formatPercentage(Number(assetResult.rendimiento_porcentaje)),
-    }))
-    .filter((item) => Number.isFinite(item.value))
-    .sort((a, b) => b.value - a.value)
+    .map((assetResult) => {
+      const change = Number(assetResult.ganancia_perdida)
+
+      return {
+        key: assetResult.id,
+        label: marketAssetsById.get(assetResult.activo_id)?.symbol ?? 'Activo',
+        before: Number(assetResult.capital_asignado),
+        after: Number(assetResult.valor_final),
+        changeLabel: `${change > 0 ? '+' : ''}${formatCurrency(change, result.moneda)} · ${formatPercentage(Number(assetResult.rendimiento_porcentaje))}`,
+      }
+    })
+    .filter((item) => Number.isFinite(item.before) && Number.isFinite(item.after))
+    .sort((a, b) => b.after - b.before - (a.after - a.before))
 
   const simulationReturn = evolution.map((point) => {
     const value = Number(point.valor)
@@ -105,7 +110,7 @@ export function SimulationCharts({
               {
                 key: 'contributed',
                 label: 'Capital aportado',
-                color: 'muted',
+                color: 'series-2',
                 dashed: true,
                 values: evolution.map((point) => Number(point.aportado)),
               },
@@ -140,9 +145,11 @@ export function SimulationCharts({
       )}
 
       {assetBars.length > 0 ? (
-        <DivergingBarChart
-          title="Resultado por activo"
-          description="Ganancia o pérdida de cada activo en el periodo simulado."
+        <GroupedBarChart
+          title="Antes y después por activo"
+          description="Capital asignado a cada activo al inicio contra su valor al final del periodo. Arriba, la ganancia o pérdida."
+          beforeLabel="Capital asignado (antes)"
+          afterLabel="Valor final (después)"
           items={assetBars}
           formatValue={(value) => formatCurrency(value, result.moneda)}
         />

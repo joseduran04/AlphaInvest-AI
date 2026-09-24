@@ -13,6 +13,8 @@ import { useLatestPrice } from '@/features/market/hooks/useLatestPrice'
 import { usePriceHistory } from '@/features/market/hooks/usePriceHistory'
 import { useSyncAssetPrices } from '@/features/market/hooks/useSyncAssetPrices'
 
+import { AssetPriceChart } from '@/features/market/components/AssetPriceChart'
+
 import '@/styles/asset-detail.css'
 
 const HISTORY_PAGE_SIZE = 20
@@ -382,6 +384,19 @@ export function AssetDetailPage() {
           </article>
         ) : null}
       </section>
+
+      {canReadPrices ? (
+        <section className="asset-detail-card">
+          <header className="asset-detail-card__header">
+            <div>
+              <span className="asset-detail-card__eyebrow">Gráfica</span>
+              <h2>Evolución del precio</h2>
+            </div>
+          </header>
+
+          <AssetPriceChart assetId={asset.id} symbol={asset.symbol} />
+        </section>
+      ) : null}
 
       {canReadPrices ? (
         <section className="asset-detail-card">

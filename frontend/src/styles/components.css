@@ -508,3 +508,64 @@
 .chart__table th:first-child {
   text-align: left;
 }
+
+.chart__stroke--positive {
+  color: var(--color-success);
+  stroke: var(--color-success);
+}
+
+.chart__stroke--negative {
+  color: var(--color-danger);
+  stroke: var(--color-danger);
+}
+
+.chart__legend-swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+}
+
+.chart__fill-bg--series-1 {
+  background: var(--chart-series-1);
+}
+
+.chart__fill-bg--series-2 {
+  background: var(--chart-series-2);
+}
+
+.chart__bar-change {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__text--positive {
+  fill: var(--color-success);
+}
+
+.chart__text--negative {
+  fill: var(--color-danger);
+}
+
+.chart__text--neutral {
+  fill: var(--color-text-secondary);
+}
+
+.chart__bar-values text {
+  fill: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: rgb(15 23 42 / 0.35);
+  stroke-width: 2px;
+}
+
+.chart__bar-group:focus-visible {
+  outline: none;
+}
+
+.chart__bar-group:hover .chart__bar,
+.chart__bar-group:focus-visible .chart__bar {
+  opacity: 0.85;
+}

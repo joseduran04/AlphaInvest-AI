@@ -7,8 +7,11 @@ import { useElementWidth } from './useElementWidth'
 export interface TimeSeries {
   key: string
   label: string
-  /** Rol de color: 'series-1' | 'series-2' | 'positive' | 'negative' | 'muted'. */
-  color: 'series-1' | 'series-2' | 'muted'
+  /**
+   * Rol de color. 'positive'/'negative' solo para una serie única de precio
+   * (sube/baja en el periodo, acompañado del cambio en texto).
+   */
+  color: 'series-1' | 'series-2' | 'muted' | 'positive' | 'negative'
   dashed?: boolean
   values: (number | null)[]
 }

@@ -345,6 +345,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/assets/{asset_id}/price-series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultar serie de precios para graficar
+         * @description Devuelve un cierre por fecha (fuente principal primero) desde start_date, muestreado a max_points para gráficas.
+         */
+        get: operations["get_asset_price_series_api_v1_market_assets__asset_id__price_series_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/assets/{asset_id}/latest-price": {
         parameters: {
             query?: never;
@@ -3439,6 +3459,41 @@ export interface components {
             /** Fecha Apertura */
             fecha_apertura?: string | null;
         };
+        /** PricePointResponse */
+        PricePointResponse: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Close */
+            close: string;
+        };
+        /**
+         * PriceSeriesResponse
+         * @description Serie de cierres diarios para graficar (un precio por fecha).
+         */
+        PriceSeriesResponse: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /** Currency */
+            currency: string;
+            /** Points */
+            points: components["schemas"]["PricePointResponse"][];
+            /** First Close */
+            first_close: string | null;
+            /** Last Close */
+            last_close: string | null;
+            /** Change */
+            change: string | null;
+            /** Change Percentage */
+            change_percentage: string | null;
+            /** Sampled */
+            sampled: boolean;
+        };
         /** PriceSourceSummaryResponse */
         PriceSourceSummaryResponse: {
             /**
@@ -5142,6 +5197,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarketMoversResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_asset_price_series_api_v1_market_assets__asset_id__price_series_get: {
+        parameters: {
+            query?: {
+                start_date?: string | null;
+                max_points?: number;
+            };
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceSeriesResponse"];
                 };
             };
             /** @description Validation Error */

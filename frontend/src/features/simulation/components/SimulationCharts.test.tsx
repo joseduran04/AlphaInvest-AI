@@ -30,6 +30,8 @@ function buildResult(resumen: Record<string, unknown>): SimulationResultResponse
       {
         id: 'r1',
         activo_id: 'meta',
+        capital_asignado: '10000',
+        valor_final: '11201.13',
         ganancia_perdida: '1201.13',
         rendimiento_porcentaje: '12.01',
       },
@@ -57,7 +59,8 @@ describe('SimulationCharts', () => {
 
     expect(screen.getByText('Valor del portafolio contra capital aportado')).toBeInTheDocument()
     expect(screen.getByText('Rendimiento contra el S&P 500')).toBeInTheDocument()
-    expect(screen.getByText('Resultado por activo')).toBeInTheDocument()
+    expect(screen.getByText('Antes y después por activo')).toBeInTheDocument()
+    expect(screen.getAllByText(/\+12\.0 %/).length).toBeGreaterThan(0)
     expect(screen.getAllByText('S&P 500 (SPY)').length).toBeGreaterThan(0)
   })
 

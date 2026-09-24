@@ -1,5 +1,6 @@
 import { apiClient } from '@/api/client'
 import type {
+  PriceSeriesResponse,
   AssetListQuery,
   AssetListResponse,
   AssetResponse,
@@ -153,6 +154,23 @@ export async function marketSynchronizationRequest(
 ): Promise<JobExecutionResponse> {
   const response = await apiClient.get<JobExecutionResponse>(
     `${MARKET_SYNCHRONIZATIONS_PATH}/${executionId}`,
+  )
+
+  return response.data
+}
+
+export async function priceSeriesRequest(
+  assetId: string,
+  startDate: string | null,
+): Promise<PriceSeriesResponse> {
+  const response = await apiClient.get<PriceSeriesResponse>(
+    `${ASSETS_PATH}/${assetId}/price-series`,
+    {
+      params: {
+        start_date: startDate ?? undefined,
+        max_points: 800,
+      },
+    },
   )
 
   return response.data
