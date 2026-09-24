@@ -11,6 +11,15 @@ vi.mock('@/features/simulation/hooks/useSimulationResult', () => ({
   useSimulationResult: (executionId: string) => useSimulationResultMock(executionId),
 }))
 
+vi.mock('@/features/market/hooks/useDailyCloses', () => ({
+  useDailyCloses: () => ({
+    closesByAsset: new Map(),
+    isPending: false,
+    isError: false,
+    errorMessage: null,
+  }),
+}))
+
 vi.mock('@/features/market/hooks/useAssets', () => ({
   useAssets: () => ({ data: { items: [] }, isError: false }),
 }))

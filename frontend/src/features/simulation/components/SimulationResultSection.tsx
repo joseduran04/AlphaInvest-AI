@@ -5,6 +5,7 @@ import type { AssetResponse, SimulationAssetResultResponse } from '@/api/types'
 import { PageErrorState } from '@/components/PageErrorState'
 import { PageLoadingState } from '@/components/PageLoadingState'
 import { useAssets } from '@/features/market/hooks/useAssets'
+import { SimulationCharts } from '@/features/simulation/components/SimulationCharts'
 import { useSimulationResult } from '@/features/simulation/hooks/useSimulationResult'
 import { getFinancialToneClass } from '@/lib/financialTone'
 import { formatCurrency } from '@/lib/formatters'
@@ -455,6 +456,14 @@ export function SimulationResultSection({
           </div>
         </dl>
       </div>
+
+      <SimulationCharts
+        result={result}
+        marketAssetsById={marketAssetsById}
+        benchmarkAsset={(marketAssetsQuery.data?.items ?? []).find(
+          (asset) => asset.symbol === 'SPY',
+        )}
+      />
 
       <div className="simulation-result-subsection">
         <h4>Resultados por activo</h4>

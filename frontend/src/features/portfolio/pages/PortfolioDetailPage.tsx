@@ -11,6 +11,7 @@ import { useAssets } from '@/features/market/hooks/useAssets'
 import { CreatePositionForm } from '@/features/portfolio/components/CreatePositionForm'
 import { ClosePortfolioSection } from '@/features/portfolio/components/ClosePortfolioSection'
 import { PositionCard } from '@/features/portfolio/components/PositionCard'
+import { PortfolioPerformanceSection } from '@/features/portfolio/components/PortfolioPerformanceSection'
 import { PortfolioAllocationSection } from '@/features/portfolio/components/PortfolioAllocationSection'
 import { PortfolioValuationsSection } from '@/features/portfolio/components/PortfolioValuationsSection'
 import { EditPortfolioForm } from '@/features/portfolio/components/EditPortfolioForm'
@@ -105,7 +106,7 @@ export function PortfolioDetailPage() {
 
   const positionsQuery = usePortfolioPositions(normalizedPortfolioId)
 
-  const assetsQuery = useAssets({}, normalizedPortfolioId !== null)
+  const assetsQuery = useAssets({ limit: 100, offset: 0 }, normalizedPortfolioId !== null)
 
   if (!normalizedPortfolioId) {
     return (
@@ -291,6 +292,15 @@ export function PortfolioDetailPage() {
           </article>
         </div>
       </section>
+
+      {positionsQuery.data && positionsQuery.data.items.length > 0 ? (
+        <PortfolioPerformanceSection
+          positions={positionsQuery.data.items}
+          assetsById={assetsById}
+          benchmarkAsset={(assetsQuery.data?.items ?? []).find((asset) => asset.symbol === 'SPY')}
+          currency={summary.moneda_base}
+        />
+      ) : null}
 
       <section className="portfolio-detail-section">
         <header className="portfolio-detail-section__header">

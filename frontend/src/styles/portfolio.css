@@ -1171,3 +1171,8 @@
     width: 100%;
   }
 }
+
+.portfolio-charts {
+  display: grid;
+  gap: 2rem;
+}

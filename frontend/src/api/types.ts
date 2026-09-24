@@ -276,3 +276,4 @@ export type MarketSynchronizationListQuery = NonNullable<
 
 export type MarketMoversResponse = components['schemas']['MarketMoversResponse']
 export type MarketMoverResponse = components['schemas']['MarketMoverResponse']
+export type HistoricalPriceResponse = components['schemas']['HistoricalPriceResponse']

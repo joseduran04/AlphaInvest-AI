@@ -293,3 +293,218 @@
   margin: 0;
   padding-left: 1.1rem;
 }
+
+/*
+ * Gráficas SVG. Paleta validada (dataviz): serie 1 azul #2a78d6, serie 2
+ * naranja #eb6834; ganancias/pérdidas con los tokens success/danger
+ * (CVD ΔE 8.6, siempre acompañadas de su valor en texto).
+ */
+.chart {
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
+
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.chart__header {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.chart__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chart__legend-line {
+  display: inline-block;
+  width: 1.1rem;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+
+.chart__legend-line--dashed {
+  border-top-style: dashed;
+}
+
+.chart__canvas {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.chart__canvas svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.chart__reference {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+
+.chart__axis-label,
+.chart__bar-label,
+.chart__bar-value {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__bar-label {
+  fill: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.chart__bar-value {
+  fill: var(--color-text-secondary);
+}
+
+.chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart__line--dashed {
+  stroke-dasharray: 5 4;
+}
+
+.chart__stroke--series-1 {
+  color: var(--chart-series-1);
+  stroke: var(--chart-series-1);
+}
+
+.chart__stroke--series-2 {
+  color: var(--chart-series-2);
+  stroke: var(--chart-series-2);
+}
+
+.chart__stroke--muted {
+  color: var(--color-text-muted);
+  stroke: var(--color-text-muted);
+}
+
+.chart__fill--series-1 {
+  fill: var(--chart-series-1);
+}
+
+.chart__fill--series-2 {
+  fill: var(--chart-series-2);
+}
+
+.chart__fill--positive {
+  fill: var(--color-success);
+}
+
+.chart__fill--negative {
+  fill: var(--color-danger);
+}
+
+.chart__fill--muted {
+  fill: var(--color-text-muted);
+}
+
+.chart__marker {
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.chart__crosshair {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.chart__hit-area {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.chart__bar-row:focus-visible .chart__bar,
+.chart__bar-row:hover .chart__bar {
+  opacity: 0.8;
+}
+
+.chart__tooltip {
+  position: absolute;
+  top: 0.5rem;
+  z-index: 2;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 10rem;
+  padding: 0.5rem 0.7rem;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  font-size: 0.8rem;
+}
+
+.chart__tooltip-date {
+  color: var(--color-text-muted);
+}
+
+.chart__tooltip-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-secondary);
+}
+
+.chart__tooltip-row strong {
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__table summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.chart__table-scroll {
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.chart__table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__table th,
+.chart__table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+}
+
+.chart__table th:first-child {
+  text-align: left;
+}
