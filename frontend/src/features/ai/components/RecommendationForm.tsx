@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import type { AnalysisHorizon, AssetResponse, PortfolioResponse } from '@/api/types'
+import { ANALYSIS_HORIZON_OPTIONS } from '@/lib/aiModelCards'
 
 const recommendationFormSchema = z.object({
   asset_id: z.string().uuid('Selecciona un activo válido'),
@@ -128,11 +129,15 @@ export function RecommendationForm({
         <label className="ai-field">
           <span>Horizonte</span>
           <select {...register('horizon')} disabled={disabled || isSubmitting}>
-            <option value="INTRADIA">Intradía</option>
-            <option value="CORTO_PLAZO">Corto plazo</option>
-            <option value="MEDIANO_PLAZO">Mediano plazo</option>
-            <option value="LARGO_PLAZO">Largo plazo</option>
+            {ANALYSIS_HORIZON_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value} disabled={!option.supported}>
+                {option.label}
+              </option>
+            ))}
           </select>
+          <small className="metric-hint">
+            Solo el horizonte de corto plazo (5 sesiones) tiene un modelo entrenado.
+          </small>
 
           {errors.horizon ? <small>{errors.horizon.message}</small> : null}
         </label>

@@ -1,10 +1,9 @@
 import type { NewsResponse } from '@/api/types'
+import { describeRelevance, translateProviderSentiment } from '@/lib/aiInterpretation'
 
 interface NewsCardProps {
   news: NewsResponse
 }
-
-type SentimentTone = 'positive' | 'negative' | 'neutral'
 
 function formatPublishedAt(value: string): string {
   return new Intl.DateTimeFormat('es-MX', {
@@ -27,26 +26,12 @@ function formatDecimal(value: string | null): string | null {
   return parsed.toFixed(2)
 }
 
-function getSentimentTone(label: string): SentimentTone {
-  const normalizedLabel = label.trim().toLowerCase()
-
-  if (normalizedLabel.includes('bullish') || normalizedLabel.includes('positive')) {
-    return 'positive'
-  }
-
-  if (normalizedLabel.includes('bearish') || normalizedLabel.includes('negative')) {
-    return 'negative'
-  }
-
-  return 'neutral'
-}
-
 export function NewsCard({ news }: NewsCardProps) {
-  const relevance = formatDecimal(news.relevance)
+  const relevance = describeRelevance(news.relevance)
   const providerScore = formatDecimal(news.provider_sentiment.score)
   const providerSentimentLabel = news.provider_sentiment.label
-  const providerSentimentTone = providerSentimentLabel
-    ? getSentimentTone(providerSentimentLabel)
+  const providerSentiment = providerSentimentLabel
+    ? translateProviderSentiment(providerSentimentLabel)
     : null
 
   return (
@@ -64,7 +49,14 @@ export function NewsCard({ news }: NewsCardProps) {
             <span>{formatPublishedAt(news.published_at)}</span>
           </div>
 
-          {relevance ? <span className="news-card__relevance">Relevancia {relevance}</span> : null}
+          {relevance ? (
+            <span
+              className="news-card__relevance"
+              title="Qué tanto trata la noticia sobre este activo, según Alpha Vantage (0 a 100)."
+            >
+              Relevancia {relevance}
+            </span>
+          ) : null}
         </header>
 
         <div className="news-card__body">
@@ -91,48 +83,52 @@ export function NewsCard({ news }: NewsCardProps) {
           </section>
         ) : null}
 
-        {providerSentimentLabel && providerSentimentTone ? (
+        {providerSentiment ? (
           <section className="news-card__section">
-            <h4>Sentimiento general</h4>
+            <h4>Tono general de la noticia</h4>
 
             <div className="news-card__sentiment">
-              <span className={`news-sentiment news-sentiment--${providerSentimentTone}`}>
-                {providerSentimentLabel}
+              <span className={`news-sentiment news-sentiment--${providerSentiment.tone}`}>
+                {providerSentiment.text}
               </span>
 
-              {providerScore ? <span>Score {providerScore}</span> : null}
+              {providerScore ? (
+                <span title="Puntuación del proveedor: negativa = bajista, positiva = alcista.">
+                  Puntuación {providerScore}
+                </span>
+              ) : null}
             </div>
           </section>
         ) : null}
 
         {news.ticker_sentiment.length > 0 ? (
           <section className="news-card__section">
-            <h4>Sentimiento por activo</h4>
+            <h4>Tono por activo mencionado</h4>
 
             <div className="news-card__tickers">
               {news.ticker_sentiment.map((ticker) => {
                 const sentimentScore = formatDecimal(ticker.sentiment_score)
-                const tickerRelevance = formatDecimal(ticker.relevance_score)
-                const sentimentTone = getSentimentTone(ticker.sentiment_label)
+                const tickerRelevance = describeRelevance(ticker.relevance_score)
+                const tickerSentiment = translateProviderSentiment(ticker.sentiment_label)
 
                 return (
                   <div className="news-ticker" key={`${news.reference_id}-${ticker.ticker}`}>
                     <div className="news-ticker__header">
                       <strong>{ticker.ticker}</strong>
 
-                      <span className={`news-sentiment news-sentiment--${sentimentTone}`}>
-                        {ticker.sentiment_label}
+                      <span className={`news-sentiment news-sentiment--${tickerSentiment.tone}`}>
+                        {tickerSentiment.text}
                       </span>
                     </div>
 
                     <dl>
                       <div>
-                        <dt>Sentimiento</dt>
+                        <dt>Puntuación</dt>
                         <dd>{sentimentScore ?? 'No disponible'}</dd>
                       </div>
 
                       <div>
-                        <dt>Relevancia</dt>
+                        <dt>Relevancia (0 a 100)</dt>
                         <dd>{tickerRelevance ?? 'No disponible'}</dd>
                       </div>
                     </dl>

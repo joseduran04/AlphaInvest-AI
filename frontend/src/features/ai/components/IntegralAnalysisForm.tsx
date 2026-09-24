@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import type { AnalysisHorizon, AssetResponse, NewsResponse } from '@/api/types'
+import { ANALYSIS_HORIZON_OPTIONS } from '@/lib/aiModelCards'
 
 const integralAnalysisSchema = z.object({
   asset_id: z.string().uuid('Selecciona un activo válido.'),
@@ -139,11 +140,15 @@ export function IntegralAnalysisForm({
           <label className="ai-field">
             <span>Horizonte</span>
             <select disabled={disabled || isSubmitting} {...register('horizon')}>
-              <option value="INTRADIA">Intradía</option>
-              <option value="CORTO_PLAZO">Corto plazo</option>
-              <option value="MEDIANO_PLAZO">Mediano plazo</option>
-              <option value="LARGO_PLAZO">Largo plazo</option>
+              {ANALYSIS_HORIZON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} disabled={!option.supported}>
+                  {option.label}
+                </option>
+              ))}
             </select>
+            <small className="metric-hint">
+              Solo el horizonte de corto plazo (5 sesiones) tiene un modelo entrenado.
+            </small>
 
             {errors.horizon ? (
               <small className="ai-field__error">{errors.horizon.message}</small>

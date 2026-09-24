@@ -1,4 +1,15 @@
 import type { AssetResponse, NewsResponse, SentimentAnalysisResultResponse } from '@/api/types'
+import { ModelCardDetails } from '@/components/insights/ModelCardDetails'
+import { ProbabilityBars } from '@/components/insights/ProbabilityBars'
+import {
+  describeRelevance,
+  describeSentimentBalance,
+  describeTopProbability,
+  formatProbabilityPercent,
+  parseNumber,
+  translateSentiment,
+} from '@/lib/aiInterpretation'
+import { SENTIMENT_MODEL_CARD } from '@/lib/aiModelCards'
 
 interface SentimentAnalysisResultProps {
   result: SentimentAnalysisResultResponse
@@ -6,34 +17,16 @@ interface SentimentAnalysisResultProps {
   news?: NewsResponse
 }
 
-function formatProbability(value: string | null | undefined): string {
-  if (value === null || value === undefined) {
-    return 'No disponible'
-  }
-
-  const parsedValue = Number(value)
-
-  if (!Number.isFinite(parsedValue)) {
-    return value
-  }
-
-  return `${(parsedValue * 100).toFixed(2)} %`
-}
-
 function formatDecimal(value: string | null | undefined, maximumFractionDigits = 4): string {
-  if (value === null || value === undefined) {
+  const parsed = parseNumber(value)
+
+  if (parsed === null) {
     return 'No disponible'
-  }
-
-  const parsedValue = Number(value)
-
-  if (!Number.isFinite(parsedValue)) {
-    return value
   }
 
   return new Intl.NumberFormat('es-MX', {
     maximumFractionDigits,
-  }).format(parsedValue)
+  }).format(parsed)
 }
 
 function formatDateTime(value: string | null | undefined): string {
@@ -53,34 +46,16 @@ function formatDateTime(value: string | null | undefined): string {
   }).format(date)
 }
 
-function formatSentiment(sentiment: string): string {
-  switch (sentiment.toUpperCase()) {
-    case 'POSITIVO':
-      return 'Positivo'
-    case 'NEUTRAL':
-      return 'Neutral'
-    case 'NEGATIVO':
-      return 'Negativo'
-    default:
-      return sentiment
-  }
-}
-
-function sentimentClass(sentiment: string): string {
-  switch (sentiment.toUpperCase()) {
-    case 'POSITIVO':
-      return 'positivo'
-    case 'NEGATIVO':
-      return 'negativo'
-    default:
-      return 'neutral'
-  }
-}
-
 export function SentimentAnalysisResult({ result, asset, news }: SentimentAnalysisResultProps) {
   const assetTitle = asset
     ? `${asset.symbol} · ${asset.name}`
     : (result.asset_id ?? 'Activo no disponible')
+  const sentiment = translateSentiment(result.sentiment)
+  const balance = describeSentimentBalance({
+    positive: result.positive_probability,
+    negative: result.negative_probability,
+  })
+  const relevance = describeRelevance(result.relevance)
 
   return (
     <section className="ai-result" aria-labelledby="ai-sentiment-result-title">
@@ -88,12 +63,9 @@ export function SentimentAnalysisResult({ result, asset, news }: SentimentAnalys
         <div>
           <p className="app__eyebrow">Análisis de sentimiento completado</p>
           <h2 id="ai-sentiment-result-title">{assetTitle}</h2>
-          <p>Resultado del análisis de lenguaje aplicado a la noticia seleccionada.</p>
         </div>
 
-        <span className={`ai-trend ai-sentiment--${sentimentClass(result.sentiment)}`}>
-          {formatSentiment(result.sentiment)}
-        </span>
+        <span className={`tone-badge tone-badge--${sentiment.tone}`}>{sentiment.text}</span>
       </header>
 
       {news ? (
@@ -105,58 +77,26 @@ export function SentimentAnalysisResult({ result, asset, news }: SentimentAnalys
         </div>
       ) : null}
 
-      <dl className="ai-result__metrics">
-        <div>
-          <dt>Puntuación</dt>
-          <dd>{formatDecimal(result.score)}</dd>
-        </div>
+      <p className="insight-headline">
+        El modelo lee esta noticia con <strong>{sentiment.text.toLowerCase()}</strong> (
+        {formatProbabilityPercent(result.confidence)} de probabilidad).
+        {relevance
+          ? ` Según el proveedor, la noticia trata sobre ${asset?.symbol ?? 'el activo'} con una relevancia de ${relevance}.`
+          : ''}
+      </p>
 
-        <div>
-          <dt>Confianza</dt>
-          <dd>{formatProbability(result.confidence)}</dd>
-        </div>
+      <p className="metric-hint">{describeTopProbability(result.confidence)}</p>
 
-        <div>
-          <dt>Relevancia</dt>
-          <dd>{formatProbability(result.relevance)}</dd>
-        </div>
+      <ProbabilityBars
+        title="Tono detectado en el texto"
+        items={[
+          { label: 'Positivo', value: result.positive_probability, tone: 'positive' },
+          { label: 'Neutral', value: result.neutral_probability, tone: 'neutral' },
+          { label: 'Negativo', value: result.negative_probability, tone: 'negative' },
+        ]}
+      />
 
-        <div>
-          <dt>Idioma</dt>
-          <dd>{result.language ?? 'No disponible'}</dd>
-        </div>
-
-        <div>
-          <dt>Tipo de fuente</dt>
-          <dd>{result.source_type}</dd>
-        </div>
-
-        <div>
-          <dt>Fecha del contenido</dt>
-          <dd>{formatDateTime(result.content_date)}</dd>
-        </div>
-      </dl>
-
-      <div className="ai-result__probabilities">
-        <h3>Probabilidades de sentimiento</h3>
-
-        <dl className="ai-result__probability-grid">
-          <div>
-            <dt>Positivo</dt>
-            <dd>{formatProbability(result.positive_probability)}</dd>
-          </div>
-
-          <div>
-            <dt>Neutral</dt>
-            <dd>{formatProbability(result.neutral_probability)}</dd>
-          </div>
-
-          <div>
-            <dt>Negativo</dt>
-            <dd>{formatProbability(result.negative_probability)}</dd>
-          </div>
-        </dl>
-      </div>
+      {balance ? <p className="metric-hint">{balance}</p> : null}
 
       {result.summary ? (
         <div className="ai-result__summary">
@@ -165,9 +105,47 @@ export function SentimentAnalysisResult({ result, asset, news }: SentimentAnalys
         </div>
       ) : null}
 
+      <details className="technical-details">
+        <summary>Detalle técnico</summary>
+
+        <dl className="ai-result__metrics">
+          <div>
+            <dt>Puntuación (P. positivo − P. negativo)</dt>
+            <dd>{formatDecimal(result.score)}</dd>
+          </div>
+
+          <div>
+            <dt>Confianza (probabilidad máxima)</dt>
+            <dd>{formatDecimal(result.confidence)}</dd>
+          </div>
+
+          <div>
+            <dt>Relevancia del proveedor (0 a 1)</dt>
+            <dd>{formatDecimal(result.relevance)}</dd>
+          </div>
+
+          <div>
+            <dt>Idioma</dt>
+            <dd>{result.language ?? 'No disponible'}</dd>
+          </div>
+
+          <div>
+            <dt>Tipo de fuente</dt>
+            <dd>{result.source_type}</dd>
+          </div>
+
+          <div>
+            <dt>Fecha del contenido</dt>
+            <dd>{formatDateTime(result.content_date)}</dd>
+          </div>
+        </dl>
+      </details>
+
+      <ModelCardDetails card={SENTIMENT_MODEL_CARD} />
+
       <p className="ai-result__notice">
-        El sentimiento representa una clasificación automática del contenido analizado y no
-        constituye por sí mismo una recomendación de inversión.
+        El sentimiento describe el tono del texto, no el efecto que tendrá la noticia en el precio,
+        y no constituye una recomendación de inversión.
       </p>
     </section>
   )

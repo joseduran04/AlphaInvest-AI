@@ -166,6 +166,11 @@ export function NewsPage() {
             Consulta las noticias financieras registradas para los activos disponibles en
             AlphaInvest AI.
           </p>
+          <p className="metric-hint">
+            El tono (alcista, neutral o bajista) y la relevancia los calcula el proveedor de
+            noticias. Un tono alcista describe cómo está escrita la noticia; no garantiza que el
+            precio suba.
+          </p>
         </div>
       </header>
 
