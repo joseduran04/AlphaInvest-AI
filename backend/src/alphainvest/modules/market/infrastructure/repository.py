@@ -302,6 +302,60 @@ class MarketRepository:
 
         return int(getattr(result, "rowcount", 0) or 0)
 
+    async def list_daily_closes(
+        self,
+        *,
+        asset_id: UUID,
+        start_date: date | None,
+        preferred_source_name: str,
+    ) -> list[tuple[date, Decimal]]:
+        """Un cierre por fecha: la fuente preferida primero.
+
+        Se usa el cierre (no el ajustado por dividendos), como en las
+        gráficas de precio de los portales financieros.
+        """
+
+        date_filter = (
+            "AND p.fecha >= :start_date"
+            if start_date is not None
+            else ""
+        )
+
+        statement = text(
+            f"""
+            SELECT DISTINCT ON (p.fecha)
+                p.fecha,
+                p.cierre
+            FROM market.precios_historicos p
+            JOIN market.fuentes_financieras f
+              ON f.id = p.fuente_id
+            WHERE p.activo_id = :asset_id
+              {date_filter}
+            ORDER BY
+                p.fecha,
+                (f.nombre = :preferred_source_name) DESC,
+                p.fecha_registro DESC
+            """
+        )
+
+        parameters: dict[str, object] = {
+            "asset_id": asset_id,
+            "preferred_source_name": preferred_source_name,
+        }
+
+        if start_date is not None:
+            parameters["start_date"] = start_date
+
+        result = await self._session.execute(
+            statement,
+            parameters,
+        )
+
+        return [
+            (row[0], Decimal(row[1]))
+            for row in result.all()
+        ]
+
     async def list_active_symbols(self) -> list[str]:
         """Símbolos de todos los activos en estado ACTIVO."""
 

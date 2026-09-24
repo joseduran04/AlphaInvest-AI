@@ -28,6 +28,8 @@ from alphainvest.modules.market.presentation.schemas import (
     MarketMoverResponse,
     MarketMoversResponse,
     MarketResponse,
+    PricePointResponse,
+    PriceSeriesResponse,
 )
 
 
@@ -39,6 +41,69 @@ class MarketService:
         repository: MarketRepository,
     ) -> None:
         self._repository = repository
+
+    async def get_price_series(
+        self,
+        *,
+        asset_id: UUID,
+        start_date: date | None,
+        max_points: int,
+        preferred_source_name: str,
+    ) -> PriceSeriesResponse:
+        """Cierres diarios del activo, muestreados para graficar."""
+
+        asset = await self._repository.get_asset(asset_id)
+
+        if asset is None:
+            raise AssetNotFoundError(
+                "El activo solicitado no existe"
+            )
+
+        closes = await self._repository.list_daily_closes(
+            asset_id=asset_id,
+            start_date=start_date,
+            preferred_source_name=preferred_source_name,
+        )
+
+        sampled = len(closes) > max_points
+
+        if sampled:
+            step = (len(closes) - 1) / (max_points - 1)
+            indexes = sorted(
+                {round(step * index) for index in range(max_points)}
+                | {0, len(closes) - 1}
+            )
+            closes = [closes[index] for index in indexes]
+
+        first_close = closes[0][1] if closes else None
+        last_close = closes[-1][1] if closes else None
+        change = (
+            last_close - first_close
+            if first_close is not None and last_close is not None
+            else None
+        )
+        change_percentage = (
+            (change / first_close * Decimal("100")).quantize(
+                Decimal("0.0001"),
+                rounding=ROUND_HALF_UP,
+            )
+            if change is not None and first_close
+            else None
+        )
+
+        return PriceSeriesResponse(
+            asset_id=asset_id,
+            currency=asset.moneda,
+            points=[
+                PricePointResponse(date=point_date, close=close)
+                for point_date, close in closes
+            ],
+            first_close=first_close,
+            last_close=last_close,
+            change=change,
+            change_percentage=change_percentage,
+            sampled=sampled,
+        )
 
     async def get_market_movers(
         self,

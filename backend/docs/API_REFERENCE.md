@@ -10,8 +10,8 @@ Documento generado automáticamente a partir de OpenAPI.
 - **Swagger UI:** `/docs`
 - **ReDoc:** `/redoc`
 - **OpenAPI:** `/openapi.json`
-- **Paths OpenAPI:** 90
-- **Schemas:** 146
+- **Paths OpenAPI:** 91
+- **Schemas:** 148
 
 ## Autenticación
 
@@ -63,6 +63,7 @@ Esquemas OpenAPI registrados:
 | GET | `/api/v1/market/assets/{asset_id}` | Mercado | Obtener detalle de activo | activos.leer | - | AssetResponse | asset_id (path, req) | 200, 422 |
 | GET | `/api/v1/market/assets/{asset_id}/prices` | Mercado | Consultar precios históricos | precios.leer | - | HistoricalPriceListResponse | asset_id (path, req); start_date (query, opt); end_date (query, opt); source_id (query, opt); limit (query, opt); offset (query, opt) | 200, 422 |
 | GET | `/api/v1/market/movers` | Mercado | Consultar mayores alzas y bajas del catálogo | precios.leer | - | MarketMoversResponse | limit (query, opt) | 200, 422 |
+| GET | `/api/v1/market/assets/{asset_id}/price-series` | Mercado | Consultar serie de precios para graficar | precios.leer | - | PriceSeriesResponse | asset_id (path, req); start_date (query, opt); max_points (query, opt) | 200, 422 |
 | GET | `/api/v1/market/assets/{asset_id}/latest-price` | Mercado | Consultar último precio disponible | precios.leer | - | LatestPriceResponse | asset_id (path, req); source_id (query, opt) | 200, 422 |
 | POST | `/api/v1/market/assets/{asset_id}/prices/sync` | Mercado | Sincronizar precios diarios | precios.cargar | - | PriceSynchronizationResponse | asset_id (path, req) | 200, 422 |
 | POST | `/api/v1/market/assets/{asset_id}/indicators/calculate` | Mercado | Calcular indicadores financieros | indicadores.calcular | IndicatorCalculationRequest | IndicatorCalculationResponse | asset_id (path, req) | 200, 422 |
@@ -246,6 +247,8 @@ Esquemas OpenAPI registrados:
 - `PositionResponse`
 - `PositionStatus`
 - `PositionUpdateRequest`
+- `PricePointResponse`
+- `PriceSeriesResponse`
 - `PriceSourceSummaryResponse`
 - `PriceSynchronizationResponse`
 - `QuestionResponse`

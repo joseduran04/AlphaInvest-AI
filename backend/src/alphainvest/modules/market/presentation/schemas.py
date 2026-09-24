@@ -422,3 +422,21 @@ class MarketMoversResponse(BaseModel):
 
     gainers: list[MarketMoverResponse]
     losers: list[MarketMoverResponse]
+
+
+class PricePointResponse(BaseModel):
+    date: DateType
+    close: Decimal
+
+
+class PriceSeriesResponse(BaseModel):
+    """Serie de cierres diarios para graficar (un precio por fecha)."""
+
+    asset_id: UUID
+    currency: str
+    points: list[PricePointResponse]
+    first_close: Decimal | None
+    last_close: Decimal | None
+    change: Decimal | None
+    change_percentage: Decimal | None
+    sampled: bool

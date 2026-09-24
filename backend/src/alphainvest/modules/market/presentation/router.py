@@ -51,6 +51,7 @@ from alphainvest.modules.market.presentation.schemas import (
     LatestPriceResponse,
     MarketListResponse,
     MarketMoversResponse,
+    PriceSeriesResponse,
     PriceSynchronizationResponse,
 )
 from alphainvest.modules.operation.domain.enums import (
@@ -273,6 +274,44 @@ async def get_market_movers(
             settings.market_price_source_names[0]
         ),
     )
+
+
+@router.get(
+    "/assets/{asset_id}/price-series",
+    response_model=PriceSeriesResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Consultar serie de precios para graficar",
+    description=(
+        "Devuelve un cierre por fecha (fuente principal primero) desde "
+        "start_date, muestreado a max_points para gráficas."
+    ),
+)
+async def get_asset_price_series(
+    asset_id: UUID,
+    _: PriceReadContext,
+    service: MarketServiceDependency,
+    settings: Settings = Depends(get_settings),
+    start_date: date | None = Query(default=None),
+    max_points: int = Query(
+        default=800,
+        ge=10,
+        le=2000,
+    ),
+) -> PriceSeriesResponse:
+    try:
+        return await service.get_price_series(
+            asset_id=asset_id,
+            start_date=start_date,
+            max_points=max_points,
+            preferred_source_name=(
+                settings.market_price_source_names[0]
+            ),
+        )
+    except AssetNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
 
 
 @router.get(
