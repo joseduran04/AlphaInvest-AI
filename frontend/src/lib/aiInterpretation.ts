@@ -71,20 +71,6 @@ export function translateProviderSentiment(label: string): ProviderSentimentLabe
   return { text: label, tone }
 }
 
-/** Clasificación del modelo de tendencia (ALCISTA / NEUTRAL / BAJISTA). */
-export function translateTrend(trend: string): ProviderSentimentLabel {
-  switch (trend.trim().toUpperCase()) {
-    case 'ALCISTA':
-      return { text: 'Sesgo alcista', tone: 'positive' }
-    case 'BAJISTA':
-      return { text: 'Sesgo bajista', tone: 'negative' }
-    case 'NEUTRAL':
-      return { text: 'Sin sesgo claro (neutral)', tone: 'neutral' }
-    default:
-      return { text: trend, tone: 'neutral' }
-  }
-}
-
 /** Clasificación del modelo de sentimiento (POSITIVO / NEUTRAL / NEGATIVO). */
 export function translateSentiment(sentiment: string): ProviderSentimentLabel {
   switch (sentiment.trim().toUpperCase()) {

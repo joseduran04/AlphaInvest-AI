@@ -145,12 +145,6 @@ const SimulationReportPage = lazy(() =>
   })),
 )
 
-const RecommendationReportPage = lazy(() =>
-  import('@/features/reporting/pages/RecommendationReportPage').then((module) => ({
-    default: module.RecommendationReportPage,
-  })),
-)
-
 const ForbiddenPage = lazy(() =>
   import('@/pages/ForbiddenPage').then((module) => ({
     default: module.ForbiddenPage,
@@ -236,7 +230,6 @@ export function AppRouter() {
               <Route path="/app/reports/assets" element={<AssetReportPage />} />
               <Route path="/app/reports/portfolios" element={<PortfolioReportPage />} />
               <Route path="/app/reports/simulations" element={<SimulationReportPage />} />
-              <Route path="/app/reports/recommendations" element={<RecommendationReportPage />} />
             </Route>
 
             <Route

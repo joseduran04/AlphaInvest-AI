@@ -4,7 +4,6 @@ import { DashboardPanelState } from '@/features/dashboard/components/DashboardPa
 import { useDashboardAssets } from '@/features/dashboard/hooks/useDashboardAssets'
 import { useDashboardPortfolioOverview } from '@/features/dashboard/hooks/useDashboardPortfolioOverview'
 import { useDashboardPortfolios } from '@/features/dashboard/hooks/useDashboardPortfolios'
-import { useDashboardRecommendations } from '@/features/dashboard/hooks/useDashboardRecommendations'
 import { useDashboardSimulationExecutions } from '@/features/dashboard/hooks/useDashboardSimulationExecutions'
 import {
   formatDashboardDate,
@@ -46,7 +45,6 @@ export function DashboardPage() {
     },
     canReadNotifications,
   )
-  const recommendationsQuery = useDashboardRecommendations(canReadReports)
   const assetsQuery = useDashboardAssets(canReadAssets)
 
   const selectedPortfolioId = portfoliosQuery.data?.items[0]?.id ?? null
@@ -348,69 +346,6 @@ export function DashboardPage() {
                       {formatDashboardLabel(notification.priority)}
                     </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </article>
-        ) : null}
-
-        {canReadReports ? (
-          <article className="dashboard-panel dashboard-panel--wide">
-            <header className="dashboard-panel__header">
-              <div>
-                <span className="dashboard-panel__eyebrow">Inteligencia artificial</span>
-                <h2>Recomendaciones</h2>
-              </div>
-
-              <Link className="dashboard-panel__link" to="/app/reports/recommendations">
-                Ver reporte
-              </Link>
-            </header>
-
-            {recommendationsQuery.isPending ? (
-              <DashboardPanelState message="Cargando recomendaciones..." />
-            ) : recommendationsQuery.isError ? (
-              <DashboardPanelState
-                error
-                message={recommendationsQuery.error.message}
-                onRetry={() => {
-                  void recommendationsQuery.refetch()
-                }}
-              />
-            ) : recommendationsQuery.data.items.length === 0 ? (
-              <DashboardPanelState message="No hay recomendaciones disponibles." />
-            ) : (
-              <div className="dashboard-recommendations">
-                {recommendationsQuery.data.items.map((recommendation) => (
-                  <article
-                    className="dashboard-recommendation"
-                    key={recommendation.recommendation_id}
-                  >
-                    <div className="dashboard-recommendation__heading">
-                      <div>
-                        <span>{formatDashboardLabel(recommendation.type)}</span>
-                        <h3>{recommendation.title ?? 'Recomendación'}</h3>
-                      </div>
-
-                      <span className="dashboard-badge">
-                        {formatDashboardLabel(recommendation.risk_level)}
-                      </span>
-                    </div>
-
-                    {recommendation.summary ? <p>{recommendation.summary}</p> : null}
-
-                    {recommendation.asset_symbols && recommendation.asset_symbols.length > 0 ? (
-                      <div className="dashboard-tags">
-                        {recommendation.asset_symbols.map((symbol) => (
-                          <span key={symbol}>{symbol}</span>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    <span className="dashboard-recommendation__date">
-                      {formatDashboardDate(recommendation.generated_at)}
-                    </span>
-                  </article>
                 ))}
               </div>
             )}

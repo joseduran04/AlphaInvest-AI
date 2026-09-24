@@ -35,7 +35,7 @@ const routes: AccessibilityRoute[] = [
   {
     name: 'inteligencia artificial',
     route: '/app/ai',
-    heading: 'Análisis inteligente',
+    heading: 'Sentimiento de noticias',
   },
   {
     name: 'noticias',

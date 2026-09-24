@@ -181,6 +181,8 @@ export type AssetPredictionProbabilitiesResponse =
 export type SentimentAnalysisRequestCreate = components['schemas']['SentimentAnalysisRequestCreate']
 export type SentimentAnalysisResultResponse =
   components['schemas']['SentimentAnalysisResultResponse']
+export type AssetSentimentSummaryResponse = components['schemas']['AssetSentimentSummaryResponse']
+export type AssetSentimentItemResponse = components['schemas']['AssetSentimentItemResponse']
 
 export type NewsResponse = components['schemas']['NewsResponse']
 export type NewsListResponse = components['schemas']['NewsListResponse']

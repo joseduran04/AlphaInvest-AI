@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import type { AnalysisRequestStatus } from '@/api/types'
-import { assetAnalysisRequest } from '@/features/ai/api/aiApi'
+import { sentimentAnalysisRequest } from '@/features/ai/api/aiApi'
 import { aiQueryKeys } from '@/features/ai/hooks/aiQueryKeys'
 
 const ACTIVE_ANALYSIS_STATUSES: ReadonlySet<AnalysisRequestStatus> = new Set([
@@ -17,7 +17,7 @@ export function useSentimentAnalysisRequest(requestId: string | null, enabled = 
         throw new Error('Se requiere una solicitud para consultar el análisis de sentimiento')
       }
 
-      return assetAnalysisRequest(requestId)
+      return sentimentAnalysisRequest(requestId)
     },
     enabled: enabled && requestId !== null,
     refetchInterval: (query) => {

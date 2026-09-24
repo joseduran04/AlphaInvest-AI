@@ -1063,6 +1063,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/assets/{asset_id}/sentiment-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultar termómetro de sentimiento de un activo
+         * @description Resume el último análisis de sentimiento de cada noticia analizada del activo, de la más reciente a la más antigua. Describe el tono de las noticias; no predice el precio.
+         */
+        get: operations["get_asset_sentiment_summary_api_v1_ai_assets__asset_id__sentiment_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/recommendation-requests": {
         parameters: {
             query?: never;
@@ -2000,6 +2020,63 @@ export interface components {
             updated_at: string;
             market: components["schemas"]["AssetMarketResponse"];
             asset_type: components["schemas"]["AssetTypeSummaryResponse"];
+        };
+        /**
+         * AssetSentimentItemResponse
+         * @description Último análisis de sentimiento de una noticia del activo.
+         */
+        AssetSentimentItemResponse: {
+            /**
+             * News Reference Id
+             * Format: uuid
+             */
+            news_reference_id: string;
+            /** Title */
+            title: string;
+            /** Source */
+            source: string;
+            /** Url */
+            url?: string | null;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /** Sentiment */
+            sentiment: string;
+            /** Confidence */
+            confidence: string;
+            /** Score */
+            score: string;
+            /**
+             * Analyzed At
+             * Format: date-time
+             */
+            analyzed_at: string;
+        };
+        /**
+         * AssetSentimentSummaryResponse
+         * @description Termómetro de sentimiento: noticias analizadas de un activo.
+         *
+         *     Cuenta el análisis más reciente de cada noticia (sin duplicados).
+         *     Describe el tono de las noticias; no predice el precio.
+         */
+        AssetSentimentSummaryResponse: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /** Analyzed News */
+            analyzed_news: number;
+            /** Positive */
+            positive: number;
+            /** Neutral */
+            neutral: number;
+            /** Negative */
+            negative: number;
+            /** Items */
+            items: components["schemas"]["AssetSentimentItemResponse"][];
         };
         /**
          * AssetStatus
@@ -6657,6 +6734,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SentimentAnalysisResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_asset_sentiment_summary_api_v1_ai_assets__asset_id__sentiment_summary_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetSentimentSummaryResponse"];
                 };
             };
             /** @description Validation Error */

@@ -27,7 +27,6 @@ interface SentimentAnalysisFormProps {
 const sentimentAnalysisSchema = z.object({
   asset_id: z.string().min(1, 'Selecciona un activo.'),
   news_reference_id: z.string().min(1, 'Selecciona una noticia.'),
-  reference_date: z.string().min(1, 'Selecciona la fecha de referencia.'),
 })
 
 type SentimentAnalysisFormValues = z.infer<typeof sentimentAnalysisSchema>
@@ -47,7 +46,7 @@ function getCreateSentimentErrorMessage(error: Error): string {
     }
 
     if (error.status === 422) {
-      return 'Los datos enviados no son válidos. Revisa el activo, la noticia y la fecha.'
+      return 'Los datos enviados no son válidos. Revisa el activo y la noticia.'
     }
 
     if (error.status !== undefined && error.status >= 500) {
@@ -56,6 +55,14 @@ function getCreateSentimentErrorMessage(error: Error): string {
   }
 
   return error.message
+}
+
+function getTodayIsoDate(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+
+  return `${now.getFullYear()}-${month}-${day}`
 }
 
 function formatNewsDate(value: string): string {
@@ -94,14 +101,12 @@ export function SentimentAnalysisForm({
     defaultValues: {
       asset_id: selectedAssetId,
       news_reference_id: '',
-      reference_date: '',
     },
   })
 
   useEffect(() => {
     setValue('asset_id', selectedAssetId)
     resetField('news_reference_id')
-    resetField('reference_date')
   }, [resetField, selectedAssetId, setValue])
 
   async function submitAnalysis(values: SentimentAnalysisFormValues) {
@@ -112,7 +117,8 @@ export function SentimentAnalysisForm({
     const data: SentimentAnalysisRequestCreate = {
       asset_id: values.asset_id,
       news_reference_id: values.news_reference_id,
-      reference_date: values.reference_date,
+      // La fecha de referencia es la fecha del análisis (hoy).
+      reference_date: getTodayIsoDate(),
     }
 
     try {
@@ -132,8 +138,8 @@ export function SentimentAnalysisForm({
           <p className="app__eyebrow">Nuevo análisis</p>
           <h2 id="ai-sentiment-form-title">Analizar sentimiento</h2>
           <p>
-            Selecciona un activo y una noticia asociada para evaluar el sentimiento detectado por
-            AlphaInvest AI.
+            Elige un activo y una de sus noticias. El modelo indicará si el tono de la noticia es
+            positivo, neutral o negativo para la empresa.
           </p>
         </div>
       </header>
@@ -200,19 +206,6 @@ export function SentimentAnalysisForm({
 
             {errors.news_reference_id ? (
               <small className="ai-field__error">{errors.news_reference_id.message}</small>
-            ) : null}
-          </label>
-
-          <label className="ai-field">
-            <span>Fecha de referencia</span>
-            <input
-              type="date"
-              disabled={disabled || createSentimentMutation.isPending}
-              {...register('reference_date')}
-            />
-
-            {errors.reference_date ? (
-              <small className="ai-field__error">{errors.reference_date.message}</small>
             ) : null}
           </label>
         </div>

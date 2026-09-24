@@ -12,9 +12,6 @@ import type {
   PortfolioReportExportQuery,
   PortfolioReportListQuery,
   PortfolioReportListResponse,
-  RecommendationReportExportQuery,
-  RecommendationReportListQuery,
-  RecommendationReportListResponse,
   SimulationReportExportQuery,
   SimulationReportListQuery,
   SimulationReportListResponse,
@@ -99,19 +96,6 @@ export async function simulationReportsRequest(
   return response.data
 }
 
-export async function recommendationReportsRequest(
-  params: RecommendationReportListQuery = {},
-): Promise<RecommendationReportListResponse> {
-  const response = await apiClient.get<RecommendationReportListResponse>(
-    `${REPORTS_PATH}/recommendations`,
-    {
-      params,
-    },
-  )
-
-  return response.data
-}
-
 export async function userReportsRequest(
   params: UserReportListQuery = {},
 ): Promise<UserReportListResponse> {
@@ -167,16 +151,6 @@ export function exportSimulationReportsRequest(
     `${REPORTS_PATH}/export/simulations`,
     params,
     'simulations_report.csv',
-  )
-}
-
-export function exportRecommendationReportsRequest(
-  params: RecommendationReportExportQuery = {},
-): Promise<ReportDownload> {
-  return downloadReportRequest(
-    `${REPORTS_PATH}/export/recommendations`,
-    params,
-    'recommendations_report.csv',
   )
 }
 

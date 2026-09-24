@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 import { getE2ECredentials, loginThroughUI } from './support/auth'
 
 test.describe('Inteligencia artificial', () => {
-  test('permite solicitar una predicción para un activo disponible', async ({ page }) => {
+  test('muestra el análisis de sentimiento y el termómetro de un activo', async ({ page }) => {
     const credentials = getE2ECredentials('E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD')
 
     await loginThroughUI(page, credentials)
@@ -26,28 +26,22 @@ test.describe('Inteligencia artificial', () => {
     await page.getByRole('link', { name: 'Inteligencia artificial', exact: true }).click()
 
     await expect(page).toHaveURL(/\/app\/ai$/)
-    await expect(page.getByRole('heading', { name: 'Análisis inteligente' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Sentimiento de noticias' })).toBeVisible()
 
     const assetsResponse = await assetsResponsePromise
     expect(assetsResponse.ok()).toBe(true)
 
-    const modeNavigation = page.getByRole('navigation', { name: 'Tipos de análisis' })
+    // Los módulos retirados ya no se ofrecen.
+    await expect(page.getByRole('navigation', { name: 'Tipos de análisis' })).toHaveCount(0)
+    await expect(page.getByLabel('Horizonte')).toHaveCount(0)
 
-    await expect(modeNavigation.getByRole('button', { name: 'Predicción' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
-    await expect(modeNavigation.getByRole('button', { name: 'Sentimiento' })).toBeVisible()
-    await expect(modeNavigation.getByRole('button', { name: 'Recomendación' })).toBeVisible()
-    await expect(modeNavigation.getByRole('button', { name: 'Integral' })).toBeVisible()
-
-    const analysisForm = page.locator('.ai-analysis-form').filter({
-      has: page.getByRole('heading', { name: 'Analizar activo' }),
+    const sentimentForm = page.locator('.ai-analysis-form').filter({
+      has: page.getByRole('heading', { name: 'Analizar sentimiento' }),
     })
 
-    await expect(analysisForm).toBeVisible()
+    await expect(sentimentForm).toBeVisible()
 
-    const assetSelect = analysisForm.getByLabel('Activo')
+    const assetSelect = sentimentForm.getByLabel('Activo')
     const availableOptions = assetSelect.locator('option:not([value=""])')
 
     expect(await availableOptions.count()).toBeGreaterThan(0)
@@ -56,46 +50,20 @@ test.describe('Inteligencia artificial', () => {
 
     expect(firstAssetValue).not.toBeNull()
 
-    await assetSelect.selectOption(firstAssetValue!)
-    await analysisForm.getByLabel('Horizonte').selectOption('CORTO_PLAZO')
-    await analysisForm.getByLabel('Fecha de referencia').fill('2026-07-31')
-
-    const createAnalysisResponsePromise = page.waitForResponse((response) => {
+    const summaryResponsePromise = page.waitForResponse((response) => {
       const url = new URL(response.url())
 
       return (
-        response.request().method() === 'POST' && url.pathname === '/api/v1/ai/analysis-requests'
+        response.request().method() === 'GET' &&
+        url.pathname === `/api/v1/ai/assets/${firstAssetValue}/sentiment-summary`
       )
     })
 
-    await analysisForm.getByRole('button', { name: 'Iniciar análisis' }).click()
+    await assetSelect.selectOption(firstAssetValue!)
 
-    const createAnalysisResponse = await createAnalysisResponsePromise
+    const summaryResponse = await summaryResponsePromise
+    expect(summaryResponse.ok()).toBe(true)
 
-    expect(createAnalysisResponse.status()).toBe(201)
-
-    await expect(page.getByRole('button', { name: 'Nuevo análisis' })).toBeVisible()
-
-    await expect
-      .poll(
-        async () => {
-          const waiting = page.getByText('En espera', { exact: true })
-          const progress = page.locator('.ai-request__processing progress')
-
-          if (await waiting.isVisible().catch(() => false)) {
-            return true
-          }
-
-          if (await progress.isVisible().catch(() => false)) {
-            return true
-          }
-
-          return false
-        },
-        {
-          timeout: 10_000,
-        },
-      )
-      .toBe(true)
+    await expect(page.getByText('Termómetro de sentimiento', { exact: true })).toBeVisible()
   })
 })

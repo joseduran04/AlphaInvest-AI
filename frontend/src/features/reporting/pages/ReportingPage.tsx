@@ -21,11 +21,6 @@ const reportSections = [
       'Revisa ejecuciones, resultados y métricas financieras obtenidas en tus simulaciones.',
     to: '/app/reports/simulations',
   },
-  {
-    title: 'Recomendaciones',
-    description: 'Consulta las recomendaciones generadas, su contexto, nivel de riesgo y estado.',
-    to: '/app/reports/recommendations',
-  },
 ] as const
 
 export function ReportingPage() {

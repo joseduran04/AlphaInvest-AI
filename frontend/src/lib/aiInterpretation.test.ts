@@ -7,7 +7,6 @@ import {
   formatProbabilityPercent,
   translateProviderSentiment,
   translateSentiment,
-  translateTrend,
 } from './aiInterpretation'
 
 describe('translateProviderSentiment', () => {
@@ -27,9 +26,7 @@ describe('translateProviderSentiment', () => {
 })
 
 describe('traducciones de modelos', () => {
-  it('traduce tendencia y sentimiento', () => {
-    expect(translateTrend('ALCISTA').text).toBe('Sesgo alcista')
-    expect(translateTrend('NEUTRAL').tone).toBe('neutral')
+  it('traduce el sentimiento del modelo', () => {
     expect(translateSentiment('NEGATIVO')).toEqual({ text: 'Tono negativo', tone: 'negative' })
   })
 })

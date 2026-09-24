@@ -507,3 +507,66 @@
     flex-direction: column;
   }
 }
+
+/* Termómetro de sentimiento por activo */
+.ai-thermometer {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.ai-thermometer header h2 {
+  margin: 0.25rem 0 0;
+}
+
+.ai-thermometer__bar {
+  display: flex;
+  height: 0.85rem;
+  overflow: hidden;
+
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+}
+
+.ai-thermometer__segment--positive {
+  background: var(--color-success);
+}
+
+.ai-thermometer__segment--neutral {
+  background: var(--color-text-muted);
+}
+
+.ai-thermometer__segment--negative {
+  background: var(--color-danger);
+}
+
+.ai-thermometer__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-thermometer__list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+}
+
+.ai-thermometer__list li .metric-hint {
+  grid-column: 2;
+}
+
+.ai-thermometer__title {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  line-height: 1.4;
+}

@@ -3,7 +3,6 @@ import type {
   AuditReportListQuery,
   OperationJobReportListQuery,
   PortfolioReportListQuery,
-  RecommendationReportListQuery,
   SimulationReportListQuery,
   UserReportListQuery,
 } from '@/api/types'
@@ -25,11 +24,6 @@ export const reportingQueryKeys = {
 
   simulationReports: (params: SimulationReportListQuery = {}) =>
     [...reportingQueryKeys.simulationReportsRoot(), params] as const,
-
-  recommendationReportsRoot: () => [...reportingQueryKeys.all, 'recommendations', 'list'] as const,
-
-  recommendationReports: (params: RecommendationReportListQuery = {}) =>
-    [...reportingQueryKeys.recommendationReportsRoot(), params] as const,
 
   adminReportsRoot: () => [...reportingQueryKeys.all, 'admin'] as const,
 
