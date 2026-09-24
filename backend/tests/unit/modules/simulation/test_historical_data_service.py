@@ -168,3 +168,121 @@ def test_historical_data_service_rejects_empty_source(
             market_repository=repository,
             source_name="   ",
         )
+
+def build_price_row(day: int, close: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        fecha=date(2026, 9, day),
+        cierre=Decimal(close),
+        cierre_ajustado=None,
+    )
+
+
+@pytest.mark.asyncio
+async def test_prefers_source_with_most_recent_prices() -> None:
+    """AI-SIM-001: META solo tenía Alpha Vantage hasta el 11/09.
+
+    Si otra fuente configurada tiene datos más recientes, se usa esa
+    para no recortar el periodo efectivo.
+    """
+
+    yahoo = SimpleNamespace(id=uuid4())
+    alpha = SimpleNamespace(id=uuid4())
+    sources = {"Yahoo Finance": yahoo, "Alpha Vantage": alpha}
+    prices_by_source = {
+        yahoo.id: [build_price_row(1, "578"), build_price_row(22, "736")],
+        alpha.id: [build_price_row(1, "578"), build_price_row(11, "648")],
+    }
+
+    repository = SimpleNamespace(
+        get_financial_source_by_name=AsyncMock(
+            side_effect=lambda *, name, active_only: sources.get(name)
+        ),
+        list_asset_prices_for_simulation=AsyncMock(
+            side_effect=lambda *, asset_id, source_id, start_date, end_date: (
+                prices_by_source[source_id]
+            )
+        ),
+    )
+
+    service = HistoricalDataService(
+        market_repository=repository,
+        source_name="Alpha Vantage",
+        fallback_source_names=["Yahoo Finance"],
+    )
+
+    result = await service.load_asset_history(
+        asset_id=uuid4(),
+        assigned_percentage=Decimal("100"),
+        start_date=date(2026, 9, 1),
+        end_date=date(2026, 9, 23),
+    )
+
+    assert result.prices[-1].date == date(2026, 9, 22)
+
+
+@pytest.mark.asyncio
+async def test_keeps_primary_source_on_tie() -> None:
+    primary = SimpleNamespace(id=uuid4())
+    secondary = SimpleNamespace(id=uuid4())
+    sources = {"Yahoo Finance": primary, "Alpha Vantage": secondary}
+    prices_by_source = {
+        primary.id: [build_price_row(11, "100")],
+        secondary.id: [build_price_row(11, "999")],
+    }
+
+    repository = SimpleNamespace(
+        get_financial_source_by_name=AsyncMock(
+            side_effect=lambda *, name, active_only: sources.get(name)
+        ),
+        list_asset_prices_for_simulation=AsyncMock(
+            side_effect=lambda *, asset_id, source_id, start_date, end_date: (
+                prices_by_source[source_id]
+            )
+        ),
+    )
+
+    service = HistoricalDataService(
+        market_repository=repository,
+        source_name="Yahoo Finance",
+        fallback_source_names=["Alpha Vantage"],
+    )
+
+    result = await service.load_asset_history(
+        asset_id=uuid4(),
+        assigned_percentage=Decimal("100"),
+        start_date=date(2026, 9, 1),
+        end_date=date(2026, 9, 23),
+    )
+
+    assert result.prices[0].price == Decimal("100")
+
+
+@pytest.mark.asyncio
+async def test_uses_fallback_when_primary_source_missing() -> None:
+    alpha = SimpleNamespace(id=uuid4())
+
+    repository = SimpleNamespace(
+        get_financial_source_by_name=AsyncMock(
+            side_effect=lambda *, name, active_only: (
+                alpha if name == "Alpha Vantage" else None
+            )
+        ),
+        list_asset_prices_for_simulation=AsyncMock(
+            return_value=[build_price_row(11, "648")]
+        ),
+    )
+
+    service = HistoricalDataService(
+        market_repository=repository,
+        source_name="Yahoo Finance",
+        fallback_source_names=["Alpha Vantage"],
+    )
+
+    result = await service.load_asset_history(
+        asset_id=uuid4(),
+        assigned_percentage=Decimal("100"),
+        start_date=date(2026, 9, 1),
+        end_date=date(2026, 9, 23),
+    )
+
+    assert result.prices[0].price == Decimal("648")

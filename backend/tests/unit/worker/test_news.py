@@ -39,6 +39,7 @@ async def test_news_worker_without_symbols_does_nothing(
     )
 
     settings.worker_price_symbols = []
+    settings.worker_price_sync_assets_in_use = False
 
     with patch(
         
@@ -63,6 +64,7 @@ async def test_news_worker_synchronizes_configured_asset(
     settings.worker_price_symbols = [
         "AAPL"
     ]
+    settings.worker_price_sync_assets_in_use = False
 
     settings.mongodb_database = (
         "alphainvest_documents"

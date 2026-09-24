@@ -24,3 +24,30 @@ def create_alpha_vantage_provider(
 
 def create_yahoo_finance_provider() -> MarketDataProvider:
     return YahooFinanceProvider()
+
+def create_market_data_provider(
+    settings: Settings,
+    source_name: str,
+) -> MarketDataProvider:
+    """Crea el proveedor asociado a una fuente financiera por nombre."""
+
+    if source_name == YahooFinanceProvider.source_name:
+        return create_yahoo_finance_provider()
+
+    if source_name == AlphaVantageProvider.source_name:
+        return create_alpha_vantage_provider(settings)
+
+    raise ValueError(
+        f"Fuente de precios no soportada: {source_name}"
+    )
+
+
+def create_market_data_providers(
+    settings: Settings,
+) -> list[MarketDataProvider]:
+    """Proveedores de precios en orden de prioridad (principal y respaldos)."""
+
+    return [
+        create_market_data_provider(settings, name)
+        for name in settings.market_price_source_names
+    ]

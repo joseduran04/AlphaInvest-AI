@@ -36,6 +36,9 @@ def build_settings() -> Settings:
             worker_simulation_source_name=(
                 "Carga Manual"
             ),
+            price_source_priority=(
+                lambda preferred: [preferred]
+            ),
         ),
     )
 

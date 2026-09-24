@@ -94,6 +94,12 @@ async def process_pending_simulation_executions(
                         settings
                         .worker_simulation_source_name
                     ),
+                    fallback_source_names=(
+                        settings.price_source_priority(
+                            settings
+                            .worker_simulation_source_name
+                        )[1:]
+                    ),
                 )
             )
 

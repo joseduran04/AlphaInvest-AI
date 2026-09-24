@@ -99,7 +99,7 @@ def test_worker_simulation_defaults() -> None:
 
     assert (
         settings.worker_simulation_source_name
-        == "Alpha Vantage"
+        == "Yahoo Finance"
     )
 
     assert (
@@ -299,4 +299,50 @@ def test_rejects_unsupported_jwt_algorithm() -> None:
         Settings(
             _env_file=None,
             jwt_algorithm="none",
+        )
+
+def build_settings(**overrides):
+    return Settings(
+        _env_file=None,
+        database_url=(
+            "postgresql+asyncpg://"
+            "user:password@localhost/test"
+        ),
+        **overrides,
+    )
+
+
+@pytest.mark.unit
+def test_market_price_sources_default_to_yahoo_then_alpha_vantage() -> None:
+    settings = build_settings()
+
+    assert settings.market_price_source_names == [
+        "Yahoo Finance",
+        "Alpha Vantage",
+    ]
+    assert settings.worker_price_sync_assets_in_use is True
+
+
+@pytest.mark.unit
+def test_price_source_priority_puts_preferred_first() -> None:
+    settings = build_settings()
+
+    assert settings.price_source_priority(
+        "Alpha Vantage"
+    ) == ["Alpha Vantage", "Yahoo Finance"]
+
+
+@pytest.mark.unit
+def test_market_price_sources_rejects_unknown_source() -> None:
+    with pytest.raises(ValueError):
+        build_settings(
+            market_price_sources="Yahoo Finance,Bloomberg"
+        )
+
+
+@pytest.mark.unit
+def test_market_price_sources_rejects_duplicates() -> None:
+    with pytest.raises(ValueError):
+        build_settings(
+            market_price_sources="Yahoo Finance, Yahoo Finance"
         )

@@ -24,11 +24,13 @@ from alphainvest.modules.operation.domain.enums import (
 from alphainvest.modules.operation.infrastructure.repository import (
     OperationRepository,
 )
+from alphainvest.worker.jobs.symbols import (
+    resolve_worker_symbols,
+)
 
 logger = logging.getLogger(__name__)
 
 INDICATOR_JOB_CODE = "CALCULAR_INDICADORES_DIARIOS"
-INDICATOR_SOURCE_NAME = "Alpha Vantage"
 INDICATOR_LOCK_PREFIX = "MARKET_INDICATORS"
 INDICATOR_LOCK_OWNER = "alphainvest-worker"
 INDICATOR_LOCK_DURATION_SECONDS = 900
@@ -76,7 +78,7 @@ async def calculate_configured_market_indicators(
 ) -> None:
     """Calcula indicadores para los símbolos configurados."""
 
-    symbols = settings.worker_price_symbols
+    symbols = await resolve_worker_symbols(settings)
 
     if not symbols:
         logger.warning(
@@ -104,10 +106,15 @@ async def calculate_configured_market_indicators(
                 )
                 continue
 
+            # Los indicadores se calculan sobre la fuente principal de precios.
+            indicator_source_name = (
+                settings.market_price_source_names[0]
+            )
+
             source = (
                 await market_repository
                 .get_financial_source_by_name(
-                    name=INDICATOR_SOURCE_NAME,
+                    name=indicator_source_name,
                     active_only=True,
                 )
             )
@@ -115,7 +122,7 @@ async def calculate_configured_market_indicators(
             if source is None:
                 logger.warning(
                     "No existe la fuente activa %s",
-                    INDICATOR_SOURCE_NAME,
+                    indicator_source_name,
                 )
                 continue
 

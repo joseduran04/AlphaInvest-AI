@@ -447,3 +447,115 @@ async def test_sync_releases_lock_and_records_failure() -> None:
     # Segundo commit:
     # ejecución FALLIDA y bloqueo LIBERADO.
     assert operation_repository.commit.await_count == 2
+
+def build_fallback_scenario(*, fallback_fails: bool = False):
+    from alphainvest.modules.market.domain.exceptions import (
+        ProviderRequestError,
+    )
+
+    asset = SimpleNamespace(
+        id=uuid4(),
+        simbolo="META",
+        moneda="USD",
+        tipo_activo=SimpleNamespace(codigo="ACCION"),
+    )
+    yahoo_source = SimpleNamespace(id=uuid4(), nombre="Yahoo Finance")
+    alpha_source = SimpleNamespace(id=uuid4(), nombre="Alpha Vantage")
+    sources = {
+        "Yahoo Finance": yahoo_source,
+        "Alpha Vantage": alpha_source,
+    }
+    prices = [build_price(date(2026, 9, 22))]
+
+    market_repository = SimpleNamespace(
+        get_asset=AsyncMock(return_value=asset),
+        get_financial_source_by_name=AsyncMock(
+            side_effect=lambda *, name, active_only: sources.get(name)
+        ),
+        get_existing_price_dates=AsyncMock(return_value=set()),
+        upsert_daily_prices=AsyncMock(),
+        mark_source_requested=AsyncMock(return_value=datetime.now(UTC)),
+    )
+    operation_repository = SimpleNamespace(
+        get_job_by_code=AsyncMock(
+            return_value=SimpleNamespace(id=uuid4())
+        ),
+        acquire_process_lock=AsyncMock(return_value=True),
+        create_execution=AsyncMock(
+            return_value=SimpleNamespace(id=uuid4())
+        ),
+        mark_completed=AsyncMock(),
+        update_job_last_execution=AsyncMock(),
+        release_process_lock=AsyncMock(return_value=True),
+        get_execution=AsyncMock(return_value=None),
+        mark_failed=AsyncMock(),
+        commit=AsyncMock(),
+        rollback=AsyncMock(),
+    )
+    primary = SimpleNamespace(
+        source_name="Yahoo Finance",
+        fetch_daily_prices=AsyncMock(
+            side_effect=ProviderRequestError("Yahoo no respondió")
+        ),
+    )
+    fallback = SimpleNamespace(
+        source_name="Alpha Vantage",
+        fetch_daily_prices=(
+            AsyncMock(side_effect=ProviderRequestError("sin cuota"))
+            if fallback_fails
+            else AsyncMock(return_value=prices)
+        ),
+    )
+
+    service = PriceSynchronizationService(
+        market_repository=market_repository,
+        operation_repository=operation_repository,
+        provider=primary,
+        fallback_providers=[fallback],
+    )
+
+    return SimpleNamespace(
+        service=service,
+        asset=asset,
+        alpha_source=alpha_source,
+        market_repository=market_repository,
+        operation_repository=operation_repository,
+        fallback=fallback,
+    )
+
+
+@pytest.mark.asyncio
+async def test_sync_uses_fallback_provider_and_its_source() -> None:
+    scenario = build_fallback_scenario()
+
+    result = await scenario.service.synchronize_asset(
+        asset_id=scenario.asset.id,
+        requested_by=None,
+    )
+
+    assert result.source_name == "Alpha Vantage"
+    assert result.source_id == scenario.alpha_source.id
+    scenario.fallback.fetch_daily_prices.assert_awaited_once()
+
+    upsert_kwargs = (
+        scenario.market_repository.upsert_daily_prices.await_args.kwargs
+    )
+    assert upsert_kwargs["source_id"] == scenario.alpha_source.id
+
+
+@pytest.mark.asyncio
+async def test_sync_raises_primary_error_when_all_providers_fail() -> None:
+    from alphainvest.modules.market.domain.exceptions import (
+        ProviderRequestError,
+    )
+
+    scenario = build_fallback_scenario(fallback_fails=True)
+
+    with pytest.raises(ProviderRequestError, match="Yahoo"):
+        await scenario.service.synchronize_asset(
+            asset_id=scenario.asset.id,
+            requested_by=None,
+        )
+
+    scenario.market_repository.upsert_daily_prices.assert_not_awaited()
+    scenario.operation_repository.release_process_lock.assert_awaited_once()

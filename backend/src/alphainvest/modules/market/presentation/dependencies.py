@@ -24,7 +24,7 @@ from alphainvest.modules.market.application.synchronization_service import (
     PriceSynchronizationService,
 )
 from alphainvest.modules.market.infrastructure.providers.factory import (
-    create_alpha_vantage_provider,
+    create_market_data_providers,
 )
 from alphainvest.modules.market.infrastructure.repository import (
     MarketRepository,
@@ -56,12 +56,13 @@ def get_price_synchronization_service(
 ) -> PriceSynchronizationService:
     market_repository = MarketRepository(session)
     operation_repository = OperationRepository(session)
-    provider = create_alpha_vantage_provider(settings)
+    providers = create_market_data_providers(settings)
 
     return PriceSynchronizationService(
         market_repository=market_repository,
         operation_repository=operation_repository,
-        provider=provider,
+        provider=providers[0],
+        fallback_providers=providers[1:],
     )
 
 def get_market_execution_service(

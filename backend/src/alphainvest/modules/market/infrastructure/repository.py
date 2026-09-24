@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, or_, select, tuple_
+from sqlalchemy import func, or_, select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -181,6 +181,53 @@ class MarketRepository:
         result = await self._session.execute(statement)
 
         return result.scalar_one_or_none()
+
+    async def list_symbols_in_use(self) -> list[str]:
+        """Símbolos de activos activos que el usuario está utilizando.
+
+        Incluye posiciones abiertas de portafolios activos, activos de
+        configuraciones de simulación no archivadas y listas de seguimiento.
+        """
+
+        statement = text(
+            """
+            SELECT DISTINCT a.simbolo
+            FROM market.activos a
+            WHERE a.estado = 'ACTIVO'
+              AND (
+                  EXISTS (
+                      SELECT 1
+                      FROM portfolio.posiciones pos
+                      JOIN portfolio.portafolios p
+                        ON p.id = pos.portafolio_id
+                      WHERE pos.activo_id = a.id
+                        AND pos.estado = 'ABIERTA'
+                        AND p.estado = 'ACTIVO'
+                  )
+                  OR EXISTS (
+                      SELECT 1
+                      FROM simulation.configuracion_activos ca
+                      JOIN simulation.configuraciones c
+                        ON c.id = ca.configuracion_id
+                      WHERE ca.activo_id = a.id
+                        AND c.estado <> 'ARCHIVADA'
+                  )
+                  OR EXISTS (
+                      SELECT 1
+                      FROM portfolio.lista_activos la
+                      WHERE la.activo_id = a.id
+                  )
+              )
+            ORDER BY a.simbolo
+            """
+        )
+
+        result = await self._session.execute(statement)
+
+        return [
+            str(symbol)
+            for symbol in result.scalars().all()
+        ]
 
     async def get_active_asset_by_symbol(
         self,

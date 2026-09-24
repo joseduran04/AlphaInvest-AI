@@ -1,13 +1,22 @@
+import logging
+from collections.abc import Sequence
 from uuid import UUID, uuid4
 
 from alphainvest.modules.market.domain.exceptions import (
     AssetNotFoundError,
     FinancialSourceNotFoundError,
+    MarketProviderError,
     ProcessLockUnavailableError,
     ScheduledJobNotFoundError,
 )
 from alphainvest.modules.market.domain.provider import (
     MarketDataProvider,
+)
+from alphainvest.modules.market.domain.value_objects import (
+    DailyPricePoint,
+)
+from alphainvest.modules.market.infrastructure.models import (
+    FinancialSourceModel,
 )
 from alphainvest.modules.market.infrastructure.repository import (
     MarketRepository,
@@ -21,6 +30,8 @@ from alphainvest.modules.operation.domain.enums import (
 from alphainvest.modules.operation.infrastructure.repository import (
     OperationRepository,
 )
+
+logger = logging.getLogger(__name__)
 
 PRICE_SYNC_JOB_CODE = "ACTUALIZAR_PRECIOS_DIARIOS"
 PRICE_SYNC_LOCK_PREFIX = "MARKET_PRICE_SYNC"
@@ -37,10 +48,59 @@ class PriceSynchronizationService:
         market_repository: MarketRepository,
         operation_repository: OperationRepository,
         provider: MarketDataProvider,
+        fallback_providers: Sequence[MarketDataProvider] = (),
     ) -> None:
         self._market_repository = market_repository
         self._operation_repository = operation_repository
         self._provider = provider
+        self._fallback_providers = tuple(fallback_providers)
+
+    async def _fetch_from_fallbacks(
+        self,
+        *,
+        symbol: str,
+        currency: str,
+        asset_type: str,
+        primary_error: MarketProviderError,
+    ) -> tuple[FinancialSourceModel, list[DailyPricePoint]]:
+        """Intenta los proveedores de respaldo en orden de prioridad."""
+
+        for fallback in self._fallback_providers:
+            fallback_source = (
+                await self._market_repository
+                .get_financial_source_by_name(
+                    name=fallback.source_name,
+                    active_only=True,
+                )
+            )
+
+            if fallback_source is None:
+                continue
+
+            try:
+                prices = await fallback.fetch_daily_prices(
+                    symbol=symbol,
+                    currency=currency,
+                    asset_type=asset_type,
+                )
+            except MarketProviderError:
+                logger.warning(
+                    "El respaldo %s también falló para %s",
+                    fallback.source_name,
+                    symbol,
+                )
+                continue
+
+            logger.warning(
+                "Se usó el respaldo %s para %s: %s",
+                fallback.source_name,
+                symbol,
+                primary_error,
+            )
+
+            return fallback_source, prices
+
+        raise primary_error
 
     async def synchronize_asset(
         self,
@@ -141,11 +201,25 @@ class PriceSynchronizationService:
             raise
 
         try:
-            prices = await self._provider.fetch_daily_prices(
-                symbol=asset.simbolo,
-                currency=asset.moneda,
-                asset_type=asset.tipo_activo.codigo,
-            )
+            try:
+                prices = await self._provider.fetch_daily_prices(
+                    symbol=asset.simbolo,
+                    currency=asset.moneda,
+                    asset_type=asset.tipo_activo.codigo,
+                )
+            except MarketProviderError as primary_error:
+                if not self._fallback_providers:
+                    raise
+
+                fallback_source, prices = (
+                    await self._fetch_from_fallbacks(
+                        symbol=asset.simbolo,
+                        currency=asset.moneda,
+                        asset_type=asset.tipo_activo.codigo,
+                        primary_error=primary_error,
+                    )
+                )
+                source = fallback_source
 
             price_dates = [
                 price.date

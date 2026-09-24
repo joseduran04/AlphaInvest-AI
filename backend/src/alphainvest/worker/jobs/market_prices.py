@@ -11,7 +11,7 @@ from alphainvest.modules.market.domain.exceptions import (
     ProcessLockUnavailableError,
 )
 from alphainvest.modules.market.infrastructure.providers.factory import (
-    create_alpha_vantage_provider,
+    create_market_data_providers,
 )
 from alphainvest.modules.market.infrastructure.repository import (
     MarketRepository,
@@ -22,6 +22,9 @@ from alphainvest.modules.operation.domain.enums import (
 from alphainvest.modules.operation.infrastructure.repository import (
     OperationRepository,
 )
+from alphainvest.worker.jobs.symbols import (
+    resolve_worker_symbols,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +34,7 @@ async def synchronize_configured_market_prices(
 ) -> None:
     """Sincroniza los símbolos permitidos en la configuración."""
 
-    symbols = settings.worker_price_symbols
+    symbols = await resolve_worker_symbols(settings)
 
     if not symbols:
         logger.warning(
@@ -43,7 +46,7 @@ async def synchronize_configured_market_prices(
         async with AsyncSessionFactory() as session:
             market_repository = MarketRepository(session)
             operation_repository = OperationRepository(session)
-            provider = create_alpha_vantage_provider(settings)
+            providers = create_market_data_providers(settings)
 
             asset = (
                 await market_repository
@@ -60,7 +63,8 @@ async def synchronize_configured_market_prices(
             service = PriceSynchronizationService(
                 market_repository=market_repository,
                 operation_repository=operation_repository,
-                provider=provider,
+                provider=providers[0],
+                fallback_providers=providers[1:],
             )
 
             try:

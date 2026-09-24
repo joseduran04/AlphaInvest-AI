@@ -13,6 +13,11 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+SUPPORTED_MARKET_PRICE_SOURCES = (
+    "Yahoo Finance",
+    "Alpha Vantage",
+)
+
 DatabaseSslMode = Literal[
     "disable",
     "require",
@@ -119,6 +124,11 @@ class Settings(BaseSettings):
     )
     alpha_vantage_output_size: str = "compact"
 
+    # Fuentes de precios diarios en orden de prioridad. La primera es la
+    # principal; las siguientes se usan como respaldo si la anterior falla.
+    # Deben coincidir con market.fuentes_financieras.nombre.
+    market_price_sources: str = "Yahoo Finance,Alpha Vantage"
+
     worker_enabled: bool = False
     worker_run_on_startup: bool = False
     worker_run_once: bool = False
@@ -127,8 +137,12 @@ class Settings(BaseSettings):
     )
     worker_timezone: str = "America/Mexico_City"
     worker_price_sync_symbols: str = "AAPL"
+    # Además de la lista fija, sincroniza los activos en uso: posiciones
+    # abiertas, configuraciones de simulación no archivadas y listas de
+    # seguimiento.
+    worker_price_sync_assets_in_use: bool = True
     worker_simulation_source_name: str = (
-        "Alpha Vantage"
+        "Yahoo Finance"
     )
     worker_simulation_batch_size: int = Field(
         default=10,
@@ -185,6 +199,43 @@ class Settings(BaseSettings):
         normalized = value.strip()
 
         return normalized or None
+
+    @field_validator("market_price_sources")
+    @classmethod
+    def validate_market_price_sources(
+        cls,
+        value: str,
+    ) -> str:
+        names = [
+            name.strip()
+            for name in value.split(",")
+            if name.strip()
+        ]
+
+        if not names:
+            raise ValueError(
+                "APP_MARKET_PRICE_SOURCES debe incluir "
+                "al menos una fuente"
+            )
+
+        unsupported = [
+            name
+            for name in names
+            if name not in SUPPORTED_MARKET_PRICE_SOURCES
+        ]
+
+        if unsupported:
+            raise ValueError(
+                "Fuentes de precios no soportadas: "
+                + ", ".join(unsupported)
+            )
+
+        if len(set(names)) != len(names):
+            raise ValueError(
+                "APP_MARKET_PRICE_SOURCES tiene fuentes repetidas"
+            )
+
+        return ",".join(names)
 
     @field_validator("alpha_vantage_output_size")
     @classmethod
@@ -307,6 +358,26 @@ class Settings(BaseSettings):
                 parsed.fragment,
             )
         )
+
+    @property
+    def market_price_source_names(self) -> list[str]:
+        """Fuentes de precios ordenadas por prioridad."""
+
+        return self.market_price_sources.split(",")
+
+    def price_source_priority(
+        self,
+        preferred: str,
+    ) -> list[str]:
+        """Fuente preferida seguida de las demás configuradas."""
+
+        preferred_name = preferred.strip()
+
+        return [preferred_name] + [
+            name
+            for name in self.market_price_source_names
+            if name != preferred_name
+        ]
 
     @property
     def worker_price_symbols(self) -> list[str]:

@@ -31,6 +31,9 @@ from alphainvest.modules.operation.domain.enums import (
 from alphainvest.modules.operation.infrastructure.repository import (
     OperationRepository,
 )
+from alphainvest.worker.jobs.symbols import (
+    resolve_worker_symbols,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +45,7 @@ async def synchronize_configured_news(
 ) -> None:
     """Sincroniza noticias para los símbolos habilitados."""
 
-    symbols = settings.worker_price_symbols
+    symbols = await resolve_worker_symbols(settings)
 
     if not symbols:
         logger.warning(
