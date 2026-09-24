@@ -10,8 +10,8 @@ Documento generado automáticamente a partir de OpenAPI.
 - **Swagger UI:** `/docs`
 - **ReDoc:** `/redoc`
 - **OpenAPI:** `/openapi.json`
-- **Paths OpenAPI:** 88
-- **Schemas:** 142
+- **Paths OpenAPI:** 89
+- **Schemas:** 144
 
 ## Autenticación
 
@@ -114,6 +114,7 @@ Esquemas OpenAPI registrados:
 | GET | `/api/v1/ai/analysis-requests/{request_id}/result` | Inteligencia artificial | Consultar resultado de análisis | analisis.leer | - | AssetAnalysisResultResponse | request_id (path, req) | 200, 422 |
 | POST | `/api/v1/ai/sentiment-analysis-requests` | Inteligencia artificial | Solicitar análisis de sentimiento | analisis.solicitar | SentimentAnalysisRequestCreate | AnalysisRequestResponse | - | 201, 422 |
 | GET | `/api/v1/ai/sentiment-analysis-requests/{request_id}/result` | Inteligencia artificial | Consultar resultado de análisis de sentimiento | analisis.leer | - | SentimentAnalysisResultResponse | request_id (path, req) | 200, 422 |
+| GET | `/api/v1/ai/assets/{asset_id}/sentiment-summary` | Inteligencia artificial | Consultar termómetro de sentimiento de un activo | analisis.leer | - | AssetSentimentSummaryResponse | asset_id (path, req); limit (query, opt) | 200, 422 |
 | POST | `/api/v1/ai/recommendation-requests` | Inteligencia artificial | Solicitar recomendación inteligente | analisis.solicitar | RecommendationRequestCreate | AnalysisRequestResponse | - | 201, 422 |
 | GET | `/api/v1/ai/recommendation-requests/{request_id}` | Inteligencia artificial | Consultar solicitud de recomendación | analisis.leer | - | AnalysisRequestResponse | request_id (path, req) | 200, 422 |
 | GET | `/api/v1/ai/recommendation-requests/{request_id}/result` | Inteligencia artificial | Consultar resultado de recomendación | analisis.leer | - | RecommendationResultResponse | request_id (path, req) | 200, 422 |
@@ -168,6 +169,8 @@ Esquemas OpenAPI registrados:
 - `AssetReportListResponse`
 - `AssetReportResponse`
 - `AssetResponse`
+- `AssetSentimentItemResponse`
+- `AssetSentimentSummaryResponse`
 - `AssetStatus`
 - `AssetTypeListResponse`
 - `AssetTypeResponse`

@@ -286,6 +286,10 @@ PERMISSION_BY_OPERATION: dict[
         "/api/v1/ai/sentiment-analysis-requests/{request_id}/result",
     ): "analisis.leer",
     (
+        "GET",
+        "/api/v1/ai/assets/{asset_id}/sentiment-summary",
+    ): "analisis.leer",
+    (
         "POST",
         "/api/v1/ai/recommendation-requests",
     ): "analisis.solicitar",

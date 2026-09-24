@@ -42,6 +42,7 @@ from alphainvest.modules.ai.presentation.schemas import (
     AnalysisRequestResponse,
     AssetAnalysisRequestCreate,
     AssetAnalysisResultResponse,
+    AssetSentimentSummaryResponse,
     IntegralAnalysisRequestCreate,
     ModelVersionCreateRequest,
     ModelVersionListResponse,
@@ -537,6 +538,35 @@ async def get_sentiment_analysis_result(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
+
+
+@router.get(
+    "/assets/{asset_id}/sentiment-summary",
+    response_model=AssetSentimentSummaryResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Consultar termómetro de sentimiento de un activo",
+    description=(
+        "Resume el último análisis de sentimiento de cada noticia "
+        "analizada del activo, de la más reciente a la más antigua. "
+        "Describe el tono de las noticias; no predice el precio."
+    ),
+)
+async def get_asset_sentiment_summary(
+    asset_id: UUID,
+    context: AnalysisRequestReadContext,
+    service: AnalysisRequestServiceDependency,
+    limit: int = Query(
+        default=20,
+        ge=1,
+        le=100,
+    ),
+) -> AssetSentimentSummaryResponse:
+    _ = context
+
+    return await service.get_asset_sentiment_summary(
+        asset_id=asset_id,
+        limit=limit,
+    )
 
 
 @router.post(

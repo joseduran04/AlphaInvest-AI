@@ -1980,3 +1980,69 @@ async def test_rejects_missing_persisted_recommendation() -> None:
             user_id=uuid4(),
         )
 
+
+
+def build_sentiment_row(
+    *,
+    sentiment: str,
+    day: int,
+) -> dict[str, object]:
+    return {
+        "news_reference_id": uuid4(),
+        "title": f"Noticia {day}",
+        "source": "Reuters",
+        "url": None,
+        "published_at": datetime(2026, 9, day, tzinfo=UTC),
+        "sentiment": sentiment,
+        "confidence": Decimal("0.8"),
+        "score": Decimal("0.5"),
+        "analyzed_at": datetime(2026, 9, 24, tzinfo=UTC),
+    }
+
+
+@pytest.mark.asyncio
+async def test_asset_sentiment_summary_counts_tones() -> None:
+    asset_id = uuid4()
+    repository = SimpleNamespace(
+        list_latest_asset_sentiments=AsyncMock(
+            return_value=[
+                build_sentiment_row(sentiment="POSITIVO", day=23),
+                build_sentiment_row(sentiment="POSITIVO", day=22),
+                build_sentiment_row(sentiment="NEGATIVO", day=21),
+                build_sentiment_row(sentiment="NEUTRAL", day=20),
+            ]
+        )
+    )
+
+    summary = await AnalysisRequestService(
+        repository
+    ).get_asset_sentiment_summary(
+        asset_id=asset_id,
+        limit=20,
+    )
+
+    assert summary.asset_id == asset_id
+    assert summary.analyzed_news == 4
+    assert (summary.positive, summary.neutral, summary.negative) == (2, 1, 1)
+    assert summary.items[0].title == "Noticia 23"
+    repository.list_latest_asset_sentiments.assert_awaited_once_with(
+        asset_id=asset_id,
+        limit=20,
+    )
+
+
+@pytest.mark.asyncio
+async def test_asset_sentiment_summary_without_analyses() -> None:
+    repository = SimpleNamespace(
+        list_latest_asset_sentiments=AsyncMock(return_value=[])
+    )
+
+    summary = await AnalysisRequestService(
+        repository
+    ).get_asset_sentiment_summary(
+        asset_id=uuid4(),
+        limit=5,
+    )
+
+    assert summary.analyzed_news == 0
+    assert summary.items == []

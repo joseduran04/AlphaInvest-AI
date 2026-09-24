@@ -477,3 +477,32 @@ class RecommendationResultResponse(BaseModel):
 
     assets: list[RecommendationAssetResponse]
     evidence: list[RecommendationEvidenceResponse]
+
+
+class AssetSentimentItemResponse(BaseModel):
+    """Último análisis de sentimiento de una noticia del activo."""
+
+    news_reference_id: UUID
+    title: str
+    source: str
+    url: str | None = None
+    published_at: datetime
+    sentiment: str
+    confidence: Decimal
+    score: Decimal
+    analyzed_at: datetime
+
+
+class AssetSentimentSummaryResponse(BaseModel):
+    """Termómetro de sentimiento: noticias analizadas de un activo.
+
+    Cuenta el análisis más reciente de cada noticia (sin duplicados).
+    Describe el tono de las noticias; no predice el precio.
+    """
+
+    asset_id: UUID
+    analyzed_news: int
+    positive: int
+    neutral: int
+    negative: int
+    items: list[AssetSentimentItemResponse]

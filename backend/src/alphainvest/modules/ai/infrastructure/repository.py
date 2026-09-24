@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -1086,6 +1086,59 @@ class AIRepository:
         return list(
             result.scalars().all()
         )
+
+    async def list_latest_asset_sentiments(
+        self,
+        *,
+        asset_id: UUID,
+        limit: int,
+    ) -> list[dict[str, object]]:
+        """Último análisis de sentimiento por noticia del activo.
+
+        Ordena por fecha de publicación de la noticia (más recientes
+        primero). No depende del usuario: el tono de una noticia es el
+        mismo para todos.
+        """
+
+        statement = text(
+            """
+            SELECT *
+            FROM (
+                SELECT DISTINCT ON (s.noticia_referencia_id)
+                    s.noticia_referencia_id AS news_reference_id,
+                    n.titulo AS title,
+                    n.fuente AS source,
+                    n.url AS url,
+                    n.fecha_publicacion AS published_at,
+                    s.sentimiento AS sentiment,
+                    s.confianza AS confidence,
+                    s.puntuacion AS score,
+                    s.fecha_analisis AS analyzed_at
+                FROM ai.analisis_sentimiento s
+                JOIN market.noticias_referencia n
+                  ON n.id = s.noticia_referencia_id
+                WHERE s.activo_id = :asset_id
+                ORDER BY
+                    s.noticia_referencia_id,
+                    s.fecha_analisis DESC
+            ) latest
+            ORDER BY latest.published_at DESC
+            LIMIT :limit
+            """
+        )
+
+        result = await self._session.execute(
+            statement,
+            {
+                "asset_id": asset_id,
+                "limit": limit,
+            },
+        )
+
+        return [
+            dict(row)
+            for row in result.mappings().all()
+        ]
 
     async def commit(self) -> None:
         await self._session.commit()

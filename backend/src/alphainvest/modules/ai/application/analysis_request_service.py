@@ -23,6 +23,8 @@ from alphainvest.modules.ai.presentation.schemas import (
     AssetAnalysisRequestCreate,
     AssetAnalysisResultResponse,
     AssetPredictionProbabilitiesResponse,
+    AssetSentimentItemResponse,
+    AssetSentimentSummaryResponse,
     IntegralAnalysisRequestCreate,
     RecommendationAssetResponse,
     RecommendationEvidenceResponse,
@@ -41,6 +43,43 @@ class AnalysisRequestService:
         repository: AIRepository,
     ) -> None:
         self._repository = repository
+
+    async def get_asset_sentiment_summary(
+        self,
+        *,
+        asset_id: UUID,
+        limit: int,
+    ) -> AssetSentimentSummaryResponse:
+        """Termómetro de sentimiento de las noticias de un activo."""
+
+        rows = (
+            await self._repository
+            .list_latest_asset_sentiments(
+                asset_id=asset_id,
+                limit=limit,
+            )
+        )
+
+        items = [
+            AssetSentimentItemResponse.model_validate(row)
+            for row in rows
+        ]
+
+        def count(label: str) -> int:
+            return sum(
+                1
+                for item in items
+                if item.sentiment.upper() == label
+            )
+
+        return AssetSentimentSummaryResponse(
+            asset_id=asset_id,
+            analyzed_news=len(items),
+            positive=count("POSITIVO"),
+            neutral=count("NEUTRAL"),
+            negative=count("NEGATIVO"),
+            items=items,
+        )
 
     async def create_asset_request(
         self,
