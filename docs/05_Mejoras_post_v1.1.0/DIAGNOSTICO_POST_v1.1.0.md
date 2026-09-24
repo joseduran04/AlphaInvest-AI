@@ -79,3 +79,24 @@ El tag `v1.1.0` no se modificó.
 - 2026-09-24 (Jose): el capital inicial de 10,000 genera ruido. El portafolio se mide solo con capital invertido, valor actual, ganancia/pérdida y rendimiento. Las simulaciones sí conservan su capital inicial, porque el motor lo necesita para repartir los porcentajes.
 - 2026-09-23 (Jose): el worker sincroniza los activos en uso; Yahoo Finance es la fuente principal de precios y Alpha Vantage el respaldo (y la fuente de noticias).
 - 2026-09-23: no hay conversión de divisas, así que se rechazan posiciones en una moneda distinta a la base del portafolio.
+
+## Segunda ronda (2026-09-24): enfoque, datos y visualización
+
+Decisiones de Jose:
+- La IA se limita al sentimiento de noticias.
+- Se retiran de la interfaz la predicción de tendencia/precio, las recomendaciones y el análisis integral, por métricas insuficientes y para no dar asesoría de inversión.
+- Se agregan ideas inspiradas en Snowball Analytics: mayores alzas/bajas y gráficas.
+
+| Bloque | Cambio | API |
+|---|---|---|
+| IA | Página "Sentimiento de noticias" con termómetro por activo. Módulos retirados solo de la interfaz: backend, modelos y datos intactos. | `GET /ai/assets/{id}/sentiment-summary` |
+| Noticias | Sincronización de todo el catálogo (`APP_WORKER_SYNC_ALL_ACTIVE_ASSETS`); orden por fecha o relevancia; símbolos por proveedor (`.MX`, `EURUSD=X`, AMXL→AMXB.MX, ADRs AMX/FMX para noticias). | `order_by` en `GET /news/assets/{id}` |
+| Dashboard | Top 5 ganadores y perdedores del catálogo en su última sesión. | `GET /market/movers` |
+| Gráficas | Portafolio: evolución invertido vs valor, rendimiento vs SPY, P/L por posición. Simulación: valor vs aportado, rendimiento vs SPY, resultado por activo. | `resumen.evolucion` en resultados nuevos |
+
+OpenAPI: 90 paths, 101 operaciones, 146 schemas.
+
+Pendientes conocidos:
+- WALMEX y GFNORTEO no tienen ADR en EE. UU.; Alpha Vantage podría no tener noticias para ellos.
+- El símbolo interno de América Móvil sigue siendo AMXL. Se traduce a AMXB para Yahoo; renombrarlo en el catálogo sería un cambio de datos.
+- La matriz de permisos (`ENDPOINT_PERMISSION_MATRIX.md`) se regenera con `scripts/generate_endpoint_permission_matrix.py`, que requiere conexión a la base de datos.
