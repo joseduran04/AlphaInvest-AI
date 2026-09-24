@@ -6977,6 +6977,8 @@ export interface operations {
                 end_at?: string | null;
                 limit?: number;
                 offset?: number;
+                /** @description fecha: más recientes primero; relevancia: más relevantes para el activo primero (luego por fecha). */
+                order_by?: "fecha" | "relevancia";
             };
             header?: never;
             path: {

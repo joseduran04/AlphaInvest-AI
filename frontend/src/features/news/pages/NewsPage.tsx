@@ -18,12 +18,16 @@ interface NewsFilters {
   assetId: string
   startDate: string
   endDate: string
+  orderBy: NewsOrder
 }
+
+type NewsOrder = 'fecha' | 'relevancia'
 
 const initialFilters: NewsFilters = {
   assetId: '',
   startDate: '',
   endDate: '',
+  orderBy: 'fecha',
 }
 
 function toStartDateTime(value: string): string | undefined {
@@ -71,6 +75,7 @@ export function NewsPage() {
     end_at: toEndDateTime(appliedFilters.endDate),
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
+    order_by: appliedFilters.orderBy,
   }
 
   const newsQuery = useAssetNews(
@@ -210,6 +215,22 @@ export function NewsPage() {
                   {asset.symbol} — {asset.name}
                 </option>
               ))}
+            </select>
+          </label>
+
+          <label className="news-field">
+            <span>Ordenar por</span>
+            <select
+              value={draftFilters.orderBy}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  orderBy: event.target.value as NewsOrder,
+                }))
+              }
+            >
+              <option value="fecha">Más recientes</option>
+              <option value="relevancia">Más relevantes</option>
             </select>
           </label>
 
@@ -367,7 +388,7 @@ export function NewsPage() {
         ) : news.length === 0 ? (
           <PageEmptyState
             title="No se encontraron noticias"
-            description="No hay noticias registradas para el activo y el rango de fechas seleccionados."
+            description="No hay noticias registradas para el activo y el rango de fechas seleccionados. Las noticias se actualizan automáticamente cada noche; algunas emisoras mexicanas sin cotización en EE. UU. pueden no tener cobertura del proveedor."
             action={
               <button className="button button--secondary" type="button" onClick={handleReset}>
                 Limpiar filtros
