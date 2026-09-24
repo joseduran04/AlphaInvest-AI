@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Protocol
 
 from alphainvest.modules.market.domain.value_objects import (
@@ -19,9 +20,12 @@ class MarketDataProvider(Protocol):
         currency: str,
         asset_type: str,
         market_code: str | None = None,
+        start_date: date | None = None,
     ) -> list[DailyPricePoint]:
         """Obtiene y normaliza precios diarios.
 
         ``market_code`` permite traducir el símbolo a la convención
         del proveedor (por ejemplo, sufijo .MX para la BMV).
+        ``start_date`` pide solo desde esa fecha (sincronización
+        incremental); None descarga el histórico completo.
         """

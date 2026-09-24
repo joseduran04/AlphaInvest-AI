@@ -46,8 +46,10 @@ class AlphaVantageProvider:
         currency: str,
         asset_type: str,
         market_code: str | None = None,
+        start_date: date | None = None,
     ) -> list[DailyPricePoint]:
-        _ = market_code
+        # Alpha Vantage (outputsize compact) ya devuelve solo lo reciente.
+        _ = market_code, start_date
         if not self._api_key:
             raise ProviderConfigurationError(
                 "No se configuró la API key de Alpha Vantage"

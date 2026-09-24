@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Sequence
+from datetime import date, timedelta
 from uuid import UUID, uuid4
 
 from alphainvest.modules.market.domain.exceptions import (
@@ -42,6 +43,10 @@ def _market_code(asset: object) -> str | None:
     return code if isinstance(code, str) else None
 
 
+# Días que se vuelven a pedir antes del último precio guardado, para
+# recoger correcciones del proveedor sin descargar todo el histórico.
+INCREMENTAL_OVERLAP_DAYS = 14
+
 PRICE_SYNC_JOB_CODE = "ACTUALIZAR_PRECIOS_DIARIOS"
 PRICE_SYNC_LOCK_PREFIX = "MARKET_PRICE_SYNC"
 PRICE_SYNC_LOCK_OWNER = "alphainvest-api"
@@ -64,6 +69,26 @@ class PriceSynchronizationService:
         self._provider = provider
         self._fallback_providers = tuple(fallback_providers)
 
+    async def _incremental_start_date(
+        self,
+        *,
+        asset_id: UUID,
+        source_id: UUID,
+    ) -> date | None:
+        """Desde dónde pedir precios: histórico completo solo la primera vez."""
+
+        last_date = (
+            await self._market_repository.get_last_price_date(
+                asset_id=asset_id,
+                source_id=source_id,
+            )
+        )
+
+        if last_date is None:
+            return None
+
+        return last_date - timedelta(days=INCREMENTAL_OVERLAP_DAYS)
+
     async def _fetch_from_fallbacks(
         self,
         *,
@@ -71,6 +96,7 @@ class PriceSynchronizationService:
         currency: str,
         asset_type: str,
         market_code: str | None,
+        start_date: date | None,
         primary_error: MarketProviderError,
     ) -> tuple[FinancialSourceModel, list[DailyPricePoint]]:
         """Intenta los proveedores de respaldo en orden de prioridad."""
@@ -93,6 +119,7 @@ class PriceSynchronizationService:
                     currency=currency,
                     asset_type=asset_type,
                     market_code=market_code,
+                    start_date=start_date,
                 )
             except MarketProviderError:
                 logger.warning(
@@ -213,6 +240,10 @@ class PriceSynchronizationService:
 
         try:
             market_code = _market_code(asset)
+            start_date = await self._incremental_start_date(
+                asset_id=asset.id,
+                source_id=source.id,
+            )
 
             try:
                 prices = await self._provider.fetch_daily_prices(
@@ -220,6 +251,7 @@ class PriceSynchronizationService:
                     currency=asset.moneda,
                     asset_type=asset.tipo_activo.codigo,
                     market_code=market_code,
+                    start_date=start_date,
                 )
             except MarketProviderError as primary_error:
                 if not self._fallback_providers:
@@ -231,6 +263,7 @@ class PriceSynchronizationService:
                         currency=asset.moneda,
                         asset_type=asset.tipo_activo.codigo,
                         market_code=market_code,
+                        start_date=start_date,
                         primary_error=primary_error,
                     )
                 )

@@ -248,6 +248,7 @@ async def test_sync_creates_and_updates_prices() -> None:
         get_financial_source_by_name=AsyncMock(
             return_value=source
         ),
+        get_last_price_date=AsyncMock(return_value=None),
         get_existing_price_dates=AsyncMock(
             return_value={first_date}
         ),
@@ -315,6 +316,7 @@ async def test_sync_creates_and_updates_prices() -> None:
         currency="USD",
         asset_type="ACCION",
         market_code=None,
+        start_date=None,
     )
 
     market_repository.upsert_daily_prices.assert_awaited_once()
@@ -382,6 +384,7 @@ async def test_sync_releases_lock_and_records_failure() -> None:
         get_financial_source_by_name=AsyncMock(
             return_value=source
         ),
+        get_last_price_date=AsyncMock(return_value=None),
         get_existing_price_dates=AsyncMock(
             return_value=set()
         ),
@@ -478,6 +481,7 @@ def build_fallback_scenario(*, fallback_fails: bool = False):
         get_financial_source_by_name=AsyncMock(
             side_effect=lambda *, name, active_only: sources.get(name)
         ),
+        get_last_price_date=AsyncMock(return_value=None),
         get_existing_price_dates=AsyncMock(return_value=set()),
         upsert_daily_prices=AsyncMock(),
         refresh_open_position_prices=AsyncMock(return_value=0),
@@ -566,3 +570,24 @@ async def test_sync_raises_primary_error_when_all_providers_fail() -> None:
 
     scenario.market_repository.upsert_daily_prices.assert_not_awaited()
     scenario.operation_repository.release_process_lock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_sync_is_incremental_when_history_exists() -> None:
+    """Con histórico guardado solo se piden los últimos días (menos E/S)."""
+
+    scenario = build_fallback_scenario()
+    scenario.market_repository.get_last_price_date = AsyncMock(
+        return_value=date(2026, 9, 24)
+    )
+    scenario.service._provider.fetch_daily_prices = AsyncMock(
+        return_value=[build_price(date(2026, 9, 24))]
+    )
+
+    await scenario.service.synchronize_asset(
+        asset_id=scenario.asset.id,
+        requested_by=None,
+    )
+
+    kwargs = scenario.service._provider.fetch_daily_prices.await_args.kwargs
+    assert kwargs["start_date"] == date(2026, 9, 10)

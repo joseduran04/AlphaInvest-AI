@@ -783,6 +783,26 @@ class MarketRepository:
 
         return result.scalar_one_or_none()
 
+    async def get_last_price_date(
+        self,
+        *,
+        asset_id: UUID,
+        source_id: UUID,
+    ) -> date | None:
+        """Última fecha con precio guardado para el activo y la fuente."""
+
+        statement = select(
+            func.max(HistoricalPriceModel.fecha)
+        ).where(
+            HistoricalPriceModel.activo_id == asset_id,
+            HistoricalPriceModel.fuente_id == source_id,
+        )
+
+        result = await self._session.execute(statement)
+        value = result.scalar_one_or_none()
+
+        return value if isinstance(value, date) else None
+
     async def get_existing_price_dates(
         self,
         *,
@@ -900,6 +920,28 @@ class MarketRepository:
                         ),
                         "fecha_registro": func.now(),
                     },
+                    # Solo reescribe filas que cambiaron: re-sincronizar un
+                    # histórico igual no genera escrituras (ahorra E/S).
+                    where=or_(
+                        HistoricalPriceModel.apertura.is_distinct_from(
+                            statement.excluded.apertura
+                        ),
+                        HistoricalPriceModel.maximo.is_distinct_from(
+                            statement.excluded.maximo
+                        ),
+                        HistoricalPriceModel.minimo.is_distinct_from(
+                            statement.excluded.minimo
+                        ),
+                        HistoricalPriceModel.cierre.is_distinct_from(
+                            statement.excluded.cierre
+                        ),
+                        HistoricalPriceModel.cierre_ajustado.is_distinct_from(
+                            statement.excluded.cierre_ajustado
+                        ),
+                        HistoricalPriceModel.volumen.is_distinct_from(
+                            statement.excluded.volumen
+                        ),
+                    ),
                 )
             )
 

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -32,6 +33,7 @@ class YahooFinanceProvider:
         currency: str,
         asset_type: str,
         market_code: str | None = None,
+        start_date: date | None = None,
     ) -> list[DailyPricePoint]:
         normalized_symbol = yahoo_symbol(
             symbol=symbol,
@@ -48,6 +50,7 @@ class YahooFinanceProvider:
             history = await asyncio.to_thread(
                 self._download_history,
                 normalized_symbol,
+                start_date,
             )
         except Exception as error:
             raise ProviderRequestError(
@@ -99,11 +102,18 @@ class YahooFinanceProvider:
     @staticmethod
     def _download_history(
         symbol: str,
+        start_date: date | None = None,
     ) -> pd.DataFrame:
         ticker = yf.Ticker(symbol)
 
+        period_arguments: dict[str, Any] = (
+            {"start": start_date.isoformat()}
+            if start_date is not None
+            else {"period": "max"}
+        )
+
         history = ticker.history(
-            period="max",
+            **period_arguments,
             interval="1d",
             actions=False,
             auto_adjust=False,
