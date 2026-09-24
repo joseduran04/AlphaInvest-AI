@@ -259,6 +259,49 @@ class MarketRepository:
             for row in result.mappings().all()
         ]
 
+    async def refresh_open_position_prices(
+        self,
+        *,
+        asset_id: UUID,
+    ) -> int:
+        """Actualiza el precio actual de las posiciones abiertas del activo.
+
+        Usa el último precio guardado (cualquier fuente, ajustado si existe),
+        igual que al crear una posición. El trigger de posiciones recalcula
+        valor, ganancia y rendimiento.
+        """
+
+        statement = text(
+            """
+            UPDATE portfolio.posiciones pos
+            SET precio_actual = latest.precio,
+                fecha_actualizacion = CURRENT_TIMESTAMP
+            FROM (
+                SELECT DISTINCT ON (p.activo_id)
+                    p.activo_id,
+                    COALESCE(p.cierre_ajustado, p.cierre) AS precio
+                FROM market.precios_historicos p
+                WHERE p.activo_id = :asset_id
+                ORDER BY
+                    p.activo_id,
+                    p.fecha DESC,
+                    p.fecha_registro DESC,
+                    p.id DESC
+            ) latest
+            WHERE pos.activo_id = latest.activo_id
+              AND pos.estado = 'ABIERTA'
+              AND pos.activo_id = :asset_id
+              AND pos.precio_actual IS DISTINCT FROM latest.precio
+            """
+        )
+
+        result = await self._session.execute(
+            statement,
+            {"asset_id": asset_id},
+        )
+
+        return int(getattr(result, "rowcount", 0) or 0)
+
     async def list_active_symbols(self) -> list[str]:
         """Símbolos de todos los activos en estado ACTIVO."""
 

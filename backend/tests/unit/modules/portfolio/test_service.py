@@ -745,6 +745,7 @@ async def test_register_portfolio_valuation(
         get_by_id_for_user=AsyncMock(
             return_value=portfolio
         ),
+        refresh_position_prices=AsyncMock(return_value=2),
         register_valuation=AsyncMock(
             return_value=42
         ),
@@ -786,6 +787,10 @@ async def test_register_portfolio_valuation(
         details={
             "origen": "API_MANUAL",
         },
+    )
+    # Antes de la foto, las posiciones toman el último precio guardado.
+    repository.refresh_position_prices.assert_awaited_once_with(
+        portfolio_id=portfolio.id,
     )
     repository.commit.assert_awaited_once()
     repository.rollback.assert_not_awaited()

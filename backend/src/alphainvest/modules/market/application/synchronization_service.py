@@ -263,6 +263,11 @@ class PriceSynchronizationService:
                 prices=prices,
             )
 
+            # Las posiciones abiertas del activo toman el precio nuevo.
+            await self._market_repository.refresh_open_position_prices(
+                asset_id=asset.id,
+            )
+
             synchronized_at = (
                 await self._market_repository
                 .mark_source_requested(source)

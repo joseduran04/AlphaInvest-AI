@@ -405,6 +405,11 @@ class PortfolioService:
                 "El portafolio solicitado no existe"
             )
 
+        # La valoración usa el último precio guardado de cada posición.
+        await self._repository.refresh_position_prices(
+            portfolio_id=portfolio_id,
+        )
+
         valuation_id = (
             await self._repository
             .register_valuation(

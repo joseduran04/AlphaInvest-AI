@@ -252,6 +252,7 @@ async def test_sync_creates_and_updates_prices() -> None:
             return_value={first_date}
         ),
         upsert_daily_prices=AsyncMock(),
+        refresh_open_position_prices=AsyncMock(return_value=1),
         mark_source_requested=AsyncMock(
             return_value=synchronized_at
         ),
@@ -317,6 +318,10 @@ async def test_sync_creates_and_updates_prices() -> None:
     )
 
     market_repository.upsert_daily_prices.assert_awaited_once()
+    # Las posiciones abiertas del activo toman el precio recién guardado.
+    market_repository.refresh_open_position_prices.assert_awaited_once_with(
+        asset_id=asset_id,
+    )
     operation_repository.mark_completed.assert_awaited_once()
 
     operation_repository.update_job_last_execution.assert_awaited_once_with(
@@ -475,6 +480,7 @@ def build_fallback_scenario(*, fallback_fails: bool = False):
         ),
         get_existing_price_dates=AsyncMock(return_value=set()),
         upsert_daily_prices=AsyncMock(),
+        refresh_open_position_prices=AsyncMock(return_value=0),
         mark_source_requested=AsyncMock(return_value=datetime.now(UTC)),
     )
     operation_repository = SimpleNamespace(

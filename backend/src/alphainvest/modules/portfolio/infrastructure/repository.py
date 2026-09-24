@@ -332,6 +332,49 @@ class PortfolioRepository:
         await self._session.delete(position)
         await self._session.flush()
 
+    async def refresh_position_prices(
+        self,
+        *,
+        portfolio_id: UUID,
+    ) -> int:
+        """Lleva el precio actual de las posiciones abiertas al último guardado."""
+
+        statement = text(
+            """
+            UPDATE portfolio.posiciones pos
+            SET precio_actual = latest.precio,
+                fecha_actualizacion = CURRENT_TIMESTAMP
+            FROM (
+                SELECT DISTINCT ON (p.activo_id)
+                    p.activo_id,
+                    COALESCE(p.cierre_ajustado, p.cierre) AS precio
+                FROM market.precios_historicos p
+                WHERE p.activo_id IN (
+                    SELECT activo_id
+                    FROM portfolio.posiciones
+                    WHERE portafolio_id = :portfolio_id
+                      AND estado = 'ABIERTA'
+                )
+                ORDER BY
+                    p.activo_id,
+                    p.fecha DESC,
+                    p.fecha_registro DESC,
+                    p.id DESC
+            ) latest
+            WHERE pos.activo_id = latest.activo_id
+              AND pos.estado = 'ABIERTA'
+              AND pos.portafolio_id = :portfolio_id
+              AND pos.precio_actual IS DISTINCT FROM latest.precio
+            """
+        )
+
+        result = await self._session.execute(
+            statement,
+            {"portfolio_id": portfolio_id},
+        )
+
+        return int(getattr(result, "rowcount", 0) or 0)
+
     async def get_portfolio_summary(
         self,
         *,
