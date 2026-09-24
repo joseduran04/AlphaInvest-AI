@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/client'
 import type {
   AssetListResponse,
+  MarketMoversResponse,
   PortfolioListResponse,
   PortfolioOverviewResponse,
   SimulationExecutionListResponse,
@@ -9,6 +10,7 @@ import type {
 const PORTFOLIOS_PATH = '/api/v1/portfolios'
 const SIMULATION_EXECUTIONS_PATH = '/api/v1/simulations/executions'
 const ASSETS_PATH = '/api/v1/market/assets'
+const MARKET_MOVERS_PATH = '/api/v1/market/movers'
 
 export async function dashboardPortfoliosRequest(): Promise<PortfolioListResponse> {
   const response = await apiClient.get<PortfolioListResponse>(PORTFOLIOS_PATH, {
@@ -52,6 +54,14 @@ export async function dashboardAssetsRequest(): Promise<AssetListResponse> {
       limit: 5,
       offset: 0,
     },
+  })
+
+  return response.data
+}
+
+export async function dashboardMarketMoversRequest(): Promise<MarketMoversResponse> {
+  const response = await apiClient.get<MarketMoversResponse>(MARKET_MOVERS_PATH, {
+    params: { limit: 5 },
   })
 
   return response.data

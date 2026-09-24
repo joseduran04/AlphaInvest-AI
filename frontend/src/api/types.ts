@@ -273,3 +273,6 @@ export type FinancialIndicatorListQuery = NonNullable<
 export type MarketSynchronizationListQuery = NonNullable<
   paths['/api/v1/market/synchronizations']['get']['parameters']['query']
 >
+
+export type MarketMoversResponse = components['schemas']['MarketMoversResponse']
+export type MarketMoverResponse = components['schemas']['MarketMoverResponse']

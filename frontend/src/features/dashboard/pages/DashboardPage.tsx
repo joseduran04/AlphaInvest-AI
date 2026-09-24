@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 
 import { DashboardPanelState } from '@/features/dashboard/components/DashboardPanelState'
+import { MarketMoversPanel } from '@/features/dashboard/components/MarketMoversPanel'
 import { useDashboardAssets } from '@/features/dashboard/hooks/useDashboardAssets'
 import { useDashboardPortfolioOverview } from '@/features/dashboard/hooks/useDashboardPortfolioOverview'
 import { useDashboardPortfolios } from '@/features/dashboard/hooks/useDashboardPortfolios'
@@ -31,6 +32,7 @@ export function DashboardPage() {
   const canReadNotifications = hasPermission('notificaciones.leer')
   const canReadReports = hasPermission('reportes.leer')
   const canReadAssets = hasPermission('activos.leer')
+  const canReadPrices = hasPermission('precios.leer')
 
   const profileQuery = useCurrentRiskProfile()
 
@@ -148,6 +150,8 @@ export function DashboardPage() {
       </section>
 
       <div className="dashboard-grid">
+        {canReadAssets && canReadPrices ? <MarketMoversPanel /> : null}
+
         <article className="dashboard-panel">
           <header className="dashboard-panel__header">
             <div>

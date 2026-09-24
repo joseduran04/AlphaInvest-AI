@@ -325,6 +325,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/movers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultar mayores alzas y bajas del catálogo
+         * @description Compara los dos últimos cierres disponibles de cada activo ACTIVO y devuelve las mayores alzas y bajas porcentuales.
+         */
+        get: operations["get_market_movers_api_v1_market_movers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/assets/{asset_id}/latest-price": {
         parameters: {
             query?: never;
@@ -2561,6 +2581,53 @@ export interface components {
             items: components["schemas"]["MarketResponse"][];
             /** Total */
             total: number;
+        };
+        /**
+         * MarketMoverResponse
+         * @description Variación entre los dos últimos cierres disponibles de un activo.
+         */
+        MarketMoverResponse: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /** Symbol */
+            symbol: string;
+            /** Name */
+            name: string;
+            /** Currency */
+            currency: string;
+            /** Source Name */
+            source_name: string;
+            /**
+             * Last Date
+             * Format: date
+             */
+            last_date: string;
+            /** Last Close */
+            last_close: string;
+            /**
+             * Previous Date
+             * Format: date
+             */
+            previous_date: string;
+            /** Previous Close */
+            previous_close: string;
+            /** Change */
+            change: string;
+            /** Change Percentage */
+            change_percentage: string;
+        };
+        /**
+         * MarketMoversResponse
+         * @description Mayores alzas y bajas del catálogo en su última sesión.
+         */
+        MarketMoversResponse: {
+            /** Gainers */
+            gainers: components["schemas"]["MarketMoverResponse"][];
+            /** Losers */
+            losers: components["schemas"]["MarketMoverResponse"][];
         };
         /** MarketResponse */
         MarketResponse: {
@@ -5044,6 +5111,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoricalPriceListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_market_movers_api_v1_market_movers_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketMoversResponse"];
                 };
             };
             /** @description Validation Error */

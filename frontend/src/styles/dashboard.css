@@ -421,3 +421,67 @@
     flex-direction: column;
   }
 }
+
+/* Mayores alzas y bajas */
+.market-movers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.market-movers__column h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.market-movers__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.market-movers__list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.75rem;
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.market-movers__asset {
+  display: grid;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.market-movers__asset span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-movers__price,
+.market-movers__change {
+  display: grid;
+  justify-items: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.market-movers__change span {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .market-movers {
+    grid-template-columns: 1fr;
+  }
+}

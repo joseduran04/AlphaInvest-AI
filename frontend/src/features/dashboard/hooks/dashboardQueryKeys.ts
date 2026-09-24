@@ -10,4 +10,6 @@ export const dashboardQueryKeys = {
   notifications: () => [...dashboardQueryKeys.all, 'notifications', 'list'] as const,
 
   assets: () => [...dashboardQueryKeys.all, 'assets'] as const,
+
+  marketMovers: () => [...dashboardQueryKeys.all, 'market-movers'] as const,
 }
