@@ -104,6 +104,9 @@ export async function synchronizeAssetPricesRequest(
 ): Promise<PriceSynchronizationResponse> {
   const response = await apiClient.post<PriceSynchronizationResponse>(
     `${ASSETS_PATH}/${assetId}/prices/sync`,
+    undefined,
+    // Descargar el histórico completo puede tardar más que el límite general.
+    { timeout: 60_000 },
   )
 
   return response.data

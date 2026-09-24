@@ -6,6 +6,7 @@ import { PageEmptyState } from '@/components/PageEmptyState'
 import { PageErrorState } from '@/components/PageErrorState'
 import { PageLoadingState } from '@/components/PageLoadingState'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { SyncAllPricesPanel } from '@/features/market/components/SyncAllPricesPanel'
 import { useAssets } from '@/features/market/hooks/useAssets'
 import { useAssetTypes } from '@/features/market/hooks/useAssetTypes'
 import { useMarkets } from '@/features/market/hooks/useMarkets'
@@ -47,6 +48,7 @@ export function MarketPage() {
   const { hasPermission } = useAuth()
 
   const canReadAssets = hasPermission('activos.leer')
+  const canSyncPrices = hasPermission('precios.cargar')
 
   const [draftFilters, setDraftFilters] = useState<MarketFilters>(initialFilters)
   const [appliedFilters, setAppliedFilters] = useState<MarketFilters>(initialFilters)
@@ -111,6 +113,8 @@ export function MarketPage() {
             información registrada en AlphaInvest AI.
           </p>
         </div>
+
+        {canSyncPrices ? <SyncAllPricesPanel /> : null}
       </header>
 
       <form className="market-filters" onSubmit={handleSubmit}>
