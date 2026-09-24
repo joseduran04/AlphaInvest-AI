@@ -141,7 +141,7 @@ export function PortfolioValuationsSection({
               <article key={valuation.id} className="portfolio-valuation-card">
                 <header className="portfolio-valuation-card__header">
                   <div>
-                    <strong>{formatCurrency(valuation.valor_total, valuation.moneda)}</strong>
+                    <strong>{formatCurrency(valuation.valor_posiciones, valuation.moneda)}</strong>
 
                     <span>{formatDateTime(valuation.fecha_hora)}</span>
                   </div>
@@ -155,12 +155,7 @@ export function PortfolioValuationsSection({
 
                 <dl className="portfolio-valuation-card__metrics">
                   <div>
-                    <dt>Saldo efectivo</dt>
-                    <dd>{formatCurrency(valuation.saldo_efectivo, valuation.moneda)}</dd>
-                  </div>
-
-                  <div>
-                    <dt>Valor de posiciones</dt>
+                    <dt>Valor actual</dt>
                     <dd>{formatCurrency(valuation.valor_posiciones, valuation.moneda)}</dd>
                   </div>
 

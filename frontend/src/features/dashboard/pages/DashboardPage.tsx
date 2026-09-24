@@ -230,10 +230,10 @@ export function DashboardPage() {
             ) : portfolioSummary ? (
               <>
                 <div className="dashboard-panel__primary-value">
-                  <span>{portfolioSummary.portafolio_nombre}</span>
+                  <span>{portfolioSummary.portafolio_nombre} · valor actual</span>
                   <strong>
                     {formatDashboardMoney(
-                      portfolioSummary.valor_total_estimado,
+                      portfolioSummary.valor_posiciones,
                       portfolioSummary.moneda_base,
                     )}
                   </strong>

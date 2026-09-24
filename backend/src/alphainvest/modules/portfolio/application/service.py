@@ -1,5 +1,5 @@
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from typing import cast
 from uuid import UUID
 
@@ -15,7 +15,6 @@ from alphainvest.modules.portfolio.domain.exceptions import (
     PortfolioAssetNotFoundError,
     PortfolioAssetUnavailableError,
     PortfolioCurrencyMismatchError,
-    PortfolioInsufficientCashError,
     PortfolioNameAlreadyExistsError,
     PortfolioNotFoundError,
     PortfolioUnavailableError,
@@ -50,28 +49,13 @@ from alphainvest.modules.portfolio.presentation.schemas import (
     SectorAllocationResponse,
 )
 
-POSITION_COST_QUANTUM = Decimal("0.00000001")
-
-
-def calculate_position_cost(
-    *,
-    quantity: Decimal,
-    average_purchase_price: Decimal,
-) -> Decimal:
-    """Costo de una posición con el mismo redondeo que la base de datos."""
-
-    return (quantity * average_purchase_price).quantize(
-        POSITION_COST_QUANTUM,
-        rounding=ROUND_HALF_UP,
-    )
-
 
 class PortfolioService:
     """Casos de uso básicos de portafolios.
 
-    Una posición representa una compra virtual: su costo
-    (cantidad × precio promedio) se descuenta del saldo en
-    efectivo del portafolio y se reintegra al eliminarla.
+    Un portafolio registra inversiones: cada posición guarda lo
+    invertido (cantidad × precio promedio) y su valor actual. Las
+    métricas se calculan sobre las posiciones; el efectivo no participa.
     """
 
     def __init__(
@@ -119,36 +103,6 @@ class PortfolioService:
             )
 
         return portfolio
-
-    async def _apply_cash_movement(
-        self,
-        *,
-        portfolio: PortfolioModel,
-        delta: Decimal,
-    ) -> None:
-        """Aplica un movimiento de efectivo o falla sin modificar datos."""
-
-        if delta == 0:
-            return
-
-        new_balance = (
-            await self._repository
-            .adjust_cash_balance(
-                portfolio_id=portfolio.id,
-                delta=delta,
-            )
-        )
-
-        if new_balance is None:
-            await self._repository.rollback()
-
-            raise PortfolioInsufficientCashError(
-                "Saldo en efectivo insuficiente: la operación "
-                f"requiere {abs(delta)} {portfolio.moneda_base} "
-                "y el portafolio tiene "
-                f"{portfolio.saldo_efectivo} {portfolio.moneda_base} "
-                "disponibles"
-            )
 
     async def create_portfolio(
         self,
@@ -269,25 +223,27 @@ class PortfolioService:
                 "El portafolio solicitado no existe"
             )
 
-        initial_capital = cast(
+        # La ganancia se mide contra lo invertido en posiciones
+        # abiertas; el capital inicial y el efectivo no participan.
+        invested_capital = cast(
             Decimal,
-            summary_data["capital_inicial"],
+            summary_data["capital_invertido"],
         )
-        estimated_total = cast(
+        positions_value = cast(
             Decimal,
-            summary_data["valor_total_estimado"],
+            summary_data["valor_posiciones"],
         )
 
         total_profit_loss = (
-            estimated_total - initial_capital
+            positions_value - invested_capital
         )
 
         estimated_return = (
             None
-            if initial_capital == 0
+            if invested_capital == 0
             else (
                 total_profit_loss
-                / initial_capital
+                / invested_capital
                 * Decimal("100")
             )
         )
@@ -719,18 +675,6 @@ class PortfolioService:
             )
         )
 
-        purchase_cost = calculate_position_cost(
-            quantity=request.cantidad,
-            average_purchase_price=(
-                request.precio_promedio_compra
-            ),
-        )
-
-        await self._apply_cash_movement(
-            portfolio=portfolio,
-            delta=-purchase_cost,
-        )
-
         try:
             position = (
                 await self._repository
@@ -809,7 +753,7 @@ class PortfolioService:
         user_id: UUID,
         request: PositionUpdateRequest,
     ) -> PositionResponse:
-        portfolio = await self._get_active_portfolio(
+        await self._get_active_portfolio(
             portfolio_id=portfolio_id,
             user_id=user_id,
         )
@@ -852,31 +796,6 @@ class PortfolioService:
             )
         )
 
-        previous_cost = calculate_position_cost(
-            quantity=position.cantidad,
-            average_purchase_price=(
-                position.precio_promedio_compra
-            ),
-        )
-        new_cost = calculate_position_cost(
-            quantity=(
-                request.cantidad
-                if request.cantidad is not None
-                else position.cantidad
-            ),
-            average_purchase_price=(
-                request.precio_promedio_compra
-                if request.precio_promedio_compra
-                is not None
-                else position.precio_promedio_compra
-            ),
-        )
-
-        await self._apply_cash_movement(
-            portfolio=portfolio,
-            delta=previous_cost - new_cost,
-        )
-
         updated = (
             await self._repository
             .update_position(
@@ -909,7 +828,7 @@ class PortfolioService:
         position_id: UUID,
         user_id: UUID,
     ) -> None:
-        portfolio = await self._get_active_portfolio(
+        await self._get_active_portfolio(
             portfolio_id=portfolio_id,
             user_id=user_id,
         )
@@ -926,18 +845,6 @@ class PortfolioService:
             raise PositionNotFoundError(
                 "La posición solicitada no existe"
             )
-
-        refund = calculate_position_cost(
-            quantity=position.cantidad,
-            average_purchase_price=(
-                position.precio_promedio_compra
-            ),
-        )
-
-        await self._apply_cash_movement(
-            portfolio=portfolio,
-            delta=refund,
-        )
 
         await self._repository.delete_position(
             position

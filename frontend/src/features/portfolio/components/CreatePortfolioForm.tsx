@@ -23,15 +23,6 @@ const createPortfolioSchema = z.object({
     .trim()
     .length(3, 'La moneda debe contener exactamente tres letras.')
     .regex(/^[A-Za-z]{3}$/, 'Utiliza únicamente letras para la moneda.'),
-  capital_inicial: z
-    .string()
-    .trim()
-    .min(1, 'Ingresa el capital inicial.')
-    .refine((value) => {
-      const amount = Number(value)
-
-      return Number.isFinite(amount) && amount >= 0
-    }, 'El capital inicial debe ser un número mayor o igual a cero.'),
   tipo: z.enum(['VIRTUAL', 'SIMULADO']),
   fecha_inicio: z.string(),
 })
@@ -42,7 +33,6 @@ const defaultValues: CreatePortfolioFormValues = {
   nombre: '',
   descripcion: '',
   moneda_base: 'USD',
-  capital_inicial: '',
   tipo: 'VIRTUAL',
   fecha_inicio: '',
 }
@@ -86,7 +76,9 @@ export function CreatePortfolioForm({ onCancel, onCreated }: CreatePortfolioForm
       nombre: values.nombre.trim(),
       descripcion: values.descripcion.trim() || null,
       moneda_base: values.moneda_base.trim().toUpperCase(),
-      capital_inicial: values.capital_inicial.trim(),
+      // El portafolio registra inversiones; las métricas salen de las
+      // posiciones, así que no se captura un capital inicial.
+      capital_inicial: '0',
       tipo: values.tipo,
       fecha_inicio: values.fecha_inicio || null,
     }
@@ -140,20 +132,6 @@ export function CreatePortfolioForm({ onCancel, onCreated }: CreatePortfolioForm
             <input type="text" maxLength={3} autoComplete="off" {...register('moneda_base')} />
             {errors.moneda_base ? (
               <small className="portfolio-field__error">{errors.moneda_base.message}</small>
-            ) : null}
-          </label>
-
-          <label className="portfolio-field">
-            <span>Capital inicial</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              {...register('capital_inicial')}
-            />
-            {errors.capital_inicial ? (
-              <small className="portfolio-field__error">{errors.capital_inicial.message}</small>
             ) : null}
           </label>
 

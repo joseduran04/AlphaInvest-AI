@@ -42,7 +42,6 @@ test.describe('Portafolios', () => {
     await page.getByLabel('Nombre').fill(portfolioName)
     await page.getByLabel('Descripción').fill(portfolioDescription)
     await page.getByLabel('Moneda base').fill('USD')
-    await page.getByLabel('Capital inicial').fill('10000')
     await page.getByLabel('Tipo').selectOption('VIRTUAL')
 
     const createPortfolioResponse = page.waitForResponse((response) => {

@@ -55,7 +55,6 @@ describe('CreatePortfolioForm', () => {
     await user.type(screen.getByLabelText('Descripción'), '  Estrategia de crecimiento  ')
     await user.clear(screen.getByLabelText('Moneda base'))
     await user.type(screen.getByLabelText('Moneda base'), 'mxn')
-    await user.type(screen.getByLabelText('Capital inicial'), '15000.50')
     await user.selectOptions(screen.getByLabelText('Tipo'), 'SIMULADO')
     await user.type(screen.getByLabelText('Fecha de inicio'), '2026-09-22')
 
@@ -66,7 +65,7 @@ describe('CreatePortfolioForm', () => {
         nombre: 'Portafolio tecnológico',
         descripcion: 'Estrategia de crecimiento',
         moneda_base: 'MXN',
-        capital_inicial: '15000.5',
+        capital_inicial: '0',
         tipo: 'SIMULADO',
         fecha_inicio: '2026-09-22',
       })
@@ -87,7 +86,7 @@ describe('CreatePortfolioForm', () => {
     await user.click(screen.getByRole('button', { name: 'Crear portafolio' }))
 
     expect(await screen.findByText('Ingresa un nombre para el portafolio.')).toBeInTheDocument()
-    expect(screen.getByText('Ingresa el capital inicial.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Capital inicial')).not.toBeInTheDocument()
 
     expect(mockedCreatePortfolioRequest).not.toHaveBeenCalled()
   })
@@ -104,7 +103,6 @@ describe('CreatePortfolioForm', () => {
     })
 
     await user.type(screen.getByLabelText('Nombre'), 'Portafolio básico')
-    await user.type(screen.getByLabelText('Capital inicial'), '1000')
 
     await user.click(screen.getByRole('button', { name: 'Crear portafolio' }))
 
@@ -113,7 +111,7 @@ describe('CreatePortfolioForm', () => {
         nombre: 'Portafolio básico',
         descripcion: null,
         moneda_base: 'USD',
-        capital_inicial: '1000',
+        capital_inicial: '0',
         tipo: 'VIRTUAL',
         fecha_inicio: null,
       })
@@ -136,7 +134,6 @@ describe('CreatePortfolioForm', () => {
     })
 
     await user.type(screen.getByLabelText('Nombre'), 'Portafolio duplicado')
-    await user.type(screen.getByLabelText('Capital inicial'), '5000')
 
     await user.click(screen.getByRole('button', { name: 'Crear portafolio' }))
 

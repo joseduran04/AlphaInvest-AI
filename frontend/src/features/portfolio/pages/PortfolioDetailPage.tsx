@@ -221,16 +221,6 @@ export function PortfolioDetailPage() {
           </div>
 
           <div>
-            <dt>Capital inicial</dt>
-            <dd>{formatCurrency(portfolio.capital_inicial, portfolio.moneda_base)}</dd>
-          </div>
-
-          <div>
-            <dt>Saldo efectivo</dt>
-            <dd>{formatCurrency(portfolio.saldo_efectivo, portfolio.moneda_base)}</dd>
-          </div>
-
-          <div>
             <dt>Fecha de inicio</dt>
             <dd>{formatDate(portfolio.fecha_inicio)}</dd>
           </div>
@@ -267,34 +257,24 @@ export function PortfolioDetailPage() {
 
         <div className="portfolio-metrics">
           <article className="portfolio-metric-card">
-            <span>Valor total estimado</span>
-            <strong>{formatCurrency(summary.valor_total_estimado, summary.moneda_base)}</strong>
-          </article>
-
-          <article className="portfolio-metric-card">
-            <span>Valor de posiciones</span>
-            <strong>{formatCurrency(summary.valor_posiciones, summary.moneda_base)}</strong>
-          </article>
-
-          <article className="portfolio-metric-card">
             <span>Capital invertido</span>
             <strong>{formatCurrency(summary.capital_invertido, summary.moneda_base)}</strong>
           </article>
 
           <article className="portfolio-metric-card">
-            <span>Saldo efectivo</span>
-            <strong>{formatCurrency(summary.saldo_efectivo, summary.moneda_base)}</strong>
+            <span>Valor actual</span>
+            <strong>{formatCurrency(summary.valor_posiciones, summary.moneda_base)}</strong>
           </article>
 
           <article className="portfolio-metric-card">
-            <span>Ganancia / pérdida total</span>
+            <span>Ganancia / pérdida</span>
             <strong className={getFinancialToneClass(summary.ganancia_perdida_total)}>
               {formatCurrency(summary.ganancia_perdida_total, summary.moneda_base)}
             </strong>
           </article>
 
           <article className="portfolio-metric-card">
-            <span>Rendimiento estimado</span>
+            <span>Rendimiento sobre lo invertido</span>
             <strong className={getFinancialToneClass(summary.rendimiento_estimado_porcentaje)}>
               {formatPercentage(summary.rendimiento_estimado_porcentaje)}
             </strong>
@@ -387,28 +367,27 @@ export function PortfolioDetailPage() {
             </div>
 
             <div>
-              <dt>Valor total</dt>
-              <dd>{formatCurrency(latestValuation.valor_total, latestValuation.moneda)}</dd>
+              <dt>Capital invertido</dt>
+              <dd>{formatCurrency(latestValuation.capital_invertido, latestValuation.moneda)}</dd>
             </div>
 
             <div>
-              <dt>Valor de posiciones</dt>
+              <dt>Valor actual</dt>
               <dd>{formatCurrency(latestValuation.valor_posiciones, latestValuation.moneda)}</dd>
             </div>
 
             <div>
-              <dt>Saldo efectivo</dt>
-              <dd>{formatCurrency(latestValuation.saldo_efectivo, latestValuation.moneda)}</dd>
-            </div>
-
-            <div>
               <dt>Ganancia / pérdida</dt>
-              <dd>{formatCurrency(latestValuation.ganancia_perdida, latestValuation.moneda)}</dd>
+              <dd className={getFinancialToneClass(latestValuation.ganancia_perdida)}>
+                {formatCurrency(latestValuation.ganancia_perdida, latestValuation.moneda)}
+              </dd>
             </div>
 
             <div>
               <dt>Rendimiento</dt>
-              <dd>{formatPercentage(latestValuation.rendimiento_porcentaje)}</dd>
+              <dd className={getFinancialToneClass(latestValuation.rendimiento_porcentaje)}>
+                {formatPercentage(latestValuation.rendimiento_porcentaje)}
+              </dd>
             </div>
           </dl>
         ) : (

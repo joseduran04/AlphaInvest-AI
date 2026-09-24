@@ -8,7 +8,6 @@ import { PageLoadingState } from '@/components/PageLoadingState'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { CreatePortfolioForm } from '@/features/portfolio/components/CreatePortfolioForm'
 import { usePortfolios } from '@/features/portfolio/hooks/usePortfolios'
-import { formatCurrency } from '@/lib/formatters'
 
 import '@/styles/portfolio.css'
 
@@ -198,16 +197,6 @@ export function PortfoliosPage() {
                   ) : null}
 
                   <dl className="portfolio-card__details">
-                    <div>
-                      <dt>Capital inicial</dt>
-                      <dd>{formatCurrency(portfolio.capital_inicial, portfolio.moneda_base)}</dd>
-                    </div>
-
-                    <div>
-                      <dt>Saldo efectivo</dt>
-                      <dd>{formatCurrency(portfolio.saldo_efectivo, portfolio.moneda_base)}</dd>
-                    </div>
-
                     <div>
                       <dt>Moneda base</dt>
                       <dd>{portfolio.moneda_base}</dd>

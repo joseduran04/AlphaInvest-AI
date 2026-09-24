@@ -13,7 +13,6 @@ from alphainvest.modules.portfolio.domain.exceptions import (
     PortfolioAssetNotFoundError,
     PortfolioAssetUnavailableError,
     PortfolioCurrencyMismatchError,
-    PortfolioInsufficientCashError,
     PortfolioNameAlreadyExistsError,
     PortfolioNotFoundError,
     PortfolioUnavailableError,
@@ -363,9 +362,6 @@ async def test_create_position_without_market_price(
         create_position=AsyncMock(
             return_value=position
         ),
-        adjust_cash_balance=AsyncMock(
-            return_value=Decimal("9000")
-        ),
         commit=AsyncMock(),
         rollback=AsyncMock(),
     )
@@ -410,10 +406,6 @@ async def test_create_position_without_market_price(
         currency="USD",
         current_price=None,
         opening_date=None,
-    )
-    repository.adjust_cash_balance.assert_awaited_once_with(
-        portfolio_id=portfolio.id,
-        delta=Decimal("-1000.00000000"),
     )
     repository.commit.assert_awaited_once()
 
@@ -466,9 +458,6 @@ async def test_delete_position() -> None:
             return_value=position
         ),
         delete_position=AsyncMock(),
-        adjust_cash_balance=AsyncMock(
-            return_value=Decimal("11000")
-        ),
         commit=AsyncMock(),
     )
 
@@ -485,10 +474,6 @@ async def test_delete_position() -> None:
 
     repository.delete_position.assert_awaited_once_with(
         position
-    )
-    repository.adjust_cash_balance.assert_awaited_once_with(
-        portfolio_id=portfolio.id,
-        delta=Decimal("1000.00000000"),
     )
     repository.commit.assert_awaited_once()
 
@@ -541,7 +526,7 @@ async def test_get_summary_without_latest_valuation(
     assert (
         response.resumen
         .rendimiento_estimado_porcentaje
-        == Decimal("6")
+        == Decimal("8")
     )
     assert response.ultima_valoracion is None
 
@@ -553,6 +538,8 @@ async def test_get_summary_with_zero_initial_capital(
         initial_capital=Decimal("0"),
         estimated_total=Decimal("0"),
     )
+    summary_data["capital_invertido"] = Decimal("0")
+    summary_data["valor_posiciones"] = Decimal("0")
 
     repository = SimpleNamespace(
         get_portfolio_summary=AsyncMock(
@@ -889,39 +876,73 @@ async def test_list_valuations_rejects_missing_portfolio(
             offset=0,
         )
 
-def build_position_repository(
-    *,
-    portfolio,
-    position=None,
-    new_balance=Decimal("9000"),
-):
-    return SimpleNamespace(
+
+@pytest.mark.asyncio
+async def test_summary_ignores_cash_and_initial_capital(
+) -> None:
+    """Caso reportado: capital 10,000 y 2 posiciones.
+
+    AAPL costo 337.02 / valor 339.75 y NVDA costo 225.51 / valor 218.29:
+    la ganancia total debe ser -4.49, medida sobre lo invertido.
+    """
+
+    summary_data = build_summary_data(
+        initial_capital=Decimal("10000"),
+        estimated_total=Decimal("10558.04"),
+    )
+    summary_data["saldo_efectivo"] = Decimal("10000")
+    summary_data["capital_invertido"] = Decimal("562.53")
+    summary_data["valor_posiciones"] = Decimal("558.04")
+
+    repository = SimpleNamespace(
+        get_portfolio_summary=AsyncMock(
+            return_value=summary_data
+        ),
+        get_latest_valuation=AsyncMock(
+            return_value=None
+        ),
+    )
+
+    response = await PortfolioService(
+        repository
+    ).get_portfolio_summary(
+        portfolio_id=summary_data["portafolio_id"],
+        user_id=summary_data["usuario_id"],
+    )
+
+    assert (
+        response.resumen.ganancia_perdida_total
+        == Decimal("-4.49")
+    )
+    estimated_return = (
+        response.resumen.rendimiento_estimado_porcentaje
+    )
+    assert estimated_return is not None
+    assert round(estimated_return, 2) == Decimal("-0.80")
+
+
+@pytest.mark.asyncio
+async def test_create_position_does_not_touch_cash() -> None:
+    portfolio = build_portfolio()
+    asset = build_asset()
+    position = build_position(
+        portfolio_id=portfolio.id,
+        asset_id=asset.id,
+    )
+    repository = SimpleNamespace(
         get_by_id_for_user=AsyncMock(
             return_value=portfolio
         ),
         get_position_by_asset=AsyncMock(
             return_value=None
         ),
-        get_position_by_id=AsyncMock(
-            return_value=position
-        ),
         create_position=AsyncMock(
             return_value=position
-        ),
-        update_position=AsyncMock(
-            return_value=position
-        ),
-        delete_position=AsyncMock(),
-        adjust_cash_balance=AsyncMock(
-            return_value=new_balance
         ),
         commit=AsyncMock(),
         rollback=AsyncMock(),
     )
-
-
-def build_market_repository(asset):
-    return SimpleNamespace(
+    market_repository = SimpleNamespace(
         get_asset=AsyncMock(
             return_value=asset
         ),
@@ -930,53 +951,22 @@ def build_market_repository(asset):
         ),
     )
 
-
-@pytest.mark.asyncio
-async def test_create_position_rejects_insufficient_cash(
-) -> None:
-    """AI-PORT-001: agregar una posición es una compra con efectivo."""
-
-    portfolio = build_portfolio()
-    portfolio.saldo_efectivo = Decimal("500")
-    asset = build_asset()
-    repository = build_position_repository(
-        portfolio=portfolio,
-        new_balance=None,
-    )
-
-    service = PortfolioService(
+    # 100,000 invertidos con capital 10,000: no hay límite de efectivo.
+    await PortfolioService(
         repository,
-        build_market_repository(asset),
+        market_repository,
+    ).create_position(
+        portfolio_id=portfolio.id,
+        user_id=portfolio.usuario_id,
+        request=PositionCreateRequest(
+            activo_id=asset.id,
+            cantidad=Decimal("100"),
+            precio_promedio_compra=Decimal("1000"),
+        ),
     )
 
-    with pytest.raises(
-        PortfolioInsufficientCashError
-    ):
-        await service.create_position(
-            portfolio_id=portfolio.id,
-            user_id=portfolio.usuario_id,
-            request=PositionCreateRequest(
-                activo_id=asset.id,
-                cantidad=Decimal("10"),
-                precio_promedio_compra=Decimal("100"),
-            ),
-        )
-
-    repository.create_position.assert_not_awaited()
-    repository.commit.assert_not_awaited()
-    repository.rollback.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_insufficient_cash_maps_to_conflict() -> None:
-    assert issubclass(
-        PortfolioInsufficientCashError,
-        PortfolioUnavailableError,
-    )
-    assert issubclass(
-        PortfolioCurrencyMismatchError,
-        PortfolioUnavailableError,
-    )
+    repository.create_position.assert_awaited_once()
+    repository.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -985,19 +975,28 @@ async def test_create_position_rejects_currency_mismatch(
     portfolio = build_portfolio()
     portfolio.moneda_base = "MXN"
     asset = build_asset()
-    repository = build_position_repository(
-        portfolio=portfolio,
+    repository = SimpleNamespace(
+        get_by_id_for_user=AsyncMock(
+            return_value=portfolio
+        ),
+        get_position_by_asset=AsyncMock(
+            return_value=None
+        ),
+        create_position=AsyncMock(),
     )
-
-    service = PortfolioService(
-        repository,
-        build_market_repository(asset),
+    market_repository = SimpleNamespace(
+        get_asset=AsyncMock(
+            return_value=asset
+        ),
     )
 
     with pytest.raises(
         PortfolioCurrencyMismatchError
     ):
-        await service.create_position(
+        await PortfolioService(
+            repository,
+            market_repository,
+        ).create_position(
             portfolio_id=portfolio.id,
             user_id=portfolio.usuario_id,
             request=PositionCreateRequest(
@@ -1007,151 +1006,12 @@ async def test_create_position_rejects_currency_mismatch(
             ),
         )
 
-    repository.adjust_cash_balance.assert_not_awaited()
+    repository.create_position.assert_not_awaited()
 
 
-@pytest.mark.asyncio
-async def test_create_position_debits_exact_cost_aapl_case(
-) -> None:
-    """Caso observado: 1 AAPL a 337.02 debe descontar 337.02."""
-
-    portfolio = build_portfolio()
-    asset = build_asset()
-    position = build_position(
-        portfolio_id=portfolio.id,
-        asset_id=asset.id,
-    )
-    repository = build_position_repository(
-        portfolio=portfolio,
-        position=position,
-        new_balance=Decimal("9662.98"),
+def test_create_request_capital_is_optional() -> None:
+    request = PortfolioCreateRequest(
+        nombre="Inversiones tecnológicas",
     )
 
-    service = PortfolioService(
-        repository,
-        build_market_repository(asset),
-    )
-
-    await service.create_position(
-        portfolio_id=portfolio.id,
-        user_id=portfolio.usuario_id,
-        request=PositionCreateRequest(
-            activo_id=asset.id,
-            cantidad=Decimal("1"),
-            precio_promedio_compra=Decimal("337.02"),
-        ),
-    )
-
-    repository.adjust_cash_balance.assert_awaited_once_with(
-        portfolio_id=portfolio.id,
-        delta=Decimal("-337.02000000"),
-    )
-
-
-@pytest.mark.asyncio
-async def test_update_position_charges_only_cost_difference(
-) -> None:
-    portfolio = build_portfolio()
-    position = build_position(
-        portfolio_id=portfolio.id
-    )
-    repository = build_position_repository(
-        portfolio=portfolio,
-        position=position,
-    )
-    market_repository = SimpleNamespace(
-        get_latest_asset_price=AsyncMock(
-            return_value=None
-        ),
-    )
-
-    service = PortfolioService(
-        repository,
-        market_repository,
-    )
-
-    await service.update_position(
-        portfolio_id=portfolio.id,
-        position_id=position.id,
-        user_id=portfolio.usuario_id,
-        request=PositionUpdateRequest(
-            cantidad=Decimal("15")
-        ),
-    )
-
-    # 10 → 15 unidades a 100: se compran 500 adicionales.
-    repository.adjust_cash_balance.assert_awaited_once_with(
-        portfolio_id=portfolio.id,
-        delta=Decimal("-500.00000000"),
-    )
-
-
-@pytest.mark.asyncio
-async def test_update_position_refunds_when_reducing(
-) -> None:
-    portfolio = build_portfolio()
-    position = build_position(
-        portfolio_id=portfolio.id
-    )
-    repository = build_position_repository(
-        portfolio=portfolio,
-        position=position,
-    )
-    market_repository = SimpleNamespace(
-        get_latest_asset_price=AsyncMock(
-            return_value=None
-        ),
-    )
-
-    service = PortfolioService(
-        repository,
-        market_repository,
-    )
-
-    await service.update_position(
-        portfolio_id=portfolio.id,
-        position_id=position.id,
-        user_id=portfolio.usuario_id,
-        request=PositionUpdateRequest(
-            cantidad=Decimal("4")
-        ),
-    )
-
-    repository.adjust_cash_balance.assert_awaited_once_with(
-        portfolio_id=portfolio.id,
-        delta=Decimal("600.00000000"),
-    )
-
-
-@pytest.mark.asyncio
-async def test_update_position_without_cost_change_skips_cash(
-) -> None:
-    portfolio = build_portfolio()
-    position = build_position(
-        portfolio_id=portfolio.id
-    )
-    repository = build_position_repository(
-        portfolio=portfolio,
-        position=position,
-    )
-    market_repository = SimpleNamespace(
-        get_latest_asset_price=AsyncMock(
-            return_value=None
-        ),
-    )
-
-    service = PortfolioService(
-        repository,
-        market_repository,
-    )
-
-    await service.update_position(
-        portfolio_id=portfolio.id,
-        position_id=position.id,
-        user_id=portfolio.usuario_id,
-        request=PositionUpdateRequest(
-            fecha_apertura=datetime(2026, 9, 1)
-        ),
-    )
-
-    repository.adjust_cash_balance.assert_not_awaited()
+    assert request.capital_inicial == Decimal("0")

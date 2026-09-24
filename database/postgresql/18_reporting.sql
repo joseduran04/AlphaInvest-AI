@@ -143,9 +143,9 @@ SELECT
     p.valor_total_estimado,
     p.ganancia_perdida_posiciones,
     CASE
-        WHEN p.capital_inicial = 0 THEN NULL
+        WHEN p.capital_invertido = 0 THEN NULL
         ELSE ROUND(
-            ((p.valor_total_estimado - p.capital_inicial) / p.capital_inicial) * 100,
+            (p.ganancia_perdida_posiciones / p.capital_invertido) * 100,
             8
         )
     END AS rendimiento_estimado_porcentaje,

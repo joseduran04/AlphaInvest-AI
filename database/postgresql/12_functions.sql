@@ -577,10 +577,10 @@ portfolio.fn_recalcular_portafolio(UUID) IS
      saldo_efectivo + valor_posiciones
 
  ganancia_perdida =
-     valor_total - capital_inicial
+     valor_posiciones - capital_invertido
 
  rendimiento =
-     ganancia_perdida / capital_inicial * 100
+     ganancia_perdida / capital_invertido * 100
 
  Retorno:
  ID BIGINT de la valoración creada.
@@ -672,21 +672,23 @@ BEGIN
             8
         );
 
+    -- Ganancia y rendimiento sobre lo invertido en posiciones abiertas
+    -- (migración 8c3f1e6a2d47); el capital inicial no participa.
     v_ganancia :=
         ROUND
         (
-            v_valor_total
-            - v_portafolio.capital_inicial,
+            v_valor_posiciones
+            - v_capital_invertido,
             8
         );
 
-    IF v_portafolio.capital_inicial > 0 THEN
+    IF v_capital_invertido > 0 THEN
         v_rendimiento :=
             ROUND
             (
                 (
                     v_ganancia
-                    / v_portafolio.capital_inicial
+                    / v_capital_invertido
                 ) * 100,
                 8
             );

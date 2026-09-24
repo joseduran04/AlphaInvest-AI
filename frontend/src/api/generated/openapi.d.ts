@@ -2911,7 +2911,10 @@ export interface components {
              * @default USD
              */
             moneda_base: string;
-            /** Capital Inicial */
+            /**
+             * Capital Inicial
+             * @default 0
+             */
             capital_inicial: number | string;
             /** @default VIRTUAL */
             tipo: components["schemas"]["PortfolioType"];

@@ -32,7 +32,10 @@ class PortfolioCreateRequest(BaseModel):
         max_length=3,
         pattern=r"^[A-Za-z]{3}$",
     )
+    # Opcional: el portafolio registra inversiones y sus métricas se
+    # calculan sobre las posiciones. Se conserva por compatibilidad.
     capital_inicial: Decimal = Field(
+        default=Decimal("0"),
         ge=0,
         max_digits=24,
         decimal_places=8,

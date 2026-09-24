@@ -16,6 +16,7 @@ import { useExportPortfolioReports } from '@/features/reporting/hooks/useExportP
 import { formatCurrency } from '@/lib/formatters'
 
 import '@/styles/reporting.css'
+import { getFinancialToneClass } from '@/lib/financialTone'
 
 const PAGE_SIZE = 20
 
@@ -268,12 +269,9 @@ export function PortfolioReportPage() {
                   <tr>
                     <th>Portafolio</th>
                     <th>Tipo / Estado</th>
-                    <th>Capital inicial</th>
-                    <th>Efectivo</th>
                     <th>Capital invertido</th>
-                    <th>Valor posiciones</th>
-                    <th>Valor estimado</th>
-                    <th>P&amp;L</th>
+                    <th>Valor actual</th>
+                    <th>Ganancia / pérdida</th>
                     <th>Rendimiento</th>
                     <th>Posiciones</th>
                     <th>Última valuación</th>
@@ -297,23 +295,17 @@ export function PortfolioReportPage() {
                         <span>{formatPortfolioStatus(report.status)}</span>
                       </td>
 
-                      <td>{formatReportCurrency(report.initial_capital, report.base_currency)}</td>
-
-                      <td>{formatReportCurrency(report.cash_balance, report.base_currency)}</td>
-
                       <td>{formatReportCurrency(report.invested_capital, report.base_currency)}</td>
 
                       <td>{formatReportCurrency(report.positions_value, report.base_currency)}</td>
 
-                      <td>
-                        {formatReportCurrency(report.estimated_total_value, report.base_currency)}
-                      </td>
-
-                      <td>
+                      <td className={getFinancialToneClass(report.positions_profit_loss)}>
                         {formatReportCurrency(report.positions_profit_loss, report.base_currency)}
                       </td>
 
-                      <td>{formatPercentage(report.estimated_return_percentage)}</td>
+                      <td className={getFinancialToneClass(report.estimated_return_percentage)}>
+                        {formatPercentage(report.estimated_return_percentage)}
+                      </td>
 
                       <td>
                         <strong>{report.open_positions ?? 0} abiertas</strong>
@@ -322,11 +314,7 @@ export function PortfolioReportPage() {
 
                       <td>
                         <strong>{report.last_valuation_at ?? 'No disponible'}</strong>
-                        <span>
-                          {report.last_total_value !== null
-                            ? formatReportCurrency(report.last_total_value, report.base_currency)
-                            : 'Sin valuación'}
-                        </span>
+                        <span>{report.last_valuation_at ? 'Registrada' : 'Sin valuación'}</span>
                       </td>
                     </tr>
                   ))}
