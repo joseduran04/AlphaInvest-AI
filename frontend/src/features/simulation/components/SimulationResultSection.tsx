@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
 
 import { ApiError } from '@/api/errors'
-import type { AssetResponse, SimulationAssetResultResponse } from '@/api/types'
 import { PageErrorState } from '@/components/PageErrorState'
 import { PageLoadingState } from '@/components/PageLoadingState'
 import { useAssets } from '@/features/market/hooks/useAssets'
+import { SimulationAllocation } from '@/features/simulation/components/SimulationAllocation'
+import { SimulationAssetBreakdown } from '@/features/simulation/components/SimulationAssetBreakdown'
 import { SimulationCharts } from '@/features/simulation/components/SimulationCharts'
 import { useSimulationResult } from '@/features/simulation/hooks/useSimulationResult'
 import { getFinancialToneClass } from '@/lib/financialTone'
@@ -98,106 +99,6 @@ function getResultErrorMessage(error: Error): string {
   }
 
   return error.message
-}
-
-function SimulationAssetResult({
-  result,
-  marketAsset,
-  currency,
-}: {
-  result: SimulationAssetResultResponse
-  marketAsset?: AssetResponse
-  currency: string
-}) {
-  const assetTitle = marketAsset ? `${marketAsset.symbol} · ${marketAsset.name}` : result.activo_id
-
-  const assetCurrency = marketAsset?.currency ?? currency
-
-  const totalContributions = getSummaryString(result.detalle, 'aportaciones_totales')
-
-  const finalQuantity = getSummaryString(result.detalle, 'cantidad_final')
-
-  return (
-    <article className="simulation-result-asset">
-      <header className="simulation-result-asset__header">
-        <div>
-          <strong>{assetTitle}</strong>
-          <span>
-            {marketAsset
-              ? `${marketAsset.asset_type.name} · ${marketAsset.market.name}`
-              : 'Información de mercado no disponible'}
-          </span>
-        </div>
-
-        <span className={getFinancialToneClass(result.rendimiento_porcentaje)}>
-          {formatPercentage(result.rendimiento_porcentaje)}
-        </span>
-      </header>
-
-      <dl className="simulation-result-asset__grid">
-        <div>
-          <dt>Asignación</dt>
-          <dd>{formatPercentage(result.porcentaje_asignado)}</dd>
-        </div>
-
-        <div>
-          <dt>Capital asignado</dt>
-          <dd>{formatCurrency(result.capital_asignado, currency)}</dd>
-        </div>
-
-        <div>
-          <dt>Precio inicial</dt>
-          <dd>{formatCurrency(result.precio_inicial, assetCurrency)}</dd>
-        </div>
-
-        <div>
-          <dt>Precio final</dt>
-          <dd>{formatCurrency(result.precio_final, assetCurrency)}</dd>
-        </div>
-
-        <div>
-          <dt>Valor final</dt>
-          <dd>{formatCurrency(result.valor_final, currency)}</dd>
-        </div>
-
-        <div>
-          <dt>Ganancia / pérdida</dt>
-          <dd className={getFinancialToneClass(result.ganancia_perdida)}>
-            {formatCurrency(result.ganancia_perdida, currency)}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Cantidad inicial</dt>
-          <dd>{formatNumber(result.cantidad_inicial, 8)}</dd>
-        </div>
-
-        <div>
-          <dt>Cantidad final</dt>
-          <dd>{formatNumber(finalQuantity, 8)}</dd>
-        </div>
-
-        <div>
-          <dt>Aportaciones</dt>
-          <dd>
-            {totalContributions === null
-              ? 'No disponible'
-              : formatCurrency(totalContributions, currency)}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Volatilidad</dt>
-          <dd>{formatPercentage(result.volatilidad)}</dd>
-        </div>
-
-        <div>
-          <dt>Drawdown máximo</dt>
-          <dd>{formatPercentage(result.maximo_drawdown_porcentaje)}</dd>
-        </div>
-      </dl>
-    </article>
-  )
 }
 
 export function SimulationResultSection({
@@ -329,16 +230,21 @@ export function SimulationResultSection({
         <div>
           <dt>Capital inicial</dt>
           <dd>{formatCurrency(result.capital_inicial, result.moneda)}</dd>
+          <span className="metric-hint">
+            Dinero total de la simulación. Se reparte entre los activos según el % de cada uno.
+          </span>
         </div>
 
         <div>
           <dt>Aportaciones totales</dt>
           <dd>{formatCurrency(result.aportaciones_totales, result.moneda)}</dd>
+          <span className="metric-hint">Dinero extra agregado durante el periodo.</span>
         </div>
 
         <div>
           <dt>Capital final</dt>
           <dd>{formatCurrency(result.capital_final, result.moneda)}</dd>
+          <span className="metric-hint">Suma del valor final de todos los activos.</span>
         </div>
 
         <div>
@@ -346,6 +252,7 @@ export function SimulationResultSection({
           <dd className={getFinancialToneClass(result.ganancia_perdida)}>
             {formatCurrency(result.ganancia_perdida, result.moneda)}
           </dd>
+          <span className="metric-hint">Capital final − capital inicial − aportaciones.</span>
         </div>
 
         <div>
@@ -372,6 +279,13 @@ export function SimulationResultSection({
           </div>
         ) : null}
       </dl>
+
+      <SimulationAllocation
+        assets={result.activos}
+        marketAssetsById={marketAssetsById}
+        currency={result.moneda}
+        initialCapital={result.capital_inicial}
+      />
 
       <div className="simulation-result-subsection">
         <h4>Riesgo y rendimiento</h4>
@@ -410,6 +324,10 @@ export function SimulationResultSection({
                 ? 'No disponible'
                 : formatCurrency(result.valor_en_riesgo, result.moneda)}
             </dd>
+            <span className="metric-hint">
+              Pérdida máxima esperada en un solo día al nivel de confianza indicado, según los
+              movimientos del periodo.
+            </span>
           </div>
 
           <div>
@@ -467,17 +385,23 @@ export function SimulationResultSection({
 
       <div className="simulation-result-subsection">
         <h4>Resultados por activo</h4>
+        <p className="metric-hint">
+          Cada activo, paso a paso: cuánto dinero se le asignó, cuántas unidades se compraron,
+          cuánto cambió su precio y cuánto valen al final.
+        </p>
 
         {result.activos.length === 0 ? (
           <p>No existen resultados por activo registrados.</p>
         ) : (
           <div className="simulation-result-assets">
             {result.activos.map((assetResult) => (
-              <SimulationAssetResult
+              <SimulationAssetBreakdown
                 key={assetResult.id}
                 result={assetResult}
                 marketAsset={marketAssetsById.get(assetResult.activo_id)}
                 currency={result.moneda}
+                initialCapital={result.capital_inicial}
+                annualizationIsRepresentative={annualizationIsRepresentative}
               />
             ))}
           </div>
