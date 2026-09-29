@@ -1,0 +1,19 @@
+# Contexto de la imagen de nube (deploy/huggingface/Dockerfile).
+# Los builds de docker-compose usan ./backend y ./frontend como contexto
+# y no leen este archivo.
+.git
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.env
+**/.env.*
+!**/.env.example
+machine_learning
+market-service-legacy
+docs
+Claude outputs
+frontend/test-results
+frontend/playwright-report

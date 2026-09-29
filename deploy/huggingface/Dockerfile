@@ -1,4 +1,4 @@
-# Imagen única para Hugging Face Spaces (SDK Docker).
+# Imagen única de AlphaInvest AI para la nube (Hugging Face Spaces o GitHub Codespaces).
 #
 # Un Space solo ejecuta un contenedor y expone un puerto (7860), así que
 # esta imagen reúne las tres piezas de AlphaInvest AI:
@@ -59,7 +59,9 @@ RUN pip install --upgrade pip \
 COPY backend/artifacts ./artifacts
 
 COPY --from=frontend /build/dist /app/static
-COPY deploy/nginx.conf deploy/start.sh /app/deploy/
+# En el Space los archivos viven en deploy/; en el repo, en deploy/huggingface/.
+ARG DEPLOY_DIR=deploy
+COPY ${DEPLOY_DIR}/nginx.conf ${DEPLOY_DIR}/start.sh /app/deploy/
 # Por si Git en Windows convirtió los finales de línea a CRLF.
 RUN sed -i 's/\r$//' /app/deploy/start.sh /app/deploy/nginx.conf
 
