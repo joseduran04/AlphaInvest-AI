@@ -39,6 +39,9 @@ def configure_logging(level: str) -> None:
             "uvicorn": {"handlers": ["default"], "level": level, "propagate": False},
             "uvicorn.error": {"handlers": ["default"], "level": level, "propagate": False},
             "uvicorn.access": {"handlers": ["default"], "level": level, "propagate": False},
+            # httpx registra la URL completa, que incluye la API key de Alpha Vantage.
+            "httpx": {"level": "WARNING"},
+            "httpcore": {"level": "WARNING"},
         },
     }
     logging.config.dictConfig(config)
