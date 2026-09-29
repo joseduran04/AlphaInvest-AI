@@ -46,13 +46,14 @@ RUN python -m venv /opt/venv
 
 WORKDIR /app
 
+# PyTorch CPU (igual que backend/Dockerfile) para no descargar CUDA.
+# Va en su propia capa: un cambio en el código no vuelve a descargarlo.
+RUN pip install --upgrade pip \
+    && pip install "torch==2.13.0+cpu" --index-url https://download.pytorch.org/whl/cpu
+
 COPY backend/pyproject.toml backend/README.md ./
 COPY backend/src ./src
-
-# PyTorch CPU (igual que backend/Dockerfile) para no descargar CUDA.
-RUN pip install --upgrade pip \
-    && pip install "torch==2.13.0+cpu" --index-url https://download.pytorch.org/whl/cpu \
-    && pip install .
+RUN pip install .
 
 # Los modelos se registran en PostgreSQL con rutas relativas
 # artifacts/ai/<modelo>/<version>/..., que resuelven desde /app.
