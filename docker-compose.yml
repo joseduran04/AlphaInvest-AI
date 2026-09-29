@@ -40,7 +40,8 @@ services:
       - ./backend/.env
 
     environment:
-      APP_MONGODB_URI: mongodb://mongo:27017
+      # APP_MONGODB_URI viene de backend/.env (MongoDB Atlas).
+      # Para usar el Mongo local, pon APP_MONGODB_URI=mongodb://mongo:27017 en el .env.
       APP_MONGODB_DATABASE: alphainvest_documents
 
       # El API no ejecuta el scheduler del worker.
@@ -108,7 +109,8 @@ services:
       - ./backend/.env
 
     environment:
-      APP_MONGODB_URI: mongodb://mongo:27017
+      # APP_MONGODB_URI viene de backend/.env (MongoDB Atlas).
+      # Para usar el Mongo local, pon APP_MONGODB_URI=mongodb://mongo:27017 en el .env.
       APP_MONGODB_DATABASE: alphainvest_documents
 
       # El worker debe permanecer habilitado aunque el .env local cambie.
