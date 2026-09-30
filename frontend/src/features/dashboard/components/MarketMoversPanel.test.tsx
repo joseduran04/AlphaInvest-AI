@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,7 +8,7 @@ import { MarketMoversPanel } from './MarketMoversPanel'
 const useDashboardMarketMoversMock = vi.fn()
 
 vi.mock('@/features/dashboard/hooks/useDashboardMarketMovers', () => ({
-  useDashboardMarketMovers: () => useDashboardMarketMoversMock(),
+  useDashboardMarketMovers: (period: string) => useDashboardMarketMoversMock(period),
 }))
 
 function mover(symbol: string, change: string, pct: string) {
@@ -76,5 +77,31 @@ describe('MarketMoversPanel', () => {
     )
 
     expect(screen.getByText('Ningún activo bajó en su última sesión.')).toBeInTheDocument()
+  })
+
+  it('cambia el periodo de comparación', async () => {
+    useDashboardMarketMoversMock.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: { gainers: [], losers: [] },
+    })
+
+    render(
+      <MemoryRouter>
+        <MarketMoversPanel />
+      </MemoryRouter>,
+    )
+
+    expect(useDashboardMarketMoversMock).toHaveBeenLastCalledWith('DIA')
+    expect(screen.getByRole('button', { name: 'Día' })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'En el año' }))
+
+    expect(useDashboardMarketMoversMock).toHaveBeenLastCalledWith('ANIO')
+    expect(screen.getByRole('button', { name: 'En el año' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByText('Ningún activo subió en lo que va del año.')).toBeInTheDocument()
   })
 })

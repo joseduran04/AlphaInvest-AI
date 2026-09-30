@@ -59,9 +59,14 @@ export async function dashboardAssetsRequest(): Promise<AssetListResponse> {
   return response.data
 }
 
-export async function dashboardMarketMoversRequest(): Promise<MarketMoversResponse> {
+/** Periodo contra el que se comparan las alzas y bajas del Inicio. */
+export type MarketMoversPeriod = 'DIA' | 'SEMANA' | 'MES' | 'ANIO'
+
+export async function dashboardMarketMoversRequest(
+  period: MarketMoversPeriod = 'DIA',
+): Promise<MarketMoversResponse> {
   const response = await apiClient.get<MarketMoversResponse>(MARKET_MOVERS_PATH, {
-    params: { limit: 5 },
+    params: { limit: 5, period },
   })
 
   return response.data

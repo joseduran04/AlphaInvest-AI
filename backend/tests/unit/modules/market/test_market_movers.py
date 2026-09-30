@@ -9,6 +9,7 @@ import pytest
 from alphainvest.modules.market.application.service import (
     MarketService,
 )
+from alphainvest.modules.market.domain.enums import MoversPeriod
 
 pytestmark = pytest.mark.unit
 
@@ -51,8 +52,10 @@ async def test_market_movers_ranks_by_percentage() -> None:
     assert movers.gainers[0].change == Decimal("10.00")
     assert movers.gainers[0].change_percentage == Decimal("5.0000")
     assert movers.losers[0].change_percentage == Decimal("-2.2394")
+    assert movers.period == MoversPeriod.DAY
     repository.list_latest_price_changes.assert_awaited_once_with(
         preferred_source_name="Yahoo Finance",
+        period=MoversPeriod.DAY,
     )
 
 
@@ -73,3 +76,25 @@ async def test_market_movers_respects_limit() -> None:
 
     assert [item.symbol for item in movers.gainers] == ["S7", "S6", "S5"]
     assert movers.losers == []
+
+
+@pytest.mark.asyncio
+async def test_market_movers_passes_requested_period() -> None:
+    repository = SimpleNamespace(
+        list_latest_price_changes=AsyncMock(
+            return_value=[build_row("META", "600.00", "690.00")]
+        )
+    )
+
+    movers = await MarketService(repository).get_market_movers(
+        limit=5,
+        preferred_source_name="Yahoo Finance",
+        period=MoversPeriod.YEAR_TO_DATE,
+    )
+
+    assert movers.period == MoversPeriod.YEAR_TO_DATE
+    assert movers.gainers[0].change_percentage == Decimal("15.0000")
+    repository.list_latest_price_changes.assert_awaited_once_with(
+        preferred_source_name="Yahoo Finance",
+        period=MoversPeriod.YEAR_TO_DATE,
+    )

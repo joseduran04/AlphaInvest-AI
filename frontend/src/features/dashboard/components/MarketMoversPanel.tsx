@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
 
 import type { MarketMoverResponse } from '@/api/types'
+import type { MarketMoversPeriod } from '@/features/dashboard/api/dashboardApi'
 import { DashboardPanelState } from '@/features/dashboard/components/DashboardPanelState'
 import { useDashboardMarketMovers } from '@/features/dashboard/hooks/useDashboardMarketMovers'
 import { formatDashboardMoney } from '@/features/dashboard/utils/dashboardFormatters'
@@ -32,6 +34,41 @@ function formatDate(value: string): string {
 
   return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' }).format(date)
 }
+
+interface PeriodOption {
+  key: MarketMoversPeriod
+  label: string
+  /** Complemento para los mensajes vacíos: "subió …". */
+  span: string
+  description: string
+}
+
+const MOVERS_PERIODS: PeriodOption[] = [
+  {
+    key: 'DIA',
+    label: 'Día',
+    span: 'en su última sesión',
+    description: 'Último cierre contra el cierre de la sesión anterior.',
+  },
+  {
+    key: 'SEMANA',
+    label: 'Semana',
+    span: 'en la última semana',
+    description: 'Último cierre contra el cierre de hace 7 días.',
+  },
+  {
+    key: 'MES',
+    label: 'Mes',
+    span: 'en el último mes',
+    description: 'Último cierre contra el cierre de hace un mes.',
+  },
+  {
+    key: 'ANIO',
+    label: 'En el año',
+    span: 'en lo que va del año',
+    description: 'Último cierre contra el último cierre del año anterior.',
+  },
+]
 
 function MoversList({
   title,
@@ -74,9 +111,11 @@ function MoversList({
   )
 }
 
-/** Mayores alzas y bajas del catálogo de AlphaInvest en su última sesión. */
+/** Mayores alzas y bajas del catálogo de AlphaInvest en el periodo elegido. */
 export function MarketMoversPanel() {
-  const moversQuery = useDashboardMarketMovers()
+  const [period, setPeriod] = useState<MarketMoversPeriod>('DIA')
+  const moversQuery = useDashboardMarketMovers(period)
+  const selected = MOVERS_PERIODS.find((item) => item.key === period) ?? MOVERS_PERIODS[0]
 
   return (
     <article className="dashboard-panel dashboard-panel--wide">
@@ -91,6 +130,20 @@ export function MarketMoversPanel() {
         </Link>
       </header>
 
+      <div className="market-movers__periods" role="group" aria-label="Periodo de comparación">
+        {MOVERS_PERIODS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={`market-movers__period${period === item.key ? ' market-movers__period--active' : ''}`}
+            aria-pressed={period === item.key}
+            onClick={() => setPeriod(item.key)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
       {moversQuery.isPending ? (
         <DashboardPanelState message="Calculando movimientos del mercado..." />
       ) : moversQuery.isError ? (
@@ -103,22 +156,24 @@ export function MarketMoversPanel() {
         />
       ) : (
         <>
-          <div className="market-movers">
+          <div
+            className={`market-movers${moversQuery.isPlaceholderData ? ' market-movers--refreshing' : ''}`}
+          >
             <MoversList
               title="Top ganadores"
               items={moversQuery.data.gainers}
-              emptyMessage="Ningún activo subió en su última sesión."
+              emptyMessage={`Ningún activo subió ${selected.span}.`}
             />
             <MoversList
               title="Top perdedores"
               items={moversQuery.data.losers}
-              emptyMessage="Ningún activo bajó en su última sesión."
+              emptyMessage={`Ningún activo bajó ${selected.span}.`}
             />
           </div>
 
           <p className="metric-hint">
-            Variación entre los dos últimos cierres disponibles de los activos del catálogo de
-            AlphaInvest AI. Los activos en pesos y en dólares se comparan por porcentaje.
+            {selected.description} Activos del catálogo de AlphaInvest AI; los activos en pesos y en
+            dólares se comparan por porcentaje.
           </p>
         </>
       )}

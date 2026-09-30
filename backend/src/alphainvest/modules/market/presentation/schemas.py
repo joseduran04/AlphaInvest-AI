@@ -12,6 +12,7 @@ from pydantic import (
 
 from alphainvest.modules.market.domain.enums import (
     AssetStatus,
+    MoversPeriod,
 )
 from alphainvest.modules.market.domain.indicator_enums import (
     FinancialIndicatorType,
@@ -402,7 +403,11 @@ class FinancialIndicatorListResponse(BaseModel):
 
 
 class MarketMoverResponse(BaseModel):
-    """Variación entre los dos últimos cierres disponibles de un activo."""
+    """Variación entre el último cierre y el cierre de referencia.
+
+    ``previous_date`` y ``previous_close`` son el cierre de referencia
+    del periodo consultado.
+    """
 
     asset_id: UUID
     symbol: str
@@ -418,8 +423,9 @@ class MarketMoverResponse(BaseModel):
 
 
 class MarketMoversResponse(BaseModel):
-    """Mayores alzas y bajas del catálogo en su última sesión."""
+    """Mayores alzas y bajas del catálogo en el periodo consultado."""
 
+    period: MoversPeriod = MoversPeriod.DAY
     gainers: list[MarketMoverResponse]
     losers: list[MarketMoverResponse]
 

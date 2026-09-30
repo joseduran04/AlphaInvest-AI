@@ -4,6 +4,7 @@ from uuid import UUID
 
 from alphainvest.modules.market.domain.enums import (
     AssetStatus,
+    MoversPeriod,
 )
 from alphainvest.modules.market.domain.exceptions import (
     AssetNotFoundError,
@@ -110,17 +111,20 @@ class MarketService:
         *,
         limit: int,
         preferred_source_name: str,
+        period: MoversPeriod = MoversPeriod.DAY,
     ) -> MarketMoversResponse:
         """Mayores alzas y bajas porcentuales del catálogo.
 
-        Compara los dos últimos cierres disponibles de cada activo. Los
-        activos en monedas distintas se comparan por porcentaje.
+        Compara el último cierre de cada activo contra su cierre de
+        referencia del periodo (día, semana, mes o en lo que va del año).
+        Los activos en monedas distintas se comparan por porcentaje.
         """
 
         rows = (
             await self._repository
             .list_latest_price_changes(
                 preferred_source_name=preferred_source_name,
+                period=period,
             )
         )
 
@@ -161,6 +165,7 @@ class MarketService:
         )[:limit]
 
         return MarketMoversResponse(
+            period=period,
             gainers=gainers,
             losers=losers,
         )

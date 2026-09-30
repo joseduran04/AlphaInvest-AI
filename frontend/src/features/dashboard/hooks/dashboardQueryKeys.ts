@@ -11,5 +11,5 @@ export const dashboardQueryKeys = {
 
   assets: () => [...dashboardQueryKeys.all, 'assets'] as const,
 
-  marketMovers: () => [...dashboardQueryKeys.all, 'market-movers'] as const,
+  marketMovers: (period: string) => [...dashboardQueryKeys.all, 'market-movers', period] as const,
 }

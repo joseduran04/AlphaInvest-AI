@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from alphainvest.modules.market.domain.enums import MoversPeriod
 from alphainvest.modules.market.domain.indicator_values import (
     CalculatedIndicatorPoint,
     ClosingPricePoint,
@@ -186,63 +187,92 @@ class MarketRepository:
         self,
         *,
         preferred_source_name: str,
+        period: MoversPeriod = MoversPeriod.DAY,
         lookback_days: int = 30,
     ) -> list[dict[str, object]]:
-        """Últimos dos cierres de cada activo ACTIVO.
+        """Último cierre de cada activo ACTIVO y su cierre de referencia.
 
         Por activo se usa la fuente con el dato más reciente; en empate,
         la fuente preferida. Se usa el cierre ajustado cuando existe.
+
+        La referencia es el último cierre en o antes de la fecha ancla:
+        el día anterior (DIA), 7 días antes (SEMANA), un mes antes (MES)
+        o el 31 de diciembre del año anterior (ANIO). Si el activo no
+        tiene cierres en los 14 días previos al ancla, se omite.
         """
 
         statement = text(
             """
-            WITH ranked AS (
-                SELECT
+            WITH latest AS (
+                SELECT DISTINCT ON (p.activo_id, p.fuente_id)
                     p.activo_id,
                     p.fuente_id,
-                    p.fecha,
-                    COALESCE(p.cierre_ajustado, p.cierre) AS precio,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY p.activo_id, p.fuente_id
-                        ORDER BY p.fecha DESC
-                    ) AS rn
+                    p.fecha AS last_date,
+                    COALESCE(p.cierre_ajustado, p.cierre) AS last_close
                 FROM market.precios_historicos p
                 JOIN market.activos a
                   ON a.id = p.activo_id
                  AND a.estado = 'ACTIVO'
                 WHERE p.fecha >= CURRENT_DATE - CAST(:lookback_days AS INTEGER)
+                ORDER BY p.activo_id, p.fuente_id, p.fecha DESC
             ),
-            pairs AS (
+            chosen AS (
+                SELECT DISTINCT ON (l.activo_id)
+                    l.activo_id,
+                    l.fuente_id,
+                    l.last_date,
+                    l.last_close
+                FROM latest l
+                JOIN market.fuentes_financieras f ON f.id = l.fuente_id
+                ORDER BY
+                    l.activo_id,
+                    l.last_date DESC,
+                    (f.nombre = :preferred_source_name) DESC
+            ),
+            anchored AS (
                 SELECT
-                    activo_id,
-                    fuente_id,
-                    MAX(fecha) FILTER (WHERE rn = 1) AS last_date,
-                    MAX(precio) FILTER (WHERE rn = 1) AS last_close,
-                    MAX(fecha) FILTER (WHERE rn = 2) AS previous_date,
-                    MAX(precio) FILTER (WHERE rn = 2) AS previous_close
-                FROM ranked
-                WHERE rn <= 2
-                GROUP BY activo_id, fuente_id
+                    c.*,
+                    CASE CAST(:period AS TEXT)
+                        WHEN 'SEMANA' THEN c.last_date - 7
+                        WHEN 'MES' THEN CAST(
+                            c.last_date - INTERVAL '1 month' AS DATE
+                        )
+                        WHEN 'ANIO' THEN MAKE_DATE(
+                            CAST(EXTRACT(YEAR FROM c.last_date) AS INTEGER) - 1,
+                            12,
+                            31
+                        )
+                        ELSE c.last_date - 1
+                    END AS anchor_date
+                FROM chosen c
             )
-            SELECT DISTINCT ON (pr.activo_id)
+            SELECT
                 a.id AS asset_id,
                 a.simbolo AS symbol,
                 a.nombre AS name,
                 a.moneda AS currency,
                 f.nombre AS source_name,
-                pr.last_date,
-                pr.last_close,
-                pr.previous_date,
-                pr.previous_close
-            FROM pairs pr
-            JOIN market.activos a ON a.id = pr.activo_id
-            JOIN market.fuentes_financieras f ON f.id = pr.fuente_id
-            WHERE pr.previous_close IS NOT NULL
-              AND pr.previous_close > 0
-            ORDER BY
-                pr.activo_id,
-                pr.last_date DESC,
-                (f.nombre = :preferred_source_name) DESC
+                an.last_date,
+                an.last_close,
+                ref.fecha AS previous_date,
+                ref.precio AS previous_close
+            FROM anchored an
+            JOIN market.activos a ON a.id = an.activo_id
+            JOIN market.fuentes_financieras f ON f.id = an.fuente_id
+            JOIN LATERAL (
+                SELECT
+                    p.fecha,
+                    COALESCE(p.cierre_ajustado, p.cierre) AS precio
+                FROM market.precios_historicos p
+                WHERE p.activo_id = an.activo_id
+                  AND p.fuente_id = an.fuente_id
+                  AND p.fecha <= an.anchor_date
+                  AND p.fecha >= an.anchor_date - 14
+                ORDER BY p.fecha DESC
+                LIMIT 1
+            ) ref ON TRUE
+            WHERE ref.precio > 0
+            ORDER BY a.id
             """
         )
 
@@ -251,6 +281,7 @@ class MarketRepository:
             {
                 "lookback_days": lookback_days,
                 "preferred_source_name": preferred_source_name,
+                "period": period.value,
             },
         )
 

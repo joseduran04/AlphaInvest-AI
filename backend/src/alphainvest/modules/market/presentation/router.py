@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from alphainvest.core.config import Settings, get_settings
 from alphainvest.modules.market.domain.enums import (
     AssetStatus,
+    MoversPeriod,
 )
 from alphainvest.modules.market.domain.exceptions import (
     AssetNotFoundError,
@@ -254,8 +255,10 @@ async def get_asset_price_history(
     status_code=status.HTTP_200_OK,
     summary="Consultar mayores alzas y bajas del catálogo",
     description=(
-        "Compara los dos últimos cierres disponibles de cada activo "
-        "ACTIVO y devuelve las mayores alzas y bajas porcentuales."
+        "Compara el último cierre de cada activo ACTIVO contra su cierre "
+        "de referencia del periodo: DIA (sesión anterior), SEMANA (7 días), "
+        "MES (un mes) o ANIO (último cierre del año anterior), y devuelve "
+        "las mayores alzas y bajas porcentuales."
     ),
 )
 async def get_market_movers(
@@ -267,9 +270,11 @@ async def get_market_movers(
         ge=1,
         le=20,
     ),
+    period: MoversPeriod = Query(default=MoversPeriod.DAY),
 ) -> MarketMoversResponse:
     return await service.get_market_movers(
         limit=limit,
+        period=period,
         preferred_source_name=(
             settings.market_price_source_names[0]
         ),

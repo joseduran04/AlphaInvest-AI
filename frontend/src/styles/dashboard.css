@@ -485,3 +485,43 @@
     grid-template-columns: 1fr;
   }
 }
+
+.market-movers__periods {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-self: flex-start;
+  padding: 0.2rem;
+  margin-bottom: 1rem;
+
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+}
+
+.market-movers__period {
+  padding: 0.3rem 0.8rem;
+
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.market-movers__period--active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.market-movers__period:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.market-movers--refreshing {
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
