@@ -27,22 +27,6 @@ const editAssetSchema = z.object({
     const parsedValue = Number(value)
     return Number.isFinite(parsedValue) && parsedValue > 0 && parsedValue <= 100
   }, 'El porcentaje debe ser mayor que 0 y menor o igual que 100.'),
-  monto_inicial: z.string().refine((value) => {
-    if (value.trim() === '') {
-      return true
-    }
-
-    const parsedValue = Number(value)
-    return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El monto de referencia debe ser mayor o igual que cero.'),
-  precio_inicial: z.string().refine((value) => {
-    if (value.trim() === '') {
-      return true
-    }
-
-    const parsedValue = Number(value)
-    return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El precio de referencia debe ser mayor o igual que cero.'),
   orden: z.string().refine((value) => {
     const parsedValue = Number(value)
     return Number.isInteger(parsedValue) && parsedValue > 0
@@ -107,8 +91,6 @@ export function SimulationAssetItem({
     resolver: zodResolver(editAssetSchema),
     defaultValues: {
       porcentaje_asignado: configuredAsset.porcentaje_asignado,
-      monto_inicial: configuredAsset.monto_inicial ?? '',
-      precio_inicial: configuredAsset.precio_inicial ?? '',
       orden: String(configuredAsset.orden),
     },
   })
@@ -116,8 +98,6 @@ export function SimulationAssetItem({
   const handleCancelEdit = () => {
     reset({
       porcentaje_asignado: configuredAsset.porcentaje_asignado,
-      monto_inicial: configuredAsset.monto_inicial ?? '',
-      precio_inicial: configuredAsset.precio_inicial ?? '',
       orden: String(configuredAsset.orden),
     })
     setIsEditing(false)
@@ -126,8 +106,6 @@ export function SimulationAssetItem({
   const handleValidSubmit = (values: EditAssetFormValues) => {
     const data: SimulationConfigurationAssetUpdateRequest = {
       porcentaje_asignado: values.porcentaje_asignado.trim(),
-      monto_inicial: values.monto_inicial.trim() === '' ? null : values.monto_inicial.trim(),
-      precio_inicial: values.precio_inicial.trim() === '' ? null : values.precio_inicial.trim(),
       orden: Number(values.orden),
     }
 
@@ -196,38 +174,6 @@ export function SimulationAssetItem({
               />
               {errors.orden ? <small>{errors.orden.message}</small> : null}
             </label>
-
-            <label className="form-field">
-              <span>Monto de referencia (opcional)</span>
-              <input
-                {...register('monto_inicial')}
-                type="number"
-                min="0"
-                step="0.00000001"
-                disabled={updateMutation.isPending}
-              />
-              {errors.monto_inicial ? <small>{errors.monto_inicial.message}</small> : null}
-              <span className="metric-hint">
-                Dato informativo: no cambia el cálculo. La simulación asigna capital inicial ×
-                porcentaje.
-              </span>
-            </label>
-
-            <label className="form-field">
-              <span>Precio de referencia (opcional)</span>
-              <input
-                {...register('precio_inicial')}
-                type="number"
-                min="0"
-                step="0.00000001"
-                disabled={updateMutation.isPending}
-              />
-              {errors.precio_inicial ? <small>{errors.precio_inicial.message}</small> : null}
-              <span className="metric-hint">
-                Dato informativo: la simulación usa el precio histórico de la fecha de inicio
-                efectiva.
-              </span>
-            </label>
           </div>
 
           {updateMutation.isError ? (
@@ -265,28 +211,6 @@ export function SimulationAssetItem({
                 <span className="metric-hint">Capital inicial × porcentaje asignado.</span>
               </div>
             ) : null}
-
-            <div>
-              <dt>Monto de referencia</dt>
-              <dd>
-                {configuredAsset.monto_inicial === null
-                  ? 'No configurado'
-                  : formatCurrency(configuredAsset.monto_inicial, currency)}
-              </dd>
-              <span className="metric-hint">Informativo, no afecta el cálculo.</span>
-            </div>
-
-            <div>
-              <dt>Precio de referencia</dt>
-              <dd>
-                {configuredAsset.precio_inicial === null
-                  ? 'No configurado'
-                  : formatCurrency(
-                      configuredAsset.precio_inicial,
-                      marketAsset?.currency ?? currency,
-                    )}
-              </dd>
-            </div>
 
             <div>
               <dt>Orden</dt>

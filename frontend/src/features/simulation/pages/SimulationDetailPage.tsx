@@ -286,23 +286,8 @@ export function SimulationDetailPage() {
           </div>
 
           <div>
-            <dt>Inflación anual</dt>
-            <dd>{formatPercentage(configuration.inflacion_anual)}</dd>
-          </div>
-
-          <div>
             <dt>Tasa libre de riesgo</dt>
             <dd>{formatPercentage(configuration.tasa_libre_riesgo)}</dd>
-          </div>
-
-          <div>
-            <dt>Número de escenarios</dt>
-            <dd>{configuration.numero_escenarios.toLocaleString('es-MX')}</dd>
-          </div>
-
-          <div>
-            <dt>Semilla aleatoria</dt>
-            <dd>{configuration.semilla_aleatoria ?? 'No configurada'}</dd>
           </div>
 
           <div>

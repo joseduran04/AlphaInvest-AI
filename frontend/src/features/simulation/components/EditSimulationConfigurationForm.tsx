@@ -324,40 +324,10 @@ export function EditSimulationConfigurationForm({
           </label>
 
           <label className="simulation-field">
-            <span>Inflación anual (%)</span>
-            <input type="number" step="any" {...register('inflacion_anual')} />
-            {errors.inflacion_anual ? (
-              <small className="simulation-field__error">{errors.inflacion_anual.message}</small>
-            ) : null}
-          </label>
-
-          <label className="simulation-field">
             <span>Tasa libre de riesgo (%)</span>
             <input type="number" step="any" {...register('tasa_libre_riesgo')} />
             {errors.tasa_libre_riesgo ? (
               <small className="simulation-field__error">{errors.tasa_libre_riesgo.message}</small>
-            ) : null}
-          </label>
-
-          <label className="simulation-field">
-            <span>Número de escenarios</span>
-            <input
-              type="number"
-              min="1"
-              max="1000000"
-              step="1"
-              {...register('numero_escenarios')}
-            />
-            {errors.numero_escenarios ? (
-              <small className="simulation-field__error">{errors.numero_escenarios.message}</small>
-            ) : null}
-          </label>
-
-          <label className="simulation-field">
-            <span>Semilla aleatoria</span>
-            <input type="number" step="1" {...register('semilla_aleatoria')} />
-            {errors.semilla_aleatoria ? (
-              <small className="simulation-field__error">{errors.semilla_aleatoria.message}</small>
             ) : null}
           </label>
 

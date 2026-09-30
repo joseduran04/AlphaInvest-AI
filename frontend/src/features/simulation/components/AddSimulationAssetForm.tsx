@@ -26,22 +26,6 @@ const addSimulationAssetSchema = z.object({
       const parsedValue = Number(value)
       return Number.isFinite(parsedValue) && parsedValue > 0 && parsedValue <= 100
     }, 'El porcentaje debe ser mayor que 0 y menor o igual que 100.'),
-  monto_inicial: z.string().refine((value) => {
-    if (value.trim() === '') {
-      return true
-    }
-
-    const parsedValue = Number(value)
-    return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El monto de referencia debe ser mayor o igual que cero.'),
-  precio_inicial: z.string().refine((value) => {
-    if (value.trim() === '') {
-      return true
-    }
-
-    const parsedValue = Number(value)
-    return Number.isFinite(parsedValue) && parsedValue >= 0
-  }, 'El precio de referencia debe ser mayor o igual que cero.'),
   orden: z
     .string()
     .min(1, 'Ingresa el orden.')
@@ -94,8 +78,6 @@ export function AddSimulationAssetForm({
     defaultValues: {
       activo_id: '',
       porcentaje_asignado: '',
-      monto_inicial: '',
-      precio_inicial: '',
       orden: String(nextOrder),
     },
   })
@@ -105,14 +87,6 @@ export function AddSimulationAssetForm({
       activo_id: values.activo_id,
       porcentaje_asignado: values.porcentaje_asignado.trim(),
       orden: Number(values.orden),
-    }
-
-    if (values.monto_inicial.trim() !== '') {
-      data.monto_inicial = values.monto_inicial.trim()
-    }
-
-    if (values.precio_inicial.trim() !== '') {
-      data.precio_inicial = values.precio_inicial.trim()
     }
 
     mutation.mutate(data, {
@@ -168,38 +142,6 @@ export function AddSimulationAssetForm({
               disabled={mutation.isPending}
             />
             {errors.orden ? <small>{errors.orden.message}</small> : null}
-          </label>
-
-          <label className="form-field">
-            <span>Monto de referencia (opcional)</span>
-            <input
-              {...register('monto_inicial')}
-              type="number"
-              min="0"
-              step="0.00000001"
-              disabled={mutation.isPending}
-            />
-            {errors.monto_inicial ? <small>{errors.monto_inicial.message}</small> : null}
-            <span className="metric-hint">
-              Dato informativo: no cambia el cálculo. La simulación asigna capital inicial ×
-              porcentaje.
-            </span>
-          </label>
-
-          <label className="form-field">
-            <span>Precio de referencia (opcional)</span>
-            <input
-              {...register('precio_inicial')}
-              type="number"
-              min="0"
-              step="0.00000001"
-              disabled={mutation.isPending}
-            />
-            {errors.precio_inicial ? <small>{errors.precio_inicial.message}</small> : null}
-            <span className="metric-hint">
-              Dato informativo: la simulación usa el precio histórico de la fecha de inicio
-              efectiva.
-            </span>
           </label>
         </div>
 
