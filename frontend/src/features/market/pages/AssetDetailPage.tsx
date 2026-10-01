@@ -1,14 +1,12 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useParams } from 'react-router'
 
-import type { FinancialIndicatorType, IndicatorCalculationRequest } from '@/api/types'
+import type { FinancialIndicatorListQuery, FinancialIndicatorType } from '@/api/types'
 import { PageErrorState } from '@/components/PageErrorState'
 import { PageLoadingState } from '@/components/PageLoadingState'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAsset } from '@/features/market/hooks/useAsset'
 import { useAssetIndicators } from '@/features/market/hooks/useAssetIndicators'
-import { useCalculateIndicators } from '@/features/market/hooks/useCalculateIndicators'
-import { useFinancialSources } from '@/features/market/hooks/useFinancialSources'
 import { useLatestPrice } from '@/features/market/hooks/useLatestPrice'
 import { usePriceHistory } from '@/features/market/hooks/usePriceHistory'
 import { useSyncAssetPrices } from '@/features/market/hooks/useSyncAssetPrices'
@@ -26,7 +24,6 @@ type DirectIndicatorType = Extract<
 >
 
 interface IndicatorFormState {
-  sourceId: string
   indicatorType: DirectIndicatorType
   period: string
   fastPeriod: string
@@ -35,7 +32,6 @@ interface IndicatorFormState {
 }
 
 const initialIndicatorForm: IndicatorFormState = {
-  sourceId: '',
   indicatorType: 'SMA',
   period: '20',
   fastPeriod: '12',
@@ -110,12 +106,14 @@ export function AssetDetailPage() {
   const canReadPrices = hasPermission('precios.leer')
   const canSyncPrices = hasPermission('precios.cargar')
   const canReadIndicators = hasPermission('indicadores.leer')
-  const canCalculateIndicators = hasPermission('indicadores.calcular')
-  const canReadSources = hasPermission('fuentes.leer')
 
   const [historyPage, setHistoryPage] = useState(0)
   const [indicatorForm, setIndicatorForm] = useState<IndicatorFormState>(initialIndicatorForm)
   const [indicatorFormError, setIndicatorFormError] = useState<string | null>(null)
+  const [selectedIndicator, setSelectedIndicator] = useState<Pick<
+    FinancialIndicatorListQuery,
+    'indicator_type' | 'period'
+  > | null>(null)
 
   const resolvedAssetId = assetId ?? null
 
@@ -137,14 +135,12 @@ export function AssetDetailPage() {
     {
       limit: INDICATOR_LIMIT,
       offset: 0,
+      ...selectedIndicator,
     },
     canReadIndicators,
   )
 
-  const sourcesQuery = useFinancialSources({}, canCalculateIndicators && canReadSources)
-
   const syncPricesMutation = useSyncAssetPrices(assetId ?? '')
-  const calculateIndicatorsMutation = useCalculateIndicators(assetId ?? '')
 
   if (!assetId) {
     return (
@@ -182,13 +178,6 @@ export function AssetDetailPage() {
 
     setIndicatorFormError(null)
 
-    if (!indicatorForm.sourceId) {
-      setIndicatorFormError('Selecciona una fuente financiera.')
-      return
-    }
-
-    let calculation: IndicatorCalculationRequest['calculations'][number]
-
     if (indicatorForm.indicatorType === 'MACD') {
       const fastPeriod = parseIndicatorPeriod(indicatorForm.fastPeriod)
       const slowPeriod = parseIndicatorPeriod(indicatorForm.slowPeriod)
@@ -204,29 +193,23 @@ export function AssetDetailPage() {
         return
       }
 
-      calculation = {
+      setSelectedIndicator({
         indicator_type: 'MACD',
-        fast_period: fastPeriod,
-        slow_period: slowPeriod,
-        signal_period: signalPeriod,
-      }
-    } else {
-      const period = parseIndicatorPeriod(indicatorForm.period)
-
-      if (period === null) {
-        setIndicatorFormError('El periodo debe ser un número entero entre 2 y 500.')
-        return
-      }
-
-      calculation = {
-        indicator_type: indicatorForm.indicatorType,
-        period,
-      }
+        period: `${fastPeriod}-${slowPeriod}-${signalPeriod}`,
+      })
+      return
     }
 
-    calculateIndicatorsMutation.mutate({
-      source_id: indicatorForm.sourceId,
-      calculations: [calculation],
+    const period = parseIndicatorPeriod(indicatorForm.period)
+
+    if (period === null) {
+      setIndicatorFormError('El periodo debe ser un número entero entre 2 y 500.')
+      return
+    }
+
+    setSelectedIndicator({
+      indicator_type: indicatorForm.indicatorType,
+      period: `${period}D`,
     })
   }
 
@@ -500,9 +483,27 @@ export function AssetDetailPage() {
           <header className="asset-detail-card__header">
             <div>
               <span className="asset-detail-card__eyebrow">Indicadores técnicos</span>
-              <h2>Indicadores calculados</h2>
+              <h2>
+                {selectedIndicator
+                  ? `${selectedIndicator.indicator_type} · ${selectedIndicator.period}`
+                  : 'SMA 20, EMA 20, RSI 14, volatilidad 30 y MACD 12-26-9'}
+              </h2>
             </div>
+
+            {selectedIndicator ? (
+              <button
+                className="button button--secondary"
+                type="button"
+                onClick={() => setSelectedIndicator(null)}
+              >
+                Ver indicadores estándar
+              </button>
+            ) : null}
           </header>
+
+          <p className="metric-hint">
+            Se calculan al momento con los precios guardados del activo; no se almacenan.
+          </p>
 
           {indicatorsQuery.isPending ? (
             <div className="asset-detail-inline-state">Cargando indicadores...</div>
@@ -522,7 +523,8 @@ export function AssetDetailPage() {
             </div>
           ) : indicatorsQuery.data.items.length === 0 ? (
             <div className="asset-detail-inline-state">
-              No hay indicadores calculados para este activo.
+              No hay precios suficientes para calcular indicadores. Sincroniza los precios del
+              activo.
             </div>
           ) : (
             <div className="asset-detail-table-wrapper">
@@ -533,7 +535,6 @@ export function AssetDetailPage() {
                     <th>Indicador</th>
                     <th>Periodo</th>
                     <th>Valor</th>
-                    <th>Calculado</th>
                   </tr>
                 </thead>
 
@@ -546,7 +547,6 @@ export function AssetDetailPage() {
                       <td>
                         <strong>{formatNumber(indicator.value)}</strong>
                       </td>
-                      <td>{formatDateTime(indicator.calculated_at)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -556,7 +556,7 @@ export function AssetDetailPage() {
         </section>
       ) : null}
 
-      {canCalculateIndicators ? (
+      {canReadIndicators ? (
         <section className="asset-detail-card">
           <header className="asset-detail-card__header">
             <div>
@@ -565,184 +565,114 @@ export function AssetDetailPage() {
             </div>
           </header>
 
-          {!canReadSources ? (
-            <div className="asset-detail-inline-state asset-detail-inline-state--error">
-              Tu usuario puede calcular indicadores, pero no puede consultar las fuentes financieras
-              necesarias para seleccionar una fuente.
-            </div>
-          ) : sourcesQuery.isPending ? (
-            <div className="asset-detail-inline-state">Cargando fuentes financieras...</div>
-          ) : sourcesQuery.isError ? (
-            <div className="asset-detail-inline-state asset-detail-inline-state--error">
-              <p>{sourcesQuery.error.message}</p>
+          <form className="asset-indicator-form" onSubmit={handleIndicatorSubmit}>
+            <div className="asset-indicator-form__grid">
+              <label className="market-field">
+                <span>Indicador</span>
+                <select
+                  value={indicatorForm.indicatorType}
+                  onChange={(event) => {
+                    setIndicatorFormError(null)
 
-              <button
-                className="button button--secondary"
-                type="button"
-                onClick={() => {
-                  void sourcesQuery.refetch()
-                }}
-              >
-                Reintentar
-              </button>
-            </div>
-          ) : sourcesQuery.data.items.length === 0 ? (
-            <div className="asset-detail-inline-state">
-              No hay fuentes financieras activas disponibles.
-            </div>
-          ) : (
-            <form className="asset-indicator-form" onSubmit={handleIndicatorSubmit}>
-              <div className="asset-indicator-form__grid">
-                <label className="market-field">
-                  <span>Fuente financiera</span>
-                  <select
-                    required
-                    value={indicatorForm.sourceId}
-                    onChange={(event) =>
-                      setIndicatorForm((current) => ({
-                        ...current,
-                        sourceId: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Selecciona una fuente</option>
+                    setIndicatorForm((current) => ({
+                      ...current,
+                      indicatorType: event.target.value as DirectIndicatorType,
+                    }))
+                  }}
+                >
+                  <option value="SMA">SMA</option>
+                  <option value="EMA">EMA</option>
+                  <option value="RSI">RSI</option>
+                  <option value="VOLATILIDAD">Volatilidad</option>
+                  <option value="MACD">MACD</option>
+                </select>
+              </label>
 
-                    {sourcesQuery.data.items.map((source) => (
-                      <option key={source.id} value={source.id}>
-                        {source.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="market-field">
-                  <span>Indicador</span>
-                  <select
-                    value={indicatorForm.indicatorType}
-                    onChange={(event) => {
-                      setIndicatorFormError(null)
-
-                      setIndicatorForm((current) => ({
-                        ...current,
-                        indicatorType: event.target.value as DirectIndicatorType,
-                      }))
-                    }}
-                  >
-                    <option value="SMA">SMA</option>
-                    <option value="EMA">EMA</option>
-                    <option value="RSI">RSI</option>
-                    <option value="VOLATILIDAD">Volatilidad</option>
-                    <option value="MACD">MACD</option>
-                  </select>
-                </label>
-
-                {indicatorForm.indicatorType === 'MACD' ? (
-                  <>
-                    <label className="market-field">
-                      <span>Periodo rápido</span>
-                      <input
-                        type="number"
-                        min={2}
-                        max={500}
-                        required
-                        value={indicatorForm.fastPeriod}
-                        onChange={(event) =>
-                          setIndicatorForm((current) => ({
-                            ...current,
-                            fastPeriod: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-
-                    <label className="market-field">
-                      <span>Periodo lento</span>
-                      <input
-                        type="number"
-                        min={2}
-                        max={500}
-                        required
-                        value={indicatorForm.slowPeriod}
-                        onChange={(event) =>
-                          setIndicatorForm((current) => ({
-                            ...current,
-                            slowPeriod: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-
-                    <label className="market-field">
-                      <span>Periodo de señal</span>
-                      <input
-                        type="number"
-                        min={2}
-                        max={500}
-                        required
-                        value={indicatorForm.signalPeriod}
-                        onChange={(event) =>
-                          setIndicatorForm((current) => ({
-                            ...current,
-                            signalPeriod: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  </>
-                ) : (
+              {indicatorForm.indicatorType === 'MACD' ? (
+                <>
                   <label className="market-field">
-                    <span>Periodo</span>
+                    <span>Periodo rápido</span>
                     <input
                       type="number"
                       min={2}
                       max={500}
                       required
-                      value={indicatorForm.period}
+                      value={indicatorForm.fastPeriod}
                       onChange={(event) =>
                         setIndicatorForm((current) => ({
                           ...current,
-                          period: event.target.value,
+                          fastPeriod: event.target.value,
                         }))
                       }
                     />
                   </label>
-                )}
-              </div>
 
-              {indicatorFormError ? (
-                <p className="asset-detail-feedback asset-detail-feedback--error">
-                  {indicatorFormError}
-                </p>
-              ) : null}
+                  <label className="market-field">
+                    <span>Periodo lento</span>
+                    <input
+                      type="number"
+                      min={2}
+                      max={500}
+                      required
+                      value={indicatorForm.slowPeriod}
+                      onChange={(event) =>
+                        setIndicatorForm((current) => ({
+                          ...current,
+                          slowPeriod: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
 
-              {calculateIndicatorsMutation.isError ? (
-                <p className="asset-detail-feedback asset-detail-feedback--error">
-                  {calculateIndicatorsMutation.error.message}
-                </p>
-              ) : null}
+                  <label className="market-field">
+                    <span>Periodo de señal</span>
+                    <input
+                      type="number"
+                      min={2}
+                      max={500}
+                      required
+                      value={indicatorForm.signalPeriod}
+                      onChange={(event) =>
+                        setIndicatorForm((current) => ({
+                          ...current,
+                          signalPeriod: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                </>
+              ) : (
+                <label className="market-field">
+                  <span>Periodo</span>
+                  <input
+                    type="number"
+                    min={2}
+                    max={500}
+                    required
+                    value={indicatorForm.period}
+                    onChange={(event) =>
+                      setIndicatorForm((current) => ({
+                        ...current,
+                        period: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              )}
+            </div>
 
-              {calculateIndicatorsMutation.isSuccess ? (
-                <div className="asset-detail-feedback asset-detail-feedback--success">
-                  <strong>Cálculo completado</strong>
-                  <span>
-                    Calculados: {calculateIndicatorsMutation.data.total_calculated} · Creados:{' '}
-                    {calculateIndicatorsMutation.data.total_created} · Actualizados:{' '}
-                    {calculateIndicatorsMutation.data.total_updated}
-                  </span>
-                </div>
-              ) : null}
+            {indicatorFormError ? (
+              <p className="asset-detail-feedback asset-detail-feedback--error">
+                {indicatorFormError}
+              </p>
+            ) : null}
 
-              <div className="asset-indicator-form__actions">
-                <button
-                  className="button button--primary"
-                  type="submit"
-                  disabled={calculateIndicatorsMutation.isPending}
-                >
-                  {calculateIndicatorsMutation.isPending ? 'Calculando...' : 'Calcular indicador'}
-                </button>
-              </div>
-            </form>
-          )}
+            <div className="asset-indicator-form__actions">
+              <button className="button button--primary" type="submit">
+                Calcular indicador
+              </button>
+            </div>
+          </form>
         </section>
       ) : null}
     </section>

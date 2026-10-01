@@ -12,8 +12,7 @@ from alphainvest.modules.market.domain.exceptions import (
     AssetNotFoundError,
     FinancialSourceNotFoundError,
     HistoricalPriceNotFoundError,
-    IndicatorCalculationError,
-    InsufficientPriceHistoryError,
+    InvalidIndicatorParametersError,
     InvalidPriceDateRangeError,
     JobExecutionNotFoundError,
     PriceSynchronizationError,
@@ -29,7 +28,6 @@ from alphainvest.modules.market.domain.indicator_enums import (
 )
 from alphainvest.modules.market.presentation.dependencies import (
     FinancialIndicatorServiceDependency,
-    IndicatorCalculateContext,
     IndicatorReadContext,
     JobReadContext,
     MarketExecutionServiceDependency,
@@ -47,8 +45,6 @@ from alphainvest.modules.market.presentation.schemas import (
     FinancialIndicatorListResponse,
     FinancialSourceListResponse,
     HistoricalPriceListResponse,
-    IndicatorCalculationRequest,
-    IndicatorCalculationResponse,
     LatestPriceResponse,
     MarketListResponse,
     MarketMoversResponse,
@@ -412,59 +408,22 @@ async def synchronize_asset_prices(
         ) from error
 
 
-@router.post(
-    "/assets/{asset_id}/indicators/calculate",
-    response_model=IndicatorCalculationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Calcular indicadores financieros",
-    description=(
-        "Calcula y persiste indicadores técnicos usando "
-        "los precios históricos de una fuente específica."
-    ),
-)
-async def calculate_asset_indicators(
-    asset_id: UUID,
-    request: IndicatorCalculationRequest,
-    _: IndicatorCalculateContext,
-    service: FinancialIndicatorServiceDependency,
-) -> IndicatorCalculationResponse:
-    try:
-        return await service.calculate_indicators(
-            asset_id=asset_id,
-            request=request,
-        )
-    except AssetNotFoundError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        ) from error
-    except FinancialSourceNotFoundError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        ) from error
-    except InsufficientPriceHistoryError as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(error),
-        ) from error
-    except IndicatorCalculationError as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(error),
-        ) from error
-
-
 @router.get(
     "/assets/{asset_id}/indicators",
     response_model=FinancialIndicatorListResponse,
     status_code=status.HTTP_200_OK,
     summary="Consultar indicadores financieros",
+    description=(
+        "Calcula al momento SMA, EMA, RSI, volatilidad y MACD con los "
+        "precios guardados del activo; los indicadores no se guardan. "
+        "Sin fecha inicial devuelve los últimos dos años."
+    ),
 )
 async def list_asset_indicators(
     asset_id: UUID,
     _: IndicatorReadContext,
     service: FinancialIndicatorServiceDependency,
+    settings: Settings = Depends(get_settings),
     indicator_type: FinancialIndicatorType | None = Query(
         default=None,
     ),
@@ -499,13 +458,19 @@ async def list_asset_indicators(
             end_date=end_date,
             limit=limit,
             offset=offset,
+            preferred_source_name=(
+                settings.market_price_source_names[0]
+            ),
         )
     except AssetNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
-    except InvalidPriceDateRangeError as error:
+    except (
+        InvalidPriceDateRangeError,
+        InvalidIndicatorParametersError,
+    ) as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(error),

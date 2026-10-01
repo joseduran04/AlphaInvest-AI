@@ -121,8 +121,3 @@ IndicatorReadContext = Annotated[
     AuthContext,
     Depends(require_permission("indicadores.leer")),
 ]
-
-IndicatorCalculateContext = Annotated[
-    AuthContext,
-    Depends(require_permission("indicadores.calcular")),
-]

@@ -1,14 +1,9 @@
-from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
-
-from sqlalchemy.exc import SQLAlchemyError
 
 from alphainvest.modules.market.domain.exceptions import (
     AssetNotFoundError,
-    FinancialSourceNotFoundError,
-    IndicatorCalculationError,
-    InsufficientPriceHistoryError,
+    InvalidIndicatorParametersError,
     InvalidPriceDateRangeError,
 )
 from alphainvest.modules.market.domain.indicator_calculator import (
@@ -31,204 +26,144 @@ from alphainvest.modules.market.infrastructure.repository import (
 from alphainvest.modules.market.presentation.schemas import (
     FinancialIndicatorListResponse,
     FinancialIndicatorResponse,
-    IndicatorCalculationItemResponse,
-    IndicatorCalculationRequest,
-    IndicatorCalculationResponse,
     IndicatorCalculationSpec,
 )
 
+# Sin fecha inicial, se muestran los últimos dos años.
+DEFAULT_WINDOW_DAYS = 730
+
+# Indicadores que se muestran cuando no se pide uno en particular.
+DEFAULT_SPECS: tuple[IndicatorCalculationSpec, ...] = (
+    IndicatorCalculationSpec(
+        indicator_type=FinancialIndicatorType.SMA,
+        period=20,
+    ),
+    IndicatorCalculationSpec(
+        indicator_type=FinancialIndicatorType.EMA,
+        period=20,
+    ),
+    IndicatorCalculationSpec(
+        indicator_type=FinancialIndicatorType.RSI,
+        period=14,
+    ),
+    IndicatorCalculationSpec(
+        indicator_type=FinancialIndicatorType.VOLATILITY,
+        period=30,
+    ),
+    IndicatorCalculationSpec(
+        indicator_type=FinancialIndicatorType.MACD,
+        fast_period=12,
+        slow_period=26,
+        signal_period=9,
+    ),
+)
+
+MACD_FAMILY = frozenset(
+    {
+        FinancialIndicatorType.MACD,
+        FinancialIndicatorType.MACD_SIGNAL,
+        FinancialIndicatorType.MACD_HISTOGRAM,
+    }
+)
+
+
+def _warmup_days(spec: IndicatorCalculationSpec) -> int:
+    """Días naturales previos que necesita el indicador para estabilizarse.
+
+    Las medias exponenciales y el RSI dependen de los días anteriores;
+    con este margen el valor coincide con el calculado sobre todo el
+    historial.
+    """
+
+    if spec.indicator_type == FinancialIndicatorType.MACD:
+        sessions = (spec.slow_period or 0) + (spec.signal_period or 0)
+    else:
+        sessions = spec.period or 0
+
+    return 2 * sessions + 365
+
+
+def _resolve_specs(
+    indicator_type: FinancialIndicatorType | None,
+    period: str | None,
+) -> tuple[IndicatorCalculationSpec, ...]:
+    """Indicadores a calcular según el filtro de la consulta."""
+
+    if indicator_type is None:
+        if period is not None:
+            raise InvalidIndicatorParametersError(
+                "Indica el tipo de indicador junto con el periodo"
+            )
+
+        return DEFAULT_SPECS
+
+    is_macd = indicator_type in MACD_FAMILY
+
+    if period is None:
+        return tuple(
+            spec
+            for spec in DEFAULT_SPECS
+            if spec.indicator_type == indicator_type
+            or (
+                is_macd
+                and spec.indicator_type == FinancialIndicatorType.MACD
+            )
+        )
+
+    normalized = period.strip().upper()
+
+    try:
+        if is_macd:
+            fast, slow, signal = (
+                int(value) for value in normalized.split("-")
+            )
+            return (
+                IndicatorCalculationSpec(
+                    indicator_type=FinancialIndicatorType.MACD,
+                    fast_period=fast,
+                    slow_period=slow,
+                    signal_period=signal,
+                ),
+            )
+
+        return (
+            IndicatorCalculationSpec(
+                indicator_type=indicator_type,
+                period=int(normalized.removesuffix("D")),
+            ),
+        )
+    except ValueError as error:
+        raise InvalidIndicatorParametersError(
+            "El periodo no corresponde al indicador solicitado"
+        ) from error
+
+
+def _matches_type(
+    point: CalculatedIndicatorPoint,
+    indicator_type: FinancialIndicatorType | None,
+) -> bool:
+    if indicator_type is None:
+        return True
+
+    if indicator_type == FinancialIndicatorType.MACD:
+        return point.indicator_type in MACD_FAMILY
+
+    return point.indicator_type == indicator_type
+
 
 class FinancialIndicatorService:
-    """Calcula, persiste y consulta indicadores financieros."""
+    """Calcula indicadores técnicos al momento, sin guardarlos.
+
+    Los indicadores se derivan de los precios ya guardados, así que no
+    se persisten: se calculan al consultarlos con un margen previo para
+    que coincidan con el cálculo sobre el historial completo.
+    """
 
     def __init__(
         self,
         repository: MarketRepository,
     ) -> None:
         self._repository = repository
-
-    async def calculate_indicators(
-        self,
-        *,
-        asset_id: UUID,
-        request: IndicatorCalculationRequest,
-    ) -> IndicatorCalculationResponse:
-        asset = await self._repository.get_asset(
-            asset_id
-        )
-
-        if asset is None:
-            raise AssetNotFoundError(
-                "El activo solicitado no existe"
-            )
-
-        source = (
-            await self._repository.get_financial_source(
-                request.source_id
-            )
-        )
-
-        if source is None:
-            raise FinancialSourceNotFoundError(
-                "La fuente financiera no existe"
-            )
-
-        if not source.activa:
-            raise FinancialSourceNotFoundError(
-                "La fuente financiera no está activa"
-            )
-
-        prices = (
-            await self._repository
-            .list_closing_prices_for_indicators(
-                asset_id=asset.id,
-                source_id=source.id,
-            )
-        )
-
-        if not prices:
-            raise InsufficientPriceHistoryError(
-                "El activo no tiene precios para la fuente "
-                "seleccionada"
-            )
-
-        all_indicators: list[
-            CalculatedIndicatorPoint
-        ] = []
-
-        for calculation in request.calculations:
-            try:
-                calculated = self._calculate(
-                    prices=prices,
-                    calculation=calculation,
-                )
-            except ValueError as error:
-                raise InsufficientPriceHistoryError(
-                    str(error)
-                ) from error
-
-            enriched = [
-                replace(
-                    indicator,
-                    parameters={
-                        **indicator.parameters,
-                        "price_source_id": str(source.id),
-                        "price_source_name": source.nombre,
-                    },
-                    calculation_source=(
-                        "ALPHAINVEST_PYTHON_V1:"
-                        f"{source.nombre}"
-                    ),
-                )
-                for indicator in calculated
-            ]
-
-            
-            all_indicators.extend(enriched)
-
-        keys = [
-            (
-                indicator.indicator_type,
-                indicator.date,
-                indicator.period,
-            )
-            for indicator in all_indicators
-        ]
-
-        existing_keys = (
-            await self._repository
-            .get_existing_indicator_keys(
-                asset_id=asset.id,
-                keys=keys,
-            )
-        )
-
-        try:
-            await self._repository.upsert_financial_indicators(
-                asset_id=asset.id,
-                indicators=all_indicators,
-            )
-
-            await self._repository.commit()
-
-        except SQLAlchemyError as error:
-            await self._repository.rollback()
-
-            raise IndicatorCalculationError(
-                "No fue posible guardar los indicadores"
-            ) from error
-
-        grouped_indicators: dict[
-            tuple[str, str],
-            list[CalculatedIndicatorPoint],
-        ] = {}
-
-        for indicator in all_indicators:
-            group_key = (
-                indicator.indicator_type,
-                indicator.period,
-            )
-
-            grouped_indicators.setdefault(
-                group_key,
-                [],
-            ).append(indicator)
-
-        response_items: list[
-            IndicatorCalculationItemResponse
-        ] = []
-
-        for (
-            indicator_type_value,
-            period,
-        ), indicators in grouped_indicators.items():
-            group_keys = {
-                (
-                    indicator.indicator_type,
-                    indicator.date,
-                    indicator.period,
-                )
-                for indicator in indicators
-            }
-
-            updated = len(
-                group_keys.intersection(existing_keys)
-            )
-            created = len(group_keys) - updated
-
-            response_items.append(
-                IndicatorCalculationItemResponse(
-                    indicator_type=(
-                        FinancialIndicatorType(
-                            indicator_type_value
-                        )
-                    ),
-                    period=period,
-                    calculated=len(indicators),
-                    created=created,
-                    updated=updated,
-                    first_date=indicators[0].date,
-                    last_date=indicators[-1].date,
-                )
-            )
-
-        return IndicatorCalculationResponse(
-            asset_id=asset.id,
-            symbol=asset.simbolo,
-            source_id=source.id,
-            source_name=source.nombre,
-            total_calculated=len(all_indicators),
-            total_created=sum(
-                item.created
-                for item in response_items
-            ),
-            total_updated=sum(
-                item.updated
-                for item in response_items
-            ),
-            items=response_items,
-            calculated_at=datetime.now(UTC),
-        )
 
     async def list_indicators(
         self,
@@ -240,6 +175,7 @@ class FinancialIndicatorService:
         end_date: date | None,
         limit: int,
         offset: int,
+        preferred_source_name: str,
     ) -> FinancialIndicatorListResponse:
         asset = await self._repository.get_asset(
             asset_id
@@ -260,32 +196,86 @@ class FinancialIndicatorService:
                 "que la fecha final"
             )
 
-        indicators, total = (
-            await self._repository
-            .list_financial_indicators(
-                asset_id=asset.id,
-                indicator_type=(
-                    indicator_type.value
-                    if indicator_type is not None
-                    else None
-                ),
-                period=period,
-                start_date=start_date,
-                end_date=end_date,
-                limit=limit,
-                offset=offset,
-            )
+        specs = _resolve_specs(indicator_type, period)
+
+        window_start = start_date or (
+            (end_date or datetime.now(UTC).date())
+            - timedelta(days=DEFAULT_WINDOW_DAYS)
         )
+
+        points: list[CalculatedIndicatorPoint] = []
+        source_name = ""
+
+        source = await self._repository.get_indicator_price_source(
+            asset_id=asset.id,
+            preferred_source_name=preferred_source_name,
+        )
+
+        if source is not None:
+            source_id, source_name = source
+
+            prices = await (
+                self._repository
+                .list_closing_prices_for_indicators(
+                    asset_id=asset.id,
+                    source_id=source_id,
+                    since=window_start
+                    - timedelta(
+                        days=max(_warmup_days(spec) for spec in specs)
+                    ),
+                    until=end_date,
+                )
+            )
+
+            for spec in specs:
+                try:
+                    calculated = self._calculate(
+                        prices=prices,
+                        calculation=spec,
+                    )
+                except ValueError:
+                    # Historial insuficiente para este indicador.
+                    continue
+
+                points.extend(
+                    point
+                    for point in calculated
+                    if point.date >= window_start
+                    and _matches_type(point, indicator_type)
+                )
+
+        points.sort(
+            key=lambda point: (point.indicator_type, point.period)
+        )
+        points.sort(key=lambda point: point.date, reverse=True)
+
+        calculated_at = datetime.now(UTC)
+        page = points[offset:offset + limit]
 
         return FinancialIndicatorListResponse(
             asset_id=asset.id,
             items=[
                 FinancialIndicatorResponse.model_validate(
-                    indicator
+                    {
+                        "id": offset + index + 1,
+                        "activo_id": asset.id,
+                        "tipo_indicador": point.indicator_type,
+                        "fecha": point.date,
+                        "valor": point.value,
+                        "periodo": point.period,
+                        "parametros": {
+                            **point.parameters,
+                            "price_source_name": source_name,
+                        },
+                        "fuente_calculo": (
+                            f"ALPHAINVEST_PYTHON_V1:{source_name}"
+                        ),
+                        "fecha_calculo": calculated_at,
+                    }
                 )
-                for indicator in indicators
+                for index, point in enumerate(page)
             ],
-            total=total,
+            total=len(points),
             limit=limit,
             offset=offset,
             indicator_type=indicator_type,

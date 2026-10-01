@@ -306,58 +306,6 @@ class IndicatorCalculationSpec(BaseModel):
         return self
 
 
-class IndicatorCalculationRequest(BaseModel):
-    source_id: UUID
-    calculations: list[IndicatorCalculationSpec] = Field(
-        min_length=1,
-        max_length=20,
-    )
-
-    @model_validator(mode="after")
-    def validate_unique_calculations(
-        self,
-    ) -> "IndicatorCalculationRequest":
-        keys = [
-            (
-                calculation.indicator_type,
-                calculation.period,
-                calculation.fast_period,
-                calculation.slow_period,
-                calculation.signal_period,
-            )
-            for calculation in self.calculations
-        ]
-
-        if len(keys) != len(set(keys)):
-            raise ValueError(
-                "No se permiten cálculos duplicados"
-            )
-
-        return self
-
-
-class IndicatorCalculationItemResponse(BaseModel):
-    indicator_type: FinancialIndicatorType
-    period: str
-    calculated: int
-    created: int
-    updated: int
-    first_date: DateType | None
-    last_date: DateType | None
-
-
-class IndicatorCalculationResponse(BaseModel):
-    asset_id: UUID
-    symbol: str
-    source_id: UUID
-    source_name: str
-    total_calculated: int
-    total_created: int
-    total_updated: int
-    items: list[IndicatorCalculationItemResponse]
-    calculated_at: datetime
-
-
 class FinancialIndicatorResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

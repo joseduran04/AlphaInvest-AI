@@ -1736,9 +1736,36 @@ trg_auditoria_trabajos_programados
 ON operation.trabajos_programados;
 
 CREATE TRIGGER trg_auditoria_trabajos_programados
-AFTER INSERT OR UPDATE OR DELETE
+AFTER INSERT OR DELETE
 ON operation.trabajos_programados
 FOR EACH ROW
+EXECUTE FUNCTION audit.fn_trg_auditoria_generica();
+
+/*
+ El worker actualiza siguiente_ejecucion y ultima_ejecucion en cada
+ corrida (cada minuto en los trabajos por intervalo). Esos cambios no
+ se auditan; cualquier otro cambio del trabajo sí.
+*/
+
+DROP TRIGGER IF EXISTS
+trg_auditoria_trabajos_programados_cambios
+ON operation.trabajos_programados;
+
+CREATE TRIGGER trg_auditoria_trabajos_programados_cambios
+AFTER UPDATE
+ON operation.trabajos_programados
+FOR EACH ROW
+WHEN (
+    (
+        to_jsonb(OLD)
+        - ARRAY['siguiente_ejecucion', 'ultima_ejecucion', 'fecha_actualizacion']
+    )
+    IS DISTINCT FROM
+    (
+        to_jsonb(NEW)
+        - ARRAY['siguiente_ejecucion', 'ultima_ejecucion', 'fecha_actualizacion']
+    )
+)
 EXECUTE FUNCTION audit.fn_trg_auditoria_generica();
 
 

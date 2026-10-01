@@ -7,9 +7,6 @@ from alphainvest.worker.jobs.ai_analysis_requests import (
 from alphainvest.worker.jobs.integral_analysis_requests import (
     process_pending_integral_analysis_requests,
 )
-from alphainvest.worker.jobs.market_indicators import (
-    calculate_configured_market_indicators,
-)
 from alphainvest.worker.jobs.market_prices import (
     synchronize_configured_market_prices,
 )
@@ -31,9 +28,6 @@ WorkerJob = Callable[[Settings], Awaitable[None]]
 WORKER_JOB_REGISTRY: dict[str, WorkerJob] = {
     "ACTUALIZAR_PRECIOS_DIARIOS": (
         synchronize_configured_market_prices
-    ),
-    "CALCULAR_INDICADORES_DIARIOS": (
-        calculate_configured_market_indicators
     ),
     "PROCESAR_SIMULACIONES_PENDIENTES": (
         process_pending_simulation_executions

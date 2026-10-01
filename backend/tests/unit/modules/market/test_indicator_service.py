@@ -11,7 +11,7 @@ from alphainvest.modules.market.application.indicator_service import (
 )
 from alphainvest.modules.market.domain.exceptions import (
     AssetNotFoundError,
-    InsufficientPriceHistoryError,
+    InvalidIndicatorParametersError,
 )
 from alphainvest.modules.market.domain.indicator_enums import (
     FinancialIndicatorType,
@@ -19,290 +19,191 @@ from alphainvest.modules.market.domain.indicator_enums import (
 from alphainvest.modules.market.domain.indicator_values import (
     ClosingPricePoint,
 )
-from alphainvest.modules.market.presentation.schemas import (
-    IndicatorCalculationRequest,
-    IndicatorCalculationSpec,
-)
 
 pytestmark = pytest.mark.unit
 
+SOURCE_ID = uuid4()
+END = date(2026, 9, 25)
 
-def build_prices(
-    count: int,
-) -> list[ClosingPricePoint]:
-    start = date(2026, 1, 1)
 
+def build_prices(count: int) -> list[ClosingPricePoint]:
     return [
         ClosingPricePoint(
-            date=start + timedelta(days=index),
+            date=END - timedelta(days=count - 1 - index),
             close=Decimal(100 + index),
         )
         for index in range(count)
     ]
 
 
-@pytest.mark.asyncio
-async def test_calculation_rejects_missing_asset() -> None:
-    repository = SimpleNamespace(
-        get_asset=AsyncMock(return_value=None)
-    )
-    service = FinancialIndicatorService(repository)
-
-    request = IndicatorCalculationRequest(
-        source_id=uuid4(),
-        calculations=[
-            IndicatorCalculationSpec(
-                indicator_type=(
-                    FinancialIndicatorType.SMA
-                ),
-                period=20,
-            )
-        ],
-    )
-
-    with pytest.raises(AssetNotFoundError):
-        await service.calculate_indicators(
-            asset_id=uuid4(),
-            request=request,
-        )
-
-
-@pytest.mark.asyncio
-async def test_calculates_and_persists_sma() -> None:
-    asset_id = uuid4()
-    source_id = uuid4()
-
-    asset = SimpleNamespace(
-        id=asset_id,
-        simbolo="AAPL",
-    )
-    source = SimpleNamespace(
-        id=source_id,
-        nombre="Alpha Vantage",
-        activa=True,
-    )
-
-    repository = SimpleNamespace(
-        get_asset=AsyncMock(return_value=asset),
-        get_financial_source=AsyncMock(
-            return_value=source
-        ),
-        list_closing_prices_for_indicators=AsyncMock(
-            return_value=build_prices(30)
-        ),
-        get_existing_indicator_keys=AsyncMock(
-            return_value=set()
-        ),
-        upsert_financial_indicators=AsyncMock(),
-        commit=AsyncMock(),
-        rollback=AsyncMock(),
-    )
-
-    service = FinancialIndicatorService(repository)
-
-    request = IndicatorCalculationRequest(
-        source_id=source_id,
-        calculations=[
-            IndicatorCalculationSpec(
-                indicator_type=(
-                    FinancialIndicatorType.SMA
-                ),
-                period=20,
-            )
-        ],
-    )
-
-    response = await service.calculate_indicators(
-        asset_id=asset_id,
-        request=request,
-    )
-
-    assert response.total_calculated == 11
-    assert response.total_created == 11
-    assert response.total_updated == 0
-    assert response.items[0].period == "20D"
-
-    repository.upsert_financial_indicators.assert_awaited_once()
-    repository.commit.assert_awaited_once()
-    repository.rollback.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_counts_existing_indicators_as_updated() -> None:
-    asset_id = uuid4()
-    source_id = uuid4()
-    prices = build_prices(5)
-
-    existing_key = (
-        FinancialIndicatorType.SMA.value,
-        prices[2].date,
-        "3D",
-    )
-
-    repository = SimpleNamespace(
+def build_repository(
+    prices: list[ClosingPricePoint],
+) -> SimpleNamespace:
+    return SimpleNamespace(
         get_asset=AsyncMock(
-            return_value=SimpleNamespace(
-                id=asset_id,
-                simbolo="AAPL",
-            )
+            return_value=SimpleNamespace(id=uuid4(), simbolo="AAPL")
         ),
-        get_financial_source=AsyncMock(
-            return_value=SimpleNamespace(
-                id=source_id,
-                nombre="Alpha Vantage",
-                activa=True,
-            )
+        get_indicator_price_source=AsyncMock(
+            return_value=(SOURCE_ID, "Yahoo Finance")
         ),
         list_closing_prices_for_indicators=AsyncMock(
             return_value=prices
         ),
-        get_existing_indicator_keys=AsyncMock(
-            return_value={existing_key}
-        ),
-        upsert_financial_indicators=AsyncMock(),
-        commit=AsyncMock(),
-        rollback=AsyncMock(),
     )
 
-    service = FinancialIndicatorService(repository)
 
-    request = IndicatorCalculationRequest(
-        source_id=source_id,
-        calculations=[
-            IndicatorCalculationSpec(
-                indicator_type=(
-                    FinancialIndicatorType.SMA
-                ),
-                period=3,
-            )
-        ],
-    )
+async def list_indicators(
+    repository: SimpleNamespace,
+    **overrides: object,
+) -> object:
+    arguments: dict[str, object] = {
+        "asset_id": uuid4(),
+        "indicator_type": None,
+        "period": None,
+        "start_date": END - timedelta(days=9),
+        "end_date": END,
+        "limit": 500,
+        "offset": 0,
+        "preferred_source_name": "Yahoo Finance",
+    }
+    arguments.update(overrides)
 
-    response = await service.calculate_indicators(
-        asset_id=asset_id,
-        request=request,
-    )
-
-    assert response.total_calculated == 3
-    assert response.total_created == 2
-    assert response.total_updated == 1
+    return await FinancialIndicatorService(
+        repository  # type: ignore[arg-type]
+    ).list_indicators(**arguments)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
-async def test_rejects_insufficient_history() -> None:
-    asset_id = uuid4()
-    source_id = uuid4()
+async def test_rejects_missing_asset() -> None:
+    repository = build_repository([])
+    repository.get_asset = AsyncMock(return_value=None)
 
-    repository = SimpleNamespace(
-        get_asset=AsyncMock(
-            return_value=SimpleNamespace(
-                id=asset_id,
-                simbolo="AAPL",
-            )
-        ),
-        get_financial_source=AsyncMock(
-            return_value=SimpleNamespace(
-                id=source_id,
-                nombre="Alpha Vantage",
-                activa=True,
-            )
-        ),
-        list_closing_prices_for_indicators=AsyncMock(
-            return_value=build_prices(5)
-        ),
-    )
+    with pytest.raises(AssetNotFoundError):
+        await list_indicators(repository)
 
-    service = FinancialIndicatorService(repository)
-
-    request = IndicatorCalculationRequest(
-        source_id=source_id,
-        calculations=[
-            IndicatorCalculationSpec(
-                indicator_type=(
-                    FinancialIndicatorType.SMA
-                ),
-                period=20,
-            )
-        ],
-    )
-
-    with pytest.raises(
-        InsufficientPriceHistoryError
-    ):
-        await service.calculate_indicators(
-            asset_id=asset_id,
-            request=request,
-        )
 
 @pytest.mark.asyncio
-async def test_calculates_and_persists_macd_series() -> None:
-    asset_id = uuid4()
-    source_id = uuid4()
+async def test_computes_default_indicators_without_persisting() -> None:
+    repository = build_repository(build_prices(120))
 
-    repository = SimpleNamespace(
-        get_asset=AsyncMock(
-            return_value=SimpleNamespace(
-                id=asset_id,
-                simbolo="AAPL",
-            )
-        ),
-        get_financial_source=AsyncMock(
-            return_value=SimpleNamespace(
-                id=source_id,
-                nombre="Alpha Vantage",
-                activa=True,
-            )
-        ),
-        list_closing_prices_for_indicators=AsyncMock(
-            return_value=build_prices(40)
-        ),
-        get_existing_indicator_keys=AsyncMock(
-            return_value=set()
-        ),
-        upsert_financial_indicators=AsyncMock(),
-        commit=AsyncMock(),
-        rollback=AsyncMock(),
+    response = await list_indicators(repository)
+
+    types = {item.indicator_type for item in response.items}
+    assert types == {
+        FinancialIndicatorType.SMA,
+        FinancialIndicatorType.EMA,
+        FinancialIndicatorType.RSI,
+        FinancialIndicatorType.VOLATILITY,
+        FinancialIndicatorType.MACD,
+        FinancialIndicatorType.MACD_SIGNAL,
+        FinancialIndicatorType.MACD_HISTOGRAM,
+    }
+    # 10 días × 7 series, del más reciente al más antiguo.
+    assert response.total == 70
+    assert response.items[0].date == END
+    assert response.items[-1].date == END - timedelta(days=9)
+    assert not hasattr(repository, "upsert_financial_indicators")
+
+
+@pytest.mark.asyncio
+async def test_sma_value_matches_formula() -> None:
+    repository = build_repository(build_prices(120))
+
+    response = await list_indicators(
+        repository,
+        indicator_type=FinancialIndicatorType.SMA,
+        period="20D",
     )
 
-    service = FinancialIndicatorService(repository)
+    latest = response.items[0]
+    # Últimos 20 cierres: 200..219 → promedio 209.5.
+    assert latest.date == END
+    assert latest.value == Decimal("209.5")
+    assert latest.period == "20D"
+    assert response.total == 10
 
-    request = IndicatorCalculationRequest(
-        source_id=source_id,
-        calculations=[
-            IndicatorCalculationSpec(
-                indicator_type=(
-                    FinancialIndicatorType.MACD
-                ),
-                fast_period=3,
-                slow_period=5,
-                signal_period=3,
-            )
-        ],
+
+@pytest.mark.asyncio
+async def test_macd_returns_its_three_series() -> None:
+    repository = build_repository(build_prices(120))
+
+    response = await list_indicators(
+        repository,
+        indicator_type=FinancialIndicatorType.MACD,
+        period="12-26-9",
     )
 
-    response = await service.calculate_indicators(
-        asset_id=asset_id,
-        request=request,
-    )
-
-    assert response.total_calculated == 104
-    assert response.total_created == 104
-    assert response.total_updated == 0
-
-    counts = {
-        item.indicator_type: item.calculated
-        for item in response.items
+    assert {item.indicator_type for item in response.items} == {
+        FinancialIndicatorType.MACD,
+        FinancialIndicatorType.MACD_SIGNAL,
+        FinancialIndicatorType.MACD_HISTOGRAM,
     }
 
-    assert counts[
-        FinancialIndicatorType.MACD
-    ] == 36
-    assert counts[
-        FinancialIndicatorType.MACD_SIGNAL
-    ] == 34
-    assert counts[
-        FinancialIndicatorType.MACD_HISTOGRAM
-    ] == 34
 
-    repository.upsert_financial_indicators.assert_awaited_once()
-    repository.commit.assert_awaited_once()
+@pytest.mark.asyncio
+async def test_loads_prices_with_warmup_before_window() -> None:
+    repository = build_repository(build_prices(120))
+
+    await list_indicators(
+        repository,
+        indicator_type=FinancialIndicatorType.RSI,
+        period="14D",
+    )
+
+    call = repository.list_closing_prices_for_indicators.await_args
+    start = END - timedelta(days=9)
+    assert call.kwargs["since"] == start - timedelta(days=2 * 14 + 365)
+    assert call.kwargs["until"] == END
+
+
+@pytest.mark.asyncio
+async def test_insufficient_history_returns_empty_list() -> None:
+    repository = build_repository(build_prices(5))
+
+    response = await list_indicators(repository)
+
+    assert response.items == []
+    assert response.total == 0
+
+
+@pytest.mark.asyncio
+async def test_asset_without_prices_returns_empty_list() -> None:
+    repository = build_repository([])
+    repository.get_indicator_price_source = AsyncMock(return_value=None)
+
+    response = await list_indicators(repository)
+
+    assert response.total == 0
+    repository.list_closing_prices_for_indicators.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_rejects_period_that_does_not_match_type() -> None:
+    repository = build_repository(build_prices(120))
+
+    with pytest.raises(InvalidIndicatorParametersError):
+        await list_indicators(
+            repository,
+            indicator_type=FinancialIndicatorType.SMA,
+            period="12-26-9",
+        )
+
+
+@pytest.mark.asyncio
+async def test_paginates_after_sorting() -> None:
+    repository = build_repository(build_prices(120))
+
+    response = await list_indicators(
+        repository,
+        indicator_type=FinancialIndicatorType.SMA,
+        period="20D",
+        limit=3,
+        offset=3,
+    )
+
+    assert [item.date for item in response.items] == [
+        END - timedelta(days=3),
+        END - timedelta(days=4),
+        END - timedelta(days=5),
+    ]
+    assert [item.id for item in response.items] == [4, 5, 6]

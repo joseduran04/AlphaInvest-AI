@@ -60,3 +60,7 @@ class InsufficientPriceHistoryError(MarketError):
 
 class IndicatorCalculationError(MarketError):
     """No fue posible calcular los indicadores."""
+
+
+class InvalidIndicatorParametersError(MarketError):
+    """El tipo y el periodo del indicador no son compatibles."""

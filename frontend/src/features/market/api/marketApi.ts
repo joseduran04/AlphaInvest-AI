@@ -12,8 +12,6 @@ import type {
   FinancialSourceListResponse,
   HistoricalPriceListQuery,
   HistoricalPriceListResponse,
-  IndicatorCalculationRequest,
-  IndicatorCalculationResponse,
   JobExecutionListResponse,
   JobExecutionResponse,
   LatestPriceQuery,
@@ -122,18 +120,6 @@ export async function assetIndicatorsRequest(
     {
       params,
     },
-  )
-
-  return response.data
-}
-
-export async function calculateAssetIndicatorsRequest(
-  assetId: string,
-  data: IndicatorCalculationRequest,
-): Promise<IndicatorCalculationResponse> {
-  const response = await apiClient.post<IndicatorCalculationResponse>(
-    `${ASSETS_PATH}/${assetId}/indicators/calculate`,
-    data,
   )
 
   return response.data

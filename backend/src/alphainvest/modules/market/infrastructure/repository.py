@@ -2,14 +2,13 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, or_, select, text, tuple_
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from alphainvest.modules.market.domain.enums import MoversPeriod
 from alphainvest.modules.market.domain.indicator_values import (
-    CalculatedIndicatorPoint,
     ClosingPricePoint,
 )
 from alphainvest.modules.market.domain.value_objects import (
@@ -30,7 +29,6 @@ class MarketRepository:
     """Acceso a datos del módulo de mercado."""
 
     PRICE_WRITE_BATCH_SIZE = 500
-    INDICATOR_WRITE_BATCH_SIZE = 1000
     LOOKUP_BATCH_SIZE = 1000
 
     def __init__(self, session: AsyncSession) -> None:
@@ -991,11 +989,52 @@ class MarketRepository:
 
         return synchronized_at
 
+    async def get_indicator_price_source(
+        self,
+        *,
+        asset_id: UUID,
+        preferred_source_name: str,
+    ) -> tuple[UUID, str] | None:
+        """Fuente con el precio más reciente del activo.
+
+        En empate se usa la fuente preferida, igual que en las gráficas.
+        """
+
+        statement = text(
+            """
+            SELECT p.fuente_id, f.nombre
+            FROM market.precios_historicos p
+            JOIN market.fuentes_financieras f ON f.id = p.fuente_id
+            WHERE p.activo_id = :asset_id
+            GROUP BY p.fuente_id, f.nombre
+            ORDER BY
+                MAX(p.fecha) DESC,
+                (f.nombre = :preferred_source_name) DESC
+            LIMIT 1
+            """
+        )
+
+        result = await self._session.execute(
+            statement,
+            {
+                "asset_id": asset_id,
+                "preferred_source_name": preferred_source_name,
+            },
+        )
+        row = result.first()
+
+        if row is None:
+            return None
+
+        return row.fuente_id, str(row.nombre)
+
     async def list_closing_prices_for_indicators(
         self,
         *,
         asset_id: UUID,
         source_id: UUID,
+        since: date | None = None,
+        until: date | None = None,
     ) -> list[ClosingPricePoint]:
         statement = (
             select(
@@ -1014,6 +1053,16 @@ class MarketRepository:
             )
         )
 
+        if since is not None:
+            statement = statement.where(
+                HistoricalPriceModel.fecha >= since
+            )
+
+        if until is not None:
+            statement = statement.where(
+                HistoricalPriceModel.fecha <= until
+            )
+
         result = await self._session.execute(statement)
 
         return [
@@ -1023,205 +1072,6 @@ class MarketRepository:
             )
             for row in result.all()
         ]
-
-    async def upsert_financial_indicators(
-        self,
-        *,
-        asset_id: UUID,
-        indicators: list[
-            CalculatedIndicatorPoint
-        ],
-    ) -> None:
-        if not indicators:
-            return
-
-        for start in range(
-            0,
-            len(indicators),
-            self.INDICATOR_WRITE_BATCH_SIZE,
-        ):
-            batch = indicators[
-                start:start
-                + self.INDICATOR_WRITE_BATCH_SIZE
-            ]
-
-            values = [
-                {
-                    "activo_id": asset_id,
-                    "tipo_indicador": (
-                        indicator.indicator_type
-                    ),
-                    "fecha": indicator.date,
-                    "valor": indicator.value,
-                    "periodo": indicator.period,
-                    "parametros": (
-                        indicator.parameters
-                    ),
-                    "fuente_calculo": (
-                        indicator.calculation_source
-                    ),
-                }
-                for indicator in batch
-            ]
-
-            statement = insert(
-                FinancialIndicatorModel
-            ).values(values)
-
-            statement = (
-                statement.on_conflict_do_update(
-                    index_elements=[
-                        FinancialIndicatorModel
-                        .activo_id,
-                        FinancialIndicatorModel
-                        .tipo_indicador,
-                        FinancialIndicatorModel
-                        .fecha,
-                        FinancialIndicatorModel
-                        .periodo,
-                    ],
-                    set_={
-                        "valor": (
-                            statement.excluded.valor
-                        ),
-                        "parametros": (
-                            statement.excluded
-                            .parametros
-                        ),
-                        "fuente_calculo": (
-                            statement.excluded
-                            .fuente_calculo
-                        ),
-                        "fecha_calculo": func.now(),
-                    },
-                )
-            )
-
-            await self._session.execute(
-                statement
-            )
-
-    async def get_existing_indicator_keys(
-        self,
-        *,
-        asset_id: UUID,
-        keys: list[tuple[str, date, str]],
-    ) -> set[tuple[str, date, str]]:
-        if not keys:
-            return set()
-
-        existing_keys: set[
-            tuple[str, date, str]
-        ] = set()
-
-        for start in range(
-            0,
-            len(keys),
-            self.LOOKUP_BATCH_SIZE,
-        ):
-            batch = keys[
-                start:start + self.LOOKUP_BATCH_SIZE
-            ]
-
-            statement = select(
-                FinancialIndicatorModel.tipo_indicador,
-                FinancialIndicatorModel.fecha,
-                FinancialIndicatorModel.periodo,
-            ).where(
-                FinancialIndicatorModel.activo_id
-                == asset_id,
-                tuple_(
-                    FinancialIndicatorModel
-                    .tipo_indicador,
-                    FinancialIndicatorModel.fecha,
-                    FinancialIndicatorModel.periodo,
-                ).in_(batch),
-            )
-
-            result = await self._session.execute(
-                statement
-            )
-
-            existing_keys.update(
-                (
-                    row.tipo_indicador,
-                    row.fecha,
-                    row.periodo,
-                )
-                for row in result.all()
-            )
-
-        return existing_keys
-
-    async def list_financial_indicators(
-        self,
-        *,
-        asset_id: UUID,
-        indicator_type: str | None,
-        period: str | None,
-        start_date: date | None,
-        end_date: date | None,
-        limit: int,
-        offset: int,
-    ) -> tuple[list[FinancialIndicatorModel], int]:
-        filters = [
-            FinancialIndicatorModel.activo_id == asset_id
-        ]
-
-        if indicator_type is not None:
-            filters.append(
-                FinancialIndicatorModel.tipo_indicador
-                == indicator_type
-            )
-
-        if period is not None:
-            filters.append(
-                FinancialIndicatorModel.periodo
-                == period.strip().upper()
-            )
-
-        if start_date is not None:
-            filters.append(
-                FinancialIndicatorModel.fecha
-                >= start_date
-            )
-
-        if end_date is not None:
-            filters.append(
-                FinancialIndicatorModel.fecha
-                <= end_date
-            )
-
-        statement = (
-            select(FinancialIndicatorModel)
-            .where(*filters)
-            .order_by(
-                FinancialIndicatorModel.fecha.desc(),
-                FinancialIndicatorModel.tipo_indicador.asc(),
-                FinancialIndicatorModel.periodo.asc(),
-            )
-            .limit(limit)
-            .offset(offset)
-        )
-
-        count_statement = (
-            select(
-                func.count(
-                    FinancialIndicatorModel.id
-                )
-            )
-            .where(*filters)
-        )
-
-        result = await self._session.execute(statement)
-        count_result = await self._session.execute(
-            count_statement
-        )
-
-        return (
-            list(result.scalars().all()),
-            int(count_result.scalar_one()),
-        )
 
     async def list_financial_indicators_for_ai(
         self,

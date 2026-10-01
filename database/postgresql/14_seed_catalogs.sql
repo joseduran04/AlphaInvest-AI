@@ -522,13 +522,13 @@ VALUES
     (
         'CALCULAR_INDICADORES_DIARIOS',
         'Calcular indicadores diarios',
-        'Calcula indicadores financieros después de la actualización de precios.',
+        'Obsoleto: los indicadores se calculan al consultarlos y no se guardan.',
         'CRON',
         '30 23 * * 1-5',
         NULL,
         'America/Mexico_City',
         '{"frecuencia":"diaria"}'::JSONB,
-        TRUE,
+        FALSE,
         FALSE,
         3600,
         3

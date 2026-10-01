@@ -34,7 +34,7 @@ async def test_run_once_executes_selected_job() -> None:
         worker_enabled=True,
         worker_run_once=True,
         worker_run_once_job=(
-            "CALCULAR_INDICADORES_DIARIOS"
+            "ACTUALIZAR_PRECIOS_DIARIOS"
         ),
         worker_run_on_startup=False,
     )
@@ -61,7 +61,7 @@ async def test_run_once_executes_selected_job() -> None:
         await run_worker()
 
     scheduler.run_job_now.assert_awaited_once_with(
-        "CALCULAR_INDICADORES_DIARIOS"
+        "ACTUALIZAR_PRECIOS_DIARIOS"
     )
     scheduler.shutdown.assert_called_once()
     dispose_engine.assert_awaited_once()
